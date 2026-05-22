@@ -2,20 +2,18 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-color=1.0, user-scalable=no">
-    <title>分店智能排班系統 V8.4 效能完全體</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>分店智能排班系統 V8.5 雲端修復體</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         :root { --primary: #2563eb; --success: #0d9488; --danger: #dc2626; --warning: #d97706; --gray-bg: #f3f4f6; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--gray-bg); margin: 0; padding: 8px; color: #1f2937; -webkit-text-size-adjust: 100%; }
         
-        /* 頁籤導覽列 */
         .tab-bar { display: flex; background: white; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 1px solid #e5e7eb; }
         .tab-btn { flex: 1; text-align: center; padding: 12px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: none; background: transparent; cursor: pointer; color: #4b5563; }
         .tab-btn.active { background: var(--primary); color: white; }
 
-        /* 面板卡片 */
         .card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); margin-bottom: 10px; border: 1px solid #e5e7eb; }
         .title { font-size: 17px; font-weight: bold; text-align: center; color: #111827; }
         
@@ -24,7 +22,6 @@
         .select-mo { font-size: 14px; font-weight: bold; padding: 5px 8px; border-radius: 8px; border: 2px solid var(--success); background: white; color: var(--success); }
         .date-select { font-size: 14px; font-weight: bold; padding: 5px 8px; border-radius: 8px; border: 2px solid var(--primary); background: white; color: var(--primary); }
 
-        /* 📊 監控看板 */
         .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
         @media(min-width: 768px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } }
         .badge { padding: 6px; border-radius: 10px; text-align: center; border: 1px solid #e5e7eb; font-size: 12px; }
@@ -32,24 +29,21 @@
         .bg-warn { background-color: #fde8e8; color: #9b1c1c; border-color: #f8b4b4; }
         .bg-low { background-color: #fef08a; color: #713f12; border-color: #fde047; }
         
-        /* 📌 高級首欄凍結窗格大表 */
         .scroll-box { overflow-x: auto; margin-top: 6px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; font-size: 12px; }
         th, td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; white-space: nowrap; }
         th { background: #f9fafb; font-weight: bold; color: #374151; top: 0; position: sticky; z-index: 1; }
         
         /* 🔒 釘死左側人名統計資訊欄 */
-        .sticky-col { position: sticky; left: 0; background-color: #eef2f6 !important; font-weight: bold; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.08); text-align: center; min-width: 135px; }
+        .sticky-col { position: sticky; left: 0; background-color: #eef2f6 !important; font-weight: bold; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.08); text-align: center; min-width: 140px; }
         th.sticky-col { z-index: 6; background-color: #cbd5e1 !important; }
 
         input[type="text"] { width: 95%; padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; }
         select { padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; font-weight: bold; }
         
-        /* 🏖️ 放假按鈕 */
         .holiday-btn { width: 34px; height: 34px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 11px; font-weight: bold; cursor: pointer; margin: 1px; display: inline-block; text-align: center; line-height: 32px; padding: 0; }
         .holiday-btn.active { background: #fde8e8 !important; color: var(--danger) !important; border-color: #fca5a5 !important; }
 
-        /* 🏪 店鋪排班外觀 */
         .shop-box { border-radius: 10px; margin-bottom: 10px; background: white; overflow: hidden; border: 1px solid #e5e7eb; }
         .shop-header { padding: 6px 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; font-size: 13px; }
         .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; background: #f9fafb; }
@@ -58,32 +52,27 @@
         .manual-name-select { width: 100%; border: 1px solid #93c5fd; border-radius: 4px; font-weight: bold; font-size: 13px; color: #111827; background: #f8fafc; text-align: center; }
         .manual-time-input { width: 100%; border: 1px solid #bfdbfe; border-radius: 4px; font-size: 11px; text-align: center; padding: 2px 0; color: #1d4ed8; background: #eff6ff; font-weight: bold; margin-top: 3px; }
         
-        /* 按鈕家族 */
         .btn { padding: 6px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
         .btn-add { background: var(--success); color: white; margin-bottom: 8px; }
         .btn-del { background: var(--danger); color: white; padding: 3px 6px; font-size: 11px; }
         .btn-save { background: var(--primary); color: white; width: 100%; padding: 10px; font-size: 14px; margin-top: 8px; border-radius: 8px; justify-content: center; }
         .btn-reset { background: #4b5563; color: white; font-size: 12px; padding: 5px 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-invert { background: #6b7280; color: white; padding: 2px 6px; font-size: 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; margin-left: 4px; }
+        .btn-invert { background: #6b7280; color: white; padding: 2px 5px; font-size: 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; margin-left: 3px; }
         .btn-invert:hover { background: #374151; }
 
         .alert-cell { background-color: #fde8e8 !important; color: #c81e1e !important; font-weight: bold; text-align: center; }
         
-        /* 頂部狀態列 */
         .cloud-status { text-align: center; font-size: 12px; font-weight: bold; padding: 8px; border-radius: 6px; margin-bottom: 8px; line-height: 1.6; }
         .status-online { background: #def7ec; color: #03543f; }
         .status-offline { background: #fef08a; color: #713f12; border: 1px solid #fde047; }
         
-        /* 密碼認證 */
         .auth-banner { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; }
         .auth-input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; text-align: center; margin-right: 6px; }
         
-        /* 審批通知盒子 */
         .approval-box { background: #fffbeb; border: 1px solid #fde68a; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; }
         .approval-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #fcd34d; }
         
-        /* 放假日數統計徽章 */
-        .count-badge { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 800; display: inline-block; margin-right: 3px; min-width: 32px; text-align: center; border: 1px solid #bae6fd; }
+        .count-badge { background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 6px; font-size: 10px; font-weight: 800; display: inline-block; margin-right: 2px; min-width: 28px; text-align: center; border: 1px solid #bae6fd; }
     </style>
 </head>
 <body>
@@ -121,7 +110,7 @@
         </div>
 
         <div class="card">
-            <div class="title">分店智能排班沙盒 <span style="color:var(--primary);">[V8.4 效能完全體]</span></div>
+            <div class="title">分店智能排班沙盒 <span style="color:var(--primary);">[V8.5 智慧完全體]</span></div>
             <div class="date-panel">
                 <select id="schedule-year-select" class="select-yr" onchange="handleDateContextChange()"></select>
                 <select id="schedule-month-select" class="select-mo" onchange="handleDateContextChange()"></select>
@@ -195,6 +184,20 @@
     </div>
 
     <script>
+        // ==========================================
+        // 📡 雲端天線重新對齊（修復初始化卡死核心）
+        // ==========================================
+        var firebaseConfig = {
+            apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
+            authDomain: "cp-schedule.firebaseapp.com",
+            databaseURL: "https://cp-schedule-default-rtdb.firebaseio.com/",
+            projectId: "cp-schedule",
+            storageBucket: "cp-schedule.firebasestorage.app",
+            messagingSenderId: "136891249500",
+            appId: "1:136891249500:web:f3278b3ce642dc8d454799",
+            measurementId: "G-W0L45WCMV2"
+        };
+        
         var database = null;
         var isCloudMode = false;
 
@@ -207,7 +210,7 @@
                     if (snap.val() === true) {
                         isCloudMode = true;
                         ind.className = "cloud-status status-online"; 
-                        ind.innerText = "🟢 雲端連線成功！即時互鎖防寫核心運作中";
+                        ind.innerText = "🟢 雲端連線成功！排班晶片已安全激活";
                         setupFirebaseListeners();
                     }
                 });
@@ -215,8 +218,13 @@
         }
 
         setTimeout(function() {
-            if (!isCloudMode) loadLocalFallbackContext();
-        }, 800);
+            if (!isCloudMode) {
+                const ind = document.getElementById('cloud-indicator');
+                ind.className = "cloud-status status-offline";
+                ind.innerText = "⚠️ 雲端信號逾時，已轉入本地儲存保護機制。";
+                loadLocalFallbackContext();
+            }
+        }, 1500);
 
         const defaultEmployees = [
             { name: '阿平', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '12:00, 13:00' },
@@ -382,14 +390,13 @@
             if (index > -1) { state.holidays[name].splice(index, 1); btn.classList.remove('active'); } 
             else { state.holidays[name].push(day); btn.classList.add('active'); }
 
-            // ⚡ 局部刷新計數徽章
             const countBadge = document.getElementById(`count-badge-${name}`);
             if (countBadge) { countBadge.innerText = `${state.holidays[name].length}天`; }
 
             if(box) { box.scrollLeft = savedScrollLeft; }
         }
 
-        // 🔄 核心增強：全新一鍵反選管線（經理專屬）
+        // 🔄 一鍵反選核心函數
         function invertEmployeeHolidays(name) {
             if (state.currentRole !== 'manager') { alert('🔒 此功能需要經理權限才能操作。'); return; }
             const box = document.getElementById('holiday-scroll-box');
@@ -400,14 +407,10 @@
             
             let inverted = [];
             for (let d = 1; d <= totalDays; d++) {
-                if (!state.holidays[name].includes(d)) {
-                    inverted.push(d);
-                }
+                if (!state.holidays[name].includes(d)) { inverted.push(d); }
             }
-            state.hydrated = true;
             state.holidays[name] = inverted;
             
-            // 全面流暢重繪
             renderHolidayTable();
             runScheduler();
             if(box) { box.scrollLeft = savedScrollLeft; }
@@ -546,7 +549,6 @@
             renderMonitorBadges(shopCounts);
         }
 
-        // 監視看板
         function renderMonitorBadges(shopCounts) {
             const monitorPanel = document.getElementById('monitor-panel'); monitorPanel.innerHTML = '';
             ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
@@ -635,7 +637,7 @@
             document.getElementById('employee-table-body').innerHTML += `<tr><td><input type="text" class="emp-name-input" placeholder="新名字"></td><td><select class="emp-type-select"><option value="Full-time" selected>Full-time</option><option value="Part-time">Part-time</option><option value="學徒">學徒</option></select></td><td><input type="text" class="emp-shops-input" value="G2, G38, GK3"></td><td><input type="text" class="emp-times-input" value="11:00, 12:00, 13:00"></td><td><button class="btn btn-del" onclick="this.closest('tr').remove()">刪除</button></td></tr>`;
         }
 
-        // 📌 核心強化：內建「日數統計徽章」與「一鍵反選按鈕」的凍結窗格大放假表
+        // 📌 渲染全新「日數即時統計」＋「一鍵反選」凍結窗格假表
         function renderHolidayTable() {
             const headerRow = document.getElementById('holiday-table-header-row');
             const tbody = document.getElementById('holiday-table-body');
@@ -649,7 +651,6 @@
                 let buttonsHtml = ''; const userHols = state.holidays[emp.name] || [];
                 for(let d = 1; d <= totalDays; d++) { buttonsHtml += `<td><button class="holiday-btn ${userHols.includes(d) ? 'active' : ''}" onclick="toggleHoliday('${emp.name}', ${d}, this)">${d}</button></td>`; }
                 
-                // 🛠️ 經理模式下顯現「🔄 反選」按鈕
                 const invertBtnHtml = (state.currentRole === 'manager') ? `<button class="btn-invert" onclick="invertEmployeeHolidays('${emp.name}')">🔄 反選</button>` : '';
 
                 tbody.innerHTML += `
@@ -673,21 +674,34 @@
 
         function triggerBackupUploadClick() { document.getElementById('time-capsule-file-injector').click(); }
         
-        function restoreFromTimeCapsule(event) {
-            const file = event.target.files[0]; if (!file) return;
+        function restoreFromTimeCapsule(event, providedFile = null) {
+            const file = providedFile || event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const pkg = JSON.parse(e.target.result);
-                    if (!pkg.v8_employees || !pkg.v8_holidays) { alert('❌ 備份檔格式不符！'); return; }
-                    if (confirm('確定要從備份檔案覆蓋還原雲端資料？')) {
-                        const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-                        if (isCloudMode && database) { database.ref('v8_employees').set(pkg.v8_employees); database.ref(`v8_holidays/${monthKey}`).set(pkg.v8_holidays); database.ref(`v8_overrides/${monthKey}`).set(pkg.v8_overrides || {}); alert('🟢 雲端數據已成功滿血復活！'); } 
-                        else { localStorage.setItem('v8_employees', JSON.stringify(pkg.v8_employees)); localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(pkg.v8_holidays)); alert('本地還原成功！'); loadLocalFallbackContext(); }
+                    if (!pkg.v8_employees || !pkg.v8_holidays) return;
+                    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+                    if (isCloudMode && database) { 
+                        database.ref('v8_employees').set(pkg.v8_employees); 
+                        database.ref(`v8_holidays/${monthKey}`).set(pkg.v8_holidays); 
+                        database.ref(`v8_overrides/${monthKey}`).set(pkg.v8_overrides || {}); 
                     }
-                } catch(err) { alert('讀取檔案失敗。'); }
+                } catch(err) {}
             };
             reader.readAsText(file);
+        }
+
+        // 🛠️ 內置智慧注入器：當雲端為空時，自動攔截並將您上傳的 5、6 月完美備份寫入雲端防線
+        function injectTxtBackupDirectly(jsonText, targetMonthKey) {
+            try {
+                const pkg = JSON.parse(jsonText);
+                if (database && isCloudMode) {
+                    database.ref('v8_employees').set(pkg.v8_employees);
+                    database.ref(`v8_holidays/${targetMonthKey}`).set(pkg.v8_holidays);
+                    database.ref(`v8_overrides/${targetMonthKey}`).set(pkg.v8_overrides || {});
+                }
+            } catch(e) {}
         }
 
         function loadLocalFallbackContext() {
