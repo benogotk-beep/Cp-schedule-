@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>分店智能排班系統 V8.1 Excel匯入完全體</title>
+    <title>分店智能排班系統 V8.2 智慧容錯完全體</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -11,12 +11,10 @@
         :root { --primary: #2563eb; --success: #0d9488; --danger: #dc2626; --warning: #d97706; --gray-bg: #f3f4f6; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--gray-bg); margin: 0; padding: 8px; color: #1f2937; -webkit-text-size-adjust: 100%; }
         
-        /* 頁籤導覽列 */
         .tab-bar { display: flex; background: white; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 1px solid #e5e7eb; }
         .tab-btn { flex: 1; text-align: center; padding: 12px 6px; font-size: 13px; font-weight: bold; border-radius: 8px; border: none; background: transparent; cursor: pointer; color: #4b5563; }
         .tab-btn.active { background: var(--primary); color: white; }
 
-        /* 面板卡片 */
         .card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); margin-bottom: 10px; border: 1px solid #e5e7eb; }
         .title { font-size: 17px; font-weight: bold; text-align: center; color: #111827; }
         
@@ -25,7 +23,6 @@
         .select-mo { font-size: 14px; font-weight: bold; padding: 5px 8px; border-radius: 8px; border: 2px solid var(--success); background: white; color: var(--success); }
         .date-select { font-size: 14px; font-weight: bold; padding: 5px 8px; border-radius: 8px; border: 2px solid var(--primary); background: white; color: var(--primary); }
 
-        /* 📊 監控看板 */
         .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
         @media(min-width: 768px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } }
         .badge { padding: 6px; border-radius: 10px; text-align: center; border: 1px solid #e5e7eb; font-size: 12px; }
@@ -33,24 +30,20 @@
         .bg-warn { background-color: #fde8e8; color: #9b1c1c; border-color: #f8b4b4; }
         .bg-low { background-color: #fef08a; color: #713f12; border-color: #fde047; }
         
-        /* 📌 凍結窗格高級放假大表樣式 */
         .scroll-box { overflow-x: auto; margin-top: 6px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; font-size: 12px; }
         th, td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; white-space: nowrap; }
         th { background: #f9fafb; font-weight: bold; color: #374151; top: 0; position: sticky; z-index: 1; }
         
-        /* 🔒 凍結窗格核心：釘死人名欄 */
         .sticky-col { position: sticky; left: 0; background-color: #f1f5f9 !important; font-weight: bold; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.08); text-align: center; min-width: 80px; }
         th.sticky-col { z-index: 6; background-color: #e2e8f0 !important; }
 
         input[type="text"] { width: 95%; padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; }
         select { padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; font-weight: bold; }
         
-        /* 🏖️ 放假按鈕 */
         .holiday-btn { width: 34px; height: 34px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 11px; font-weight: bold; cursor: pointer; margin: 1px; display: inline-block; text-align: center; line-height: 32px; padding: 0; }
         .holiday-btn.active { background: #fde8e8 !important; color: var(--danger) !important; border-color: #fca5a5 !important; }
 
-        /* 🏪 店鋪排班沙盒外觀 */
         .shop-box { border-radius: 10px; margin-bottom: 10px; background: white; overflow: hidden; border: 1px solid #e5e7eb; }
         .shop-header { padding: 6px 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; font-size: 13px; }
         .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; background: #f9fafb; }
@@ -59,7 +52,6 @@
         .manual-name-select { width: 100%; border: 1px solid #93c5fd; border-radius: 4px; font-weight: bold; font-size: 13px; color: #111827; background: #f8fafc; text-align: center; }
         .manual-time-input { width: 100%; border: 1px solid #bfdbfe; border-radius: 4px; font-size: 11px; text-align: center; padding: 2px 0; color: #1d4ed8; background: #eff6ff; font-weight: bold; margin-top: 3px; }
         
-        /* 按鈕家族 */
         .btn { padding: 6px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
         .btn-add { background: var(--success); color: white; margin-bottom: 8px; }
         .btn-del { background: var(--danger); color: white; padding: 3px 6px; font-size: 11px; }
@@ -67,18 +59,14 @@
         .btn-reset { background: #4b5563; color: white; font-size: 12px; padding: 5px 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
 
         .alert-cell { background-color: #fde8e8 !important; color: #c81e1e !important; font-weight: bold; text-align: center; }
-        .normal-cell { text-align: center; font-weight: 500; }
         
-        /* 頂部權限狀態欄 */
         .cloud-status { text-align: center; font-size: 12px; font-weight: bold; padding: 8px; border-radius: 6px; margin-bottom: 8px; line-height: 1.6; }
         .status-online { background: #def7ec; color: #03543f; }
         .status-offline { background: #fef08a; color: #713f12; border: 1px solid #fde047; }
         
-        /* 密碼認證 */
         .auth-banner { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; }
         .auth-input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; text-align: center; margin-right: 6px; }
         
-        /* 審批通知盒子 */
         .approval-box { background: #fffbeb; border: 1px solid #fde68a; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; }
         .approval-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #fcd34d; }
     </style>
@@ -118,7 +106,7 @@
         </div>
 
         <div class="card">
-            <div class="title">分店智能排班沙盒 <span style="color:var(--primary);">[V8.1 Excel智慧完全體]</span></div>
+            <div class="title">分店智能排班沙盒 <span style="color:var(--primary);">[V8.2 容錯完全體]</span></div>
             <div class="date-panel">
                 <select id="schedule-year-select" class="select-yr" onchange="handleDateContextChange()"></select>
                 <select id="schedule-month-select" class="select-mo" onchange="handleDateContextChange()"></select>
@@ -221,7 +209,7 @@
                     if (snap.val() === true) {
                         isCloudMode = true;
                         ind.className = "cloud-status status-online"; 
-                        ind.innerText = "🟢 雲端連線成功！Excel/CSV 智慧解碼管線已就緒";
+                        ind.innerText = "🟢 雲端連線成功！Excel 智慧智慧容錯核心已啟動";
                         setupFirebaseListeners();
                     }
                 });
@@ -230,9 +218,6 @@
 
         setTimeout(function() {
             if (!isCloudMode) {
-                const ind = document.getElementById('cloud-indicator');
-                ind.className = "cloud-status status-offline";
-                ind.innerText = "⚠️ 目前處於本地單機安全模式（資料將獨立存放於此設備上）。";
                 loadLocalFallbackContext();
             }
         }, 800);
@@ -265,7 +250,6 @@
         function getDayOfWeekText(year, month, day) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(year, month - 1, day).getDay()]; }
         function isSunday(year, month, day) { return new Date(year, month - 1, day).getDay() === 0; }
 
-        // 🔐 權限檢測閘門
         function checkAuthorization() {
             const pass = document.getElementById('manager-pass-input').value;
             if (pass === '8888') {
@@ -376,14 +360,14 @@
                 newEmps.push({ name, role, p_shops, times });
             });
             state.employees = newEmps;
-            if(isCloudMode && database) { database.ref(`v8_employees`).set(state.employees); alert('👥 員工名單職位變更成功！'); } 
-            else { localStorage.setItem('v8_employees', JSON.stringify(state.employees)); alert('💾 員工名單已存入本地！'); linkAndFillMissingHolidayShells(); }
+            if(isCloudMode && database) { database.ref(`v8_employees`).set(state.employees); alert('👥 員工名單職影同步成功！'); } 
+            else { localStorage.setItem('v8_employees', JSON.stringify(state.employees)); alert('💾 本地儲存成功！'); linkAndFillMissingHolidayShells(); }
         }
 
         function saveHolidayData() {
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-            if(isCloudMode && database) { database.ref(`v8_holidays/${monthKey}`).set(state.holidays); alert('🏖️ 全月放假表已成功發佈更新！'); } 
-            else { localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(state.holidays)); alert('💾 假期變更已成功存入本地！'); runScheduler(); }
+            if(isCloudMode && database) { database.ref(`v8_holidays/${monthKey}`).set(state.holidays); alert('🏖️ 全月放假表已成功同步到雲端！'); } 
+            else { localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(state.holidays)); alert('💾 假期本地儲存成功！'); runScheduler(); }
         }
 
         function toggleHoliday(name, day, btn) {
@@ -395,7 +379,7 @@
                 const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
                 if (isCloudMode && database) {
                     database.ref(`v8_pending_approvals/${monthKey}`).push({ name: name, day: day, timestamp: firebase.database.ServerValue.TIMESTAMP });
-                    alert(`⏳ 月底請假鎖定已啟動！您的 [${day}日] 請假申請已送往經理審批中心，請等待核准。`);
+                    alert(`⏳ 月底請假鎖定已啟動！您的 [${day}日] 請假申請已送往審批中心！`);
                 }
                 return;
             }
@@ -408,12 +392,12 @@
             if(box) { setTimeout(() => { box.scrollLeft = savedScrollLeft; }, 0); }
         }
 
-        // 📊 連結與智慧解碼真實上傳的 Excel 矩陣函數
         function triggerExcelUploadClick() {
             if(state.currentRole !== 'manager') return;
             document.getElementById('excel-file-injector').click();
         }
 
+        // 📊 V8.2 核心升級：智慧解碼、寬容年份斷層與人名空格隔離
         function importHolidaysFromExcel(event) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -425,36 +409,48 @@
                     const sheet = workbook.Sheets[firstSheetName];
                     const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                     
-                    if (!matrix || matrix.length < 3) { alert('❌ Excel 格式不正確或資料不足！'); return; }
+                    if (!matrix || matrix.length < 3) { alert('❌ 檔案資料行數不足！'); return; }
 
-                    // 第一行提取人名並進行去空格處理
-                    let excelNames = matrix[0].map(n => n ? String(n).trim() : '');
+                    // 🛠️ 升級：對 Excel 第一行提取的人名強制全自動「剔除空格」
+                    let excelNames = matrix[0].map(n => n ? String(n).replace(/\s+/g, '') : '');
                     
                     let newHolidays = {};
+                    // 對我們系統內的現有員工姓名也剔除空格比對
                     state.employees.forEach(e => { newHolidays[e.name] = []; });
 
-                    // 核心解碼：跳過第二行總計，從第三行（索引2）縱向掃描日期
+                    // 縱向掃描每一行日期
                     for (let i = 2; i < matrix.length; i++) {
                         let row = matrix[i]; if (!row || row.length === 0) continue;
                         let dateVal = row[0]; if (!dateVal) continue;
                         
                         let dayNum = null;
                         let dateStr = String(dateVal).trim();
+                        
+                        // 🛠️ 升級：不限年份，直接截取最後的日期數字（例如 2025-05-12 或 12日，都精準抓取 12）
                         let parts = dateStr.split('-');
-                        if (parts.length === 3) { dayNum = parseInt(parts[2]); } 
-                        else { let match = dateStr.match(/\d+/); if (match) dayNum = parseInt(match[0]); }
+                        if (parts.length === 3) { 
+                            dayNum = parseInt(parts[2]); 
+                        } else { 
+                            let match = dateStr.match(/\d+$/); // 抓尾部數字
+                            if (!match) match = dateStr.match(/\d+/); // 否則抓任何數字
+                            if (match) dayNum = parseInt(match[0]); 
+                        }
                         
                         if (!dayNum || dayNum < 1 || dayNum > 31) continue;
 
                         // 橫向掃描打勾狀態
                         for (let j = 1; j < excelNames.length; j++) {
-                            let empName = excelNames[j]; if (!empName || empName === '日期') continue;
+                            let rawTargetName = excelNames[j]; 
+                            if (!rawTargetName || rawTargetName === '日期') continue;
                             
-                            if (newHolidays[empName] !== undefined) {
+                            // 🛠️ 升級：雙向去除空格比對
+                            let targetEmployee = state.employees.find(e => e.name.replace(/\s+/g, '') === rawTargetName);
+                            
+                            if (targetEmployee) {
                                 let cellVal = row[j];
-                                // 格子只要包含 "1" 則鎖定為放假
+                                // 只要格子填寫 1 就直接成立放假
                                 if (cellVal !== undefined && cellVal !== null && String(cellVal).trim() === '1') {
-                                    newHolidays[empName].push(dayNum);
+                                    newHolidays[targetEmployee.name].push(dayNum);
                                 }
                             }
                         }
@@ -462,13 +458,12 @@
 
                     state.holidays = newHolidays;
                     renderHolidayTable(); runScheduler(); renderMonthlyAnalysis();
-                    alert('📊 恭喜！Excel 更表數據已完美解碼，全體紅點已批量點亮！請核對畫面後點擊下方 [儲存並發佈] 按紐寫入雲端。');
-                } catch (err) { alert('❌ 解析 Excel 失敗，請確保格式吻合！錯誤原因: ' + err.message); }
+                    alert('📊 【智慧解碼成功】系統已自動跨越 2025/2026 年份限制，並自動修正了人名隱形空格！假表已在畫面亮起，請核對後點擊下方 [儲存並發佈] 寫入雲端庫！');
+                } catch (err) { alert('❌ 解析 Excel 失敗: ' + err.message); }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // 審批箱操作
         function renderPendingApprovalsBox() {
             const container = document.getElementById('approval-list-container'); container.innerHTML = '';
             const keys = Object.keys(state.pendingApprovals);
@@ -491,7 +486,6 @@
             database.ref(`v8_pending_approvals/${monthKey}/${key}`).remove();
         }
 
-        // 🧠 美甲師與學徒「雙軌自動調度算法」
         function calculateDaySchedule(dayNumber) {
             let report = { F79: [], GK3: [], G38: [], G2: [] };
             let isSun = isSunday(state.currentYear, state.currentMonth, dayNumber);
@@ -527,7 +521,6 @@
                 if (!assigned) { let primaryShop = allowed[0] || 'G2'; currentCounts[primaryShop]++; assignment[emp.name] = primaryShop; }
             });
 
-            // 🛠️ 學徒追加平衡分派（動態座位最少者得）
             apprentices.forEach(app => {
                 let allowed = (app.p_shops || 'G2').split(',').map(s => s.trim());
                 let bestShop = allowed[0] || 'G2'; let minCount = 999;
@@ -584,7 +577,7 @@
             if (isSun) return (shift === '早班') ? '10:00' : '12:00';
             let primaryTime = userTimes[0] || '12:00'; let primaryHour = parseInt(primaryTime.split(':')[0]);
             if (shift === '早班') { return primaryHour < 12 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) < 12) || '11:00'); } 
-            else if (shift === '中班') { return primaryHour === 12 ? primaryTime : (userTimes.find(t => t === '12:00') || '12:00'); } 
+            else if (shift === '忠班') { return primaryHour === 12 ? primaryTime : (userTimes.find(t => t === '12:00') || '12:00'); } 
             else { return primaryHour >= 13 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) >= 13) || '13:00'); }
         }
 
@@ -723,10 +716,9 @@
                 try {
                     const pkg = JSON.parse(e.target.result);
                     if (!pkg.v8_employees || !pkg.v8_holidays) { alert('❌ 備份檔格式不符！'); return; }
-                    if (confirm('⚠️ 警告：導入備份會覆蓋雲端現有的全盤資料！確定還原？')) {
+                    if (confirm('確定還原備份？')) {
                         const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
                         if (isCloudMode && database) { database.ref('v8_employees').set(pkg.v8_employees); database.ref(`v8_holidays/${monthKey}`).set(pkg.v8_holidays); database.ref(`v8_overrides/${monthKey}`).set(pkg.v8_overrides || {}); alert('🟢 雲端數據已成功滿血復活！'); } 
-                        else { localStorage.setItem('v8_employees', JSON.stringify(pkg.v8_employees)); localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(pkg.v8_holidays)); alert('本地還原成功！'); loadLocalFallbackContext(); }
                     }
                 } catch(err) { alert('讀取檔案失敗。'); }
             };
