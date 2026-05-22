@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-color=1.0, user-scalable=no">
-    <title>分店全自動+手動智能排班系統 V7.7 終極完全體</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>分店全自動+手動智能排班系統 V7.8 職位架構升級版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -27,7 +27,7 @@
         th, td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
         th { background: #f9fafb; font-weight: bold; color: #374151; }
         input[type="text"] { width: 95%; padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
-        select { padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; }
+        select { padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; font-weight: bold; }
         
         .holiday-btn { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 11px; font-weight: bold; cursor: pointer; margin: 1px; }
         .holiday-btn.active { background: #fde8e8; color: var(--danger); border-color: #fca5a5; }
@@ -74,7 +74,7 @@
     <div id="tab-schedule" class="tab-content">
         <div id="cloud-indicator" class="cloud-status status-offline">⏳ 正在初始化排班引擎晶片...</div>
         <div class="card">
-            <div class="title">分店智能排班沙盒 <span style="color:var(--primary);">[V7.7 智能上雲完全體]</span></div>
+            <div class="title">分店智能排班沙盒 <span style="color:var(--primary);">[V7.8 雲端完全體]</span></div>
             <div class="date-panel">
                 <select id="schedule-year-select" class="select-yr" onchange="handleDateContextChange()"></select>
                 <select id="schedule-month-select" class="select-mo" onchange="handleDateContextChange()"></select>
@@ -113,7 +113,7 @@
 
     <div id="tab-employees" class="tab-content" style="display: none;">
         <div class="card">
-            <div class="title" style="margin-bottom: 10px;">員工時段資料庫</div>
+            <div class="title" style="margin-bottom: 10px;">員工時段資料庫 (新架構：Full-time / Part-time / 學徒)</div>
             <button class="btn btn-add" onclick="addEmployeeRow()">＋ 新增員工</button>
             <div class="scroll-box">
                 <table>
@@ -121,8 +121,8 @@
                         <tr>
                             <th>員工姓名</th>
                             <th>職位類型</th>
-                            <th>可支援店舖</th>
-                            <th>班次時段對應</th>
+                            <th>可支援店舖 (首位絕對優先)</th>
+                            <th>班次時段對應 (首位絕對優先)</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -141,7 +141,7 @@
                     <thead>
                         <tr>
                             <th>員工姓名</th>
-                            <th>1-31 日放假選區</th>
+                            <th>1-31 日放假選區 (紅色代表放假)</th>
                         </tr>
                     </thead>
                     <tbody id="holiday-table-body"></tbody>
@@ -166,7 +166,6 @@
         var database = null;
         var isCloudMode = false;
 
-        // 🛡️ 安全偵測防卡死設計：安全檢查 firebase 物件是否存在
         if (typeof firebase !== 'undefined') {
             try {
                 firebase.initializeApp(firebaseConfig);
@@ -186,48 +185,60 @@
             }
         }
 
-        // ⏱️ 執行初始化安全降級判定
         setTimeout(function() {
             if (!isCloudMode) {
                 const ind = document.getElementById('cloud-indicator');
                 ind.className = "cloud-status status-offline";
-                ind.innerHTML = `⚠️ <b>目前處於本地單機安全模式</b>（因 iPad 隱私條例限制本地檔案讀取外部雲端）。<br>
-                💡 <b>解鎖多人同時編輯方法：</b>只需將此網頁檔案丟上 <b>GitHub Pages</b> 變成網址打開，即可立刻激活雲端即時同步！`;
+                ind.innerHTML = `⚠️ <b>目前處於本地單機安全模式</b>（請將此檔案更新至 GitHub Pages 即可直接解除限制亮起綠燈）。`;
                 document.getElementById('main-save-btn').innerText = "💾 儲存排班至此 iPad 本地";
                 loadLocalFallbackContext();
             }
         }, 800);
 
+        // 👥 初始名單及架構升級對應
         const defaultEmployees = [
-            { name: '阿平', isFlex: true, p_shops: 'G2, G38, GK3, F79', times: '12:00, 13:00' },
-            { name: 'RUBY', isFlex: false, p_shops: 'G2, G38, GK3', times: '11:00, 18:00' },
-            { name: '如意', isFlex: false, p_shops: 'F79', times: '12:00' },
-            { name: '影', isFlex: false, p_shops: 'F79', times: '13:00, 14:00' },
-            { name: '慧嫻', isFlex: false, p_shops: 'F79', times: '13:00' },
-            { name: '二妹', isFlex: false, p_shops: 'G2, G38, GK3', times: '12:00, 11:00, 13:00' },
-            { name: 'TT', isFlex: false, p_shops: 'G38', times: '10:30, 11:00' },
-            { name: 'Cici', isFlex: false, p_shops: 'G38', times: '11:00, 12:00, 10:30' },
-            { name: '珍', isFlex: false, p_shops: 'GK3, G2, G38', times: '11:00, 12:00, 13:00' },
-            { name: 'Jackie', isFlex: false, p_shops: 'G38', times: '13:00, 14:00' },
-            { name: '澄澄', isFlex: false, p_shops: 'G2, GK3', times: '11:00' },
-            { name: 'ALICE', isFlex: true, p_shops: 'G2, G38, GK3', times: '12:00, 13:00' },
-            { name: '阿璇', isFlex: true, p_shops: 'G2, G38, GK3, F79', times: '13:00, 12:00' },
-            { name: 'Mandy婷', isFlex: true, p_shops: 'G2, GK3, G38, F79', times: '12:00, 11:00, 13:00' },
-            { name: '妙妙', isFlex: true, p_shops: 'G2, GK3, F79, G38', times: '13:00, 12:00' },
-            { name: '葉子', isFlex: true, p_shops: 'GK3, G38, G2', times: '12:00, 13:00' },
-            { name: 'Lucia', isFlex: true, p_shops: 'GK3, G38, G2, F79', times: '13:00, 12:00' },
-            { name: 'AMY', isFlex: true, p_shops: 'G2, G38, GK3', times: '13:00, 12:00' },
-            { name: '小茹', isFlex: true, p_shops: 'G2, G38, GK3, F79', times: '13:00' }
+            { name: '阿平', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '12:00, 13:00' },
+            { name: 'RUBY', role: 'Full-time', p_shops: 'G2, G38, GK3', times: '11:00, 18:00' },
+            { name: '如意', role: 'Full-time', p_shops: 'F79', times: '12:00' },
+            { name: '影', role: 'Full-time', p_shops: 'F79', times: '13:00, 14:00' },
+            { name: '慧嫻', role: 'Full-time', p_shops: 'F79', times: '13:00' },
+            { name: '二妹', role: 'Full-time', p_shops: 'G2, G38, GK3', times: '12:00, 11:00, 13:00' },
+            { name: 'TT', role: 'Full-time', p_shops: 'G38', times: '10:30, 11:00' },
+            { name: 'Cici', role: 'Full-time', p_shops: 'G38', times: '11:00, 12:00, 10:30' },
+            { name: '珍', role: 'Full-time', p_shops: 'GK3, G2, G38', times: '11:00, 12:00, 13:00' },
+            { name: 'Jackie', role: 'Full-time', p_shops: 'G38', times: '13:00, 14:00' },
+            { name: '澄澄', role: 'Full-time', p_shops: 'G2, GK3', times: '11:00' },
+            { name: 'ALICE', role: 'Part-time', p_shops: 'G2, G38, GK3', times: '12:00, 13:00' },
+            { name: '阿璇', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '13:00, 12:00' },
+            { name: 'Mandy婷', role: 'Part-time', p_shops: 'G2, GK3, G38, F79', times: '12:00, 11:00, 13:00' },
+            { name: '妙妙', role: 'Part-time', p_shops: 'G2, GK3, F79, G38', times: '13:00, 12:00' },
+            { name: '葉子', role: 'Part-time', p_shops: 'GK3, G38, G2', times: '12:00, 13:00' },
+            { name: 'Lucia', role: 'Part-time', p_shops: 'GK3, G38, G2, F79', times: '13:00, 12:00' },
+            { name: 'AMY', role: 'Part-time', p_shops: 'G2, G38, GK3', times: '13:00, 12:00' },
+            { name: '小茹', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '13:00' }
         ];
 
+        // 🏖️ 根據最新上傳的 Excel 圖片，100% 轉譯錄入的 5 月份最新放假表
         const preloadedHolidaysMay = {
-            '阿平': [1, 2, 3, 18], 'RUBY': [1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22, 23, 24, 26, 27, 28, 29, 30, 31],
-            '如意': [7, 8, 14, 21, 28], '影': [10, 11, 12, 13, 29], '慧嫻': [4, 10, 17, 20, 21, 22, 23, 24, 25, 26], '二妹': [5, 6, 14, 22],
-            'TT': [1, 2, 3, 6, 7, 8, 10, 13, 14, 15, 16, 17, 19, 20, 21, 24, 25, 27, 28, 29, 31], 'Cici': [8, 15], '珍': [18, 19],
-            'Jackie': [1, 2, 3, 4, 5, 6, 11, 12, 13, 17, 20, 24, 25, 27, 28, 29, 31], '澄澄': [2, 3, 4, 15, 16],
-            'ALICE': [3, 4, 15, 18, 19, 20, 21, 22, 24], '阿璇': [14, 15, 16, 17], 'Mandy婷': [5, 10, 18, 19, 27, 28],
-            '妙妙': [6, 11, 12, 20, 25, 30], '葉子': [9, 16, 28, 29], 'Lucia': [8, 9, 30, 31], 'AMY': [12, 13, 29, 30, 31],
-            '小茹': [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+            '阿平': [1, 2, 3, 7, 18],
+            'RUBY': [1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+            '如意': [7, 8, 14, 21, 28],
+            '影': [10, 11, 12, 13, 29],
+            '慧嫻': [4, 10, 17, 20, 21, 22, 23, 24, 25, 26, 31],
+            '二妹': [5, 6, 7, 22],
+            'TT': [1, 2, 3, 6, 7, 8, 10, 13, 14, 15, 16, 17, 19, 20, 21, 24, 25, 27, 28, 29, 31],
+            'Cici': [8],
+            '珍': [18, 19, 23],
+            'Jackie': [1, 2, 3, 4, 5, 6, 11, 12, 13, 17, 20, 24, 25, 27, 28, 29, 31],
+            '澄澄': [2, 3, 4, 5, 15],
+            'ALICE': [3, 4, 11, 15, 18, 19, 20, 21, 22, 23, 24, 26, 27],
+            '阿璇': [14, 15, 16, 17],
+            'Mandy婷': [5, 10, 18, 19, 27, 28],
+            '妙妙': [6, 11, 12, 20, 25, 30],
+            '葉子': [1, 9, 16, 28, 29],
+            'Lucia': [8, 9, 30, 31],
+            'AMY': [12, 13, 21, 29, 30, 31],
+            '小茹': [17, 18]
         };
 
         let state = { employees: [], currentYear: 2026, currentMonth: 5, currentDay: 1, holidays: {}, overrides: {} };
@@ -241,13 +252,13 @@
             if(!database || !isCloudMode) return;
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
             
-            empRef = database.ref('v7_employees');
+            empRef = database.ref('v8_employees');
             empRef.on('value', (snapshot) => {
                 state.employees = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(defaultEmployees));
                 renderEmployeeTable(); runScheduler();
             });
 
-            holRef = database.ref(`v7_holidays/${monthKey}`);
+            holRef = database.ref(`v8_holidays/${monthKey}`);
             holRef.on('value', (snapshot) => {
                 if (snapshot.exists()) { state.holidays = snapshot.val(); } 
                 else { state.holidays = (monthKey === '2026-05') ? JSON.parse(JSON.stringify(preloadedHolidaysMay)) : {}; }
@@ -255,7 +266,7 @@
                 renderHolidayTable(); runScheduler();
             });
 
-            ovrRef = database.ref(`v7_overrides/${monthKey}`);
+            ovrRef = database.ref(`v8_overrides/${monthKey}`);
             ovrRef.on('value', (snapshot) => {
                 state.overrides = snapshot.exists() ? snapshot.val() : {};
                 runScheduler(); renderMonthlyAnalysis();
@@ -296,22 +307,22 @@
             let newEmps = [];
             rows.forEach(row => {
                 const name = row.querySelector('.emp-name-input').value.trim(); if(!name) return;
-                const isFlex = row.querySelector('.emp-type-select').value === 'true';
+                const role = row.querySelector('.emp-type-select').value;
                 const p_shops = row.querySelector('.emp-shops-input').value;
                 const times = row.querySelector('.emp-times-input').value;
-                newEmps.push({ name, isFlex, p_shops, times });
+                newEmps.push({ name, role, p_shops, times });
             });
             state.employees = newEmps;
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
             
             if(isCloudMode && database) {
-                database.ref(`v7_employees`).set(state.employees);
-                database.ref(`v7_holidays/${monthKey}`).set(state.holidays);
-                alert('📡 雲端資料同步更新成功！');
+                database.ref(`v8_employees`).set(state.employees);
+                database.ref(`v8_holidays/${monthKey}`).set(state.holidays);
+                alert('📡 雲端數據已成功與新架構同步！');
             } else {
-                localStorage.setItem('v77_employees', JSON.stringify(state.employees));
-                localStorage.setItem(`v77_holidays_${monthKey}`, JSON.stringify(state.holidays));
-                alert('💾 本地排班資料已成功存入 iPad 晶片！');
+                localStorage.setItem('v8_employees', JSON.stringify(state.employees));
+                localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(state.holidays));
+                alert('💾 本地排班修訂成功！');
                 runScheduler(); renderMonthlyAnalysis();
             }
         }
@@ -324,9 +335,9 @@
             
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
             if(isCloudMode && database) {
-                database.ref(`v7_holidays/${monthKey}/${name}`).set(state.holidays[name] || []);
+                database.ref(`v8_holidays/${monthKey}/${name}`).set(state.holidays[name] || []);
             } else {
-                localStorage.setItem(`v77_holidays_${monthKey}`, JSON.stringify(state.holidays));
+                localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(state.holidays));
                 runScheduler();
             }
         }
@@ -340,9 +351,9 @@
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
             
             if(isCloudMode && database) {
-                database.ref(`v7_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]);
+                database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]);
             } else {
-                localStorage.setItem(`v77_overrides_${monthKey}`, JSON.stringify(state.overrides));
+                localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides));
                 refreshBadgesOnly(state.overrides[dayKey]);
             }
         }
@@ -350,11 +361,11 @@
         function resetCurrentDayToAuto() {
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
             if(isCloudMode && database) {
-                database.ref(`v7_overrides/${monthKey}/day_${state.currentDay}`).remove();
+                database.ref(`v8_overrides/${monthKey}/day_${state.currentDay}`).remove();
             } else {
                 if(state.overrides[`day_${state.currentDay}`]) {
                     delete state.overrides[`day_${state.currentDay}`];
-                    localStorage.setItem(`v77_overrides_${monthKey}`, JSON.stringify(state.overrides));
+                    localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides));
                     runScheduler();
                 }
             }
@@ -549,10 +560,21 @@
         function renderEmployeeTable() {
             const tbody = document.getElementById('employee-table-body'); tbody.innerHTML = '';
             state.employees.forEach((emp) => {
+                // 🔄 智能解開舊版相容性：將舊 isFlex 布林值自動渡接到新組別
+                let currentRole = emp.role;
+                if (!currentRole) {
+                    currentRole = (emp.isFlex === true) ? 'Part-time' : 'Full-time';
+                }
                 tbody.innerHTML += `
                     <tr>
                         <td><input type="text" class="emp-name-input" value="${emp.name}"></td>
-                        <td><select class="emp-type-select"><option value="false" ${!emp.isFlex ? 'selected' : ''}>固定班底</option><option value="true" ${emp.isFlex ? 'selected' : ''}>機動平衡組</option></select></td>
+                        <td>
+                            <select class="emp-type-select">
+                                <option value="Full-time" ${currentRole === 'Full-time' ? 'selected' : ''}>Full-time</option>
+                                <option value="Part-time" ${currentRole === 'Part-time' ? 'selected' : ''}>Part-time</option>
+                                <option value="學徒" ${currentRole === '學徒' ? 'selected' : ''}>學徒</option>
+                            </select>
+                        </td>
                         <td><input type="text" class="emp-shops-input" value="${emp.p_shops || ''}"></td>
                         <td><input type="text" class="emp-times-input" value="${emp.times || ''}"></td>
                         <td><button class="btn btn-del" onclick="this.closest('tr').remove()">刪除</button></td>
@@ -564,7 +586,13 @@
             document.getElementById('employee-table-body').innerHTML += `
                 <tr>
                     <td><input type="text" class="emp-name-input" placeholder="新名字"></td>
-                    <td><select class="emp-type-select"><option value="false">固定班底</option><option value="true" selected>機動平衡組</option></select></td>
+                    <td>
+                        <select class="emp-type-select">
+                            <option value="Full-time" selected>Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="學徒">學徒</option>
+                        </select>
+                    </td>
                     <td><input type="text" class="emp-shops-input" value="G2, G38, GK3"></td>
                     <td><input type="text" class="emp-times-input" value="11:00, 12:00, 13:00"></td>
                     <td><button class="btn btn-del" onclick="this.closest('tr').remove()">刪除</button></td>
@@ -586,9 +614,9 @@
         function loadLocalFallbackContext() {
             const y = state.currentYear; const m = state.currentMonth;
             const monthKey = `${y}-${m < 10 ? '0'+m : m}`;
-            state.employees = JSON.parse(localStorage.getItem('v77_employees')) || JSON.parse(JSON.stringify(defaultEmployees));
-            state.overrides = JSON.parse(localStorage.getItem(`v77_overrides_${monthKey}`)) || {};
-            state.holidays = JSON.parse(localStorage.getItem(`v77_overrides_${monthKey}`)) || ((monthKey === '2026-05') ? JSON.parse(JSON.stringify(preloadedHolidaysMay)) : {});
+            state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(defaultEmployees));
+            state.overrides = JSON.parse(localStorage.getItem(`v8_overrides_${monthKey}`)) || {};
+            state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || ((monthKey === '2026-05') ? JSON.parse(JSON.stringify(preloadedHolidaysMay)) : {});
             state.employees.forEach(e => { if (!state.holidays[e.name]) state.holidays[e.name] = []; });
             renderEmployeeTable(); renderHolidayTable(); runScheduler(); renderMonthlyAnalysis();
         }
