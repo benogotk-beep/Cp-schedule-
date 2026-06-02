@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>分店智能排班系統 V9.0-Test 實驗沙箱</title>
+    <title>分店智能排班系統 V9.3-Test 歷史日子鎖定安全體</title>
+    <!-- 📡 引入 Google Firebase 雲端核心組件 -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -42,6 +43,7 @@
         
         .holiday-btn { padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
         .holiday-btn.active { background: #fde8e8 !important; color: var(--danger) !important; border-color: #fca5a5 !important; }
+        .holiday-btn.locked { background: #e5e7eb !important; color: #9ca3af !important; border-color: #d1d5db !important; cursor: not-allowed !important; }
         
         .holiday-display-dot { width: 20px; height: 20px; border-radius: 50%; display: inline-block; background: #e5e7eb; line-height: 20px; text-align: center; font-weight: bold; font-size: 10px; color: #9ca3af; }
         .holiday-display-dot.active { background: #dc2626; color: white; box-shadow: 0 0 4px rgba(220,38,38,0.4); }
@@ -50,10 +52,10 @@
         .shop-header { padding: 6px 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; font-size: 13px; }
         .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; background: #f9fafb; }
         
-        .slot-box { border: 1px solid #bfdbfe; border-radius: 6px; padding: 4px; background: white; min-height: 68px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .slot-box { border: 1px solid #bfdbfe; border-radius: 6px; padding: 4px; background: white; min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .manual-name-select { width: 100%; border: 1px solid #93c5fd; border-radius: 4px; font-weight: bold; font-size: 13px; color: #111827; background: #f8fafc; text-align: center; }
-        .manual-time-input { width: 100%; border: 1px solid #bfdbfe; border-radius: 4px; font-size: 11px; text-align: center; padding: 2px 0; color: #1d4ed8; background: #eff6ff; font-weight: bold; margin-top: 2px; }
-        .slot-note-text { font-size: 10px; color: #ea580c; font-weight: bold; margin-top: 2px; text-align: center; max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .manual-time-input { width: 100%; border: none; font-size: 12px; text-align: center; padding: 1px 0; color: #1d4ed8; background: transparent; font-weight: bold; margin-top: 1px; }
+        .slot-note-text { font-size: 10px; color: #ea580c; font-weight: bold; margin-top: 1px; text-align: center; max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .btn { padding: 6px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
         .btn-add { background: var(--success); color: white; margin-bottom: 8px; }
@@ -61,6 +63,8 @@
         .btn-save { background: var(--primary); color: white; width: 100%; padding: 10px; font-size: 14px; margin-top: 8px; border-radius: 8px; justify-content: center; }
         .btn-reset { background: #4b5563; color: white; font-size: 12px; padding: 5px 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
         .btn-invert { background: #6b7280; color: white; padding: 4px 8px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-filter { background: white; color: #4b5563; border: 1px solid #d1d5db; padding: 4px 10px; font-size: 11px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .bg-alert-red { background-color: #fde8e8 !important; color: #9b1c1c !important; font-weight: bold; text-align: center; }
         .bg-alert-lightgreen { background-color: #e6fbf4 !important; color: #0d9488 !important; font-weight: bold; text-align: center; }
@@ -79,21 +83,24 @@
         
         .count-badge { background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 6px; font-size: 10px; font-weight: 800; display: inline-block; margin-right: 2px; min-width: 28px; text-align: center; border: 1px solid #bae6fd; }
         .time-hint-banner { font-size: 11px; text-align: center; color: var(--warning); font-weight: bold; margin-top: 2px; }
+        .sub-table-title { font-size: 13px; font-weight: bold; color: #374151; margin: 12px 0 4px 0; display: flex; align-items: center; gap: 4px; }
     </style>
 </head>
 <body>
 
+    <!-- 🔐 頂部管理口令 -->
     <div class="auth-banner">
-        <div id="role-display-text">🔑 目前權限：普通員工模式（⚠️ 26號後假表需經理審批）</div>
-        <div style="color: #2563eb; font-size: 11px;">🧪 TEST SANDBOX 環境</div>
+        <div id="role-display-text">🔑 目前權限：普通員工模式（⚠️ 26號、人手不足或歷史日子鎖定防線已激活）</div>
+        <div style="color: #2563eb; font-size: 11px; font-weight: bold;">🧪 TEST SANDBOX V9.3</div>
         <div>
             <input type="password" id="manager-pass-input" class="auth-input" placeholder="管理口令" oninput="checkAuthorization()">
             <button class="btn" style="padding:4px 8px; background:#4b5563; color:white;" onclick="clearAuth()">登出</button>
         </div>
     </div>
 
+    <!-- 📥 經理待審批通知中心 -->
     <div id="manager-approval-center" class="approval-box" style="display: none;">
-        <div style="font-weight: bold; color: #b45309; margin-bottom: 4px;">📥 員工月底延遲請假申請中心</div>
+        <div style="font-weight: bold; color: #b45309; margin-bottom: 4px;">📥 員工延遲 / 人手告急假期申請中心</div>
         <div id="approval-list-container"><span style="color:#9ca3af;">目前沒有待審批的假期申請。</span></div>
     </div>
 
@@ -105,6 +112,7 @@
         <button class="tab-btn" id="nav-holidays-tab" style="display:none;" onclick="switchTab('tab-holidays')">🏖️ 全月放假表 (經理專屬)</button>
     </div>
 
+    <!-- 頁籤一：每日排班 -->
     <div id="tab-schedule" class="tab-content">
         <div id="cloud-indicator" class="cloud-status status-offline">⏳ 正在初始化排班引擎晶片...</div>
         
@@ -118,7 +126,7 @@
         </div>
 
         <div class="card">
-            <div class="title">分店智能排班沙盒 <span style="color:var(--warning);">[V9.0-Test 測試頁]</span></div>
+            <div class="title">分店智能排班沙盒 <span style="color:var(--warning);">[V9.3-Test 終極防線版]</span></div>
             <div class="date-panel">
                 <select id="schedule-year-select" class="select-yr" onchange="handleDateContextChange()"></select>
                 <select id="schedule-month-select" class="select-mo" onchange="handleDateContextChange()"></select>
@@ -133,6 +141,7 @@
         <div id="shops-report-container"></div>
     </div>
 
+    <!-- 👤 頁籤：個人當月排班 -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:8px;">👤 員工個人當月排班及放假申請表</div>
@@ -142,7 +151,7 @@
                     <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()">
                     </select>
                 </div>
-                <button class="btn-invert" onclick="invertIndividualEmployeeHolidays()">🔄 員工一鍵反選假期</button>
+                <button class="btn-invert" id="my-month-invert-btn" onclick="invertIndividualEmployeeHolidays()">🔄 員工一鍵反選假期</button>
             </div>
             <div class="scroll-box" style="max-height: 65vh;">
                 <table>
@@ -150,9 +159,10 @@
                         <tr>
                             <th style="text-align:center; width:65px;">日期</th>
                             <th style="text-align:center; width:55px;">星期</th>
+                            <th style="text-align:center; width:100px;">當天核心美甲師</th>
                             <th style="text-align:center; width:90px;">分配店舖</th>
-                            <th style="text-align:center; width:120px;">班次時間</th>
-                            <th style="text-align:center; width:110px;">🏖️ 要求放假鈕</th>
+                            <th style="text-align:center; width:90px;">班次時間</th>
+                            <th style="text-align:center; width:100px;">🏖️ 要求放假鈕</th>
                             <th style="text-align:left;">📝 當天特別事項備註</th>
                         </tr>
                     </thead>
@@ -164,29 +174,54 @@
         </div>
     </div>
 
+    <!-- 📊 頁籤二：全月人手分析 -->
     <div id="tab-analysis" class="tab-content" style="display: none;">
         <div class="card">
-            <div class="title" id="analysis-title-text" style="margin-bottom: 5px;">全月店鋪上班人手監控大表</div>
-            <div class="scroll-box" style="max-height: 70vh;">
-                <table>
+            <div class="title" id="analysis-title-text" style="margin-bottom: 8px;">全月店鋪上班人手監控大表</div>
+            
+            <div style="display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap;">
+                <button class="btn-filter active" id="filter-all" onclick="applyColumnFilter('all')">顯示全部欄</button>
+                <button class="btn-filter" id="filter-mani" onclick="applyColumnFilter('mani')">只看核心美甲師</button>
+                <button class="btn-filter" id="filter-app" onclick="applyColumnFilter('app')">只看輔助學徒</button>
+                <button class="btn-filter" id="filter-shops" onclick="applyColumnFilter('shops')">只看分店人手</button>
+            </div>
+
+            <div class="scroll-box" style="max-height: 50vh;">
+                <table id="main-analysis-table">
                     <thead>
                         <tr>
                             <th style="text-align:center;">日期</th>
                             <th style="text-align:center;">星期</th>
-                            <th style="text-align:center; background:#f1f5f9; color:#1d4ed8;">核心美甲師</th>
-                            <th style="text-align:center; background:#ecfdf5; color:#0f766e;">輔助學徒</th>
-                            <th style="text-align:center; color:#4f46e5;">F79</th>
-                            <th style="text-align:center; color:#9333ea;">GK3</th>
-                            <th style="text-align:center; color:#d97706;">G38</th>
-                            <th style="text-align:center; color:#0d9488;">G2</th>
+                            <th class="col-mani" style="text-align:center; background:#f1f5f9; color:#1d4ed8;">核心美甲師</th>
+                            <th class="col-app" style="text-align:center; background:#ecfdf5; color:#0f766e;">輔助學徒</th>
+                            <th class="col-shops" style="text-align:center; color:#4f46e5;">F79</th>
+                            <th class="col-shops" style="text-align:center; color:#9333ea;">GK3</th>
+                            <th class="col-shops" style="text-align:center; color:#d97706;">G38</th>
+                            <th class="col-shops" style="text-align:center; color:#0d9488;">G2</th>
                         </tr>
                     </thead>
                     <tbody id="analysis-table-body"></tbody>
                 </table>
             </div>
+
+            <div class="sub-table-title">🚨 美甲師告急日子總覽 (小於或等於 12 人)</div>
+            <div class="scroll-box" style="max-height: 25vh; border: 1px solid #fca5a5;">
+                <table style="background:#fffaf8;">
+                    <tbody id="low-staff-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="sub-table-title">🟢 美甲師充沛優勢日子總覽 (大於或等於 15 人)</div>
+            <div class="scroll-box" style="max-height: 25vh; border: 1px solid #6ee7b7;">
+                <table style="background:#f6fffb;">
+                    <tbody id="high-staff-table-body"></tbody>
+                </table>
+            </div>
+
         </div>
     </div>
 
+    <!-- 頁籤三：員工管理 -->
     <div id="tab-employees" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 10px;">員工職位時段資料庫</div>
@@ -209,6 +244,7 @@
         </div>
     </div>
 
+    <!-- 頁籤四：全月放假表 -->
     <div id="tab-holidays" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" id="holiday-title-text" style="margin-bottom: 10px;">2026年5月份放假表 (管理層審閱大表)</div>
@@ -226,123 +262,74 @@
     </div>
 
     <script>
-        var database = null;
-        var isCloudMode = false;
+        // 📡 雲端天線連結管線
+        var firebaseConfig = {
+            apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
+            authDomain: "cp-schedule.firebaseapp.com",
+            databaseURL: "https://cp-schedule-default-rtdb.firebaseio.com/",
+            projectId: "cp-schedule",
+            storageBucket: "cp-schedule.firebasestorage.app",
+            messagingSenderId: "136891249500",
+            appId: "1:136891249500:web:f3278b3ce642dc8d454799",
+            measurementId: "G-W0L45WCMV2"
+        };
 
-        if (typeof firebase !== 'undefined') {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                database = firebase.database();
-                database.ref(".info/connected").on("value", function(snap) {
-                    const ind = document.getElementById('cloud-indicator');
-                    if (snap.val() === true) {
-                        isCloudMode = true;
-                        ind.className = "cloud-status status-online"; 
-                        ind.innerText = "🟢 測試沙箱雲端成功連線！晚上 8 點自動跳轉機制已就緒";
-                        setupFirebaseListeners();
-                    }
-                });
-            } catch(e) { isCloudMode = false; }
-        }
-
-        setTimeout(function() {
-            if (!isCloudMode) loadLocalFallbackContext();
-        }, 1500);
-
+        // 📝 嵌入最新正式名單[span_1](start_span)[span_1](end_span)
         const defaultEmployees = [
-            { name: '阿平', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '12:00, 13:00' },
-            { name: 'RUBY', role: 'Full-time', p_shops: 'G2, G38, GK3', times: '11:00, 18:00' },
-            { name: '如意', role: 'Full-time', p_shops: 'F79', times: '12:00' },
-            { name: '影', role: 'Full-time', p_shops: 'F79', times: '13:00, 14:00' },
-            { name: '慧嫻', role: 'Full-time', p_shops: 'F79', times: '13:00' },
-            { name: '二妹', role: 'Full-time', p_shops: 'G2, G38, GK3', times: '12:00, 11:00, 13:00' },
-            { name: 'TT', role: 'Full-time', p_shops: 'G38', times: '10:30, 11:00' },
-            { name: 'Cici', role: 'Full-time', p_shops: 'G38', times: '11:00, 12:00, 10:30' },
-            { name: '珍', role: 'Full-time', p_shops: 'GK3, G2, G38', times: '11:00, 12:00, 13:00' },
-            { name: 'Jackie', role: 'Full-time', p_shops: 'G38', times: '13:00, 14:00' },
-            { name: '澄澄', role: 'Full-time', p_shops: 'G2, GK3', times: '11:00' },
-            { name: 'ALICE', role: 'Part-time', p_shops: 'G2, G38, GK3', times: '12:00, 13:00' },
-            { name: '阿璇', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '13:00, 12:00' },
-            { name: 'Mandy婷', role: 'Part-time', p_shops: 'G2, GK3, G38, F79', times: '12:00, 11:00, 13:00' },
-            { name: '妙妙', role: 'Part-time', p_shops: 'G2, GK3, F79, G38', times: '13:00, 12:00' },
-            { name: '葉子', role: 'Part-time', p_shops: 'GK3, G38, G2', times: '12:00, 13:00' },
-            { name: 'Lucia', role: 'Part-time', p_shops: 'GK3, G38, G2, F79', times: '13:00, 12:00' },
-            { name: 'AMY', role: 'Part-time', p_shops: 'G2, G38, GK3', times: '13:00, 12:00' },
-            { name: '小茹', role: 'Part-time', p_shops: 'G2, G38, GK3, F79', times: '13:00' }
+            { "name": "阿平", "p_shops": "G2, G38, GK3, F79", "role": "Full-time", "times": "12:00, 13:00" },
+            { "name": "RUBY", "p_shops": "G2, G38, GK3", "role": "Part-time", "times": "11:00, 18:00" },
+            { "name": "如意", "p_shops": "F79", "role": "Full-time", "times": "12:00" },
+            { "name": "影", "p_shops": "F79", "role": "Full-time", "times": "13:00, 14:00" },
+            { "name": "慧嫻", "p_shops": "F79", "role": "Full-time", "times": "13:00" },
+            { "name": "二妹", "p_shops": "G2, G38, GK3", "role": "Full-time", "times": "12:00, 11:00, 13:00" },
+            { "name": "TT", "p_shops": "G38", "role": "Part-time", "times": "10:30, 11:00" },
+            { "name": "Cici", "p_shops": "G38", "role": "Full-time", "times": "11:00, 12:00, 10:30" },
+            { "name": "珍", "p_shops": "GK3, G2, G38", "role": "Full-time", "times": "11:00, 12:00, 13:00" },
+            { "name": "Jackie", "p_shops": "G38", "role": "Part-time", "times": "13:00, 14:00" },
+            { "name": "澄澄", "p_shops": "G2, GK3", "role": "Full-time", "times": "11:00" },
+            { "name": "ALICE", "p_shops": "G2, G38, GK3", "role": "Full-time", "times": "12:00, 13:00" },
+            { "name": "阿璇", "p_shops": "G2, G38, GK3, F79", "role": "Full-time", "times": "13:00, 12:00" },
+            { "name": "Mandy婷", "p_shops": "G2, GK3, G38, F79", "role": "Full-time", "times": "12:00, 11:00, 13:00" },
+            { "name": "妙妙", "p_shops": "G2, GK3, F79, G38", "role": "Part-time", "times": "13:00, 12:00" },
+            { "name": "葉子", "p_shops": "GK3, G38, G2", "role": "Full-time", "times": "12:00, 13:00" },
+            { "name": "Lucia", "p_shops": "GK3, G38, G2, F79", "role": "Full-time", "times": "13:00, 12:00" },
+            { "name": "AMY", "p_shops": "G2, G38, GK3", "role": "Full-time", "times": "13:00, 12:00" },
+            { "name": "小茹", "p_shops": "G2, G38, GK3, F79", "role": "學徒", "times": "13:00" },
+            { "name": "文君", "p_shops": "G2, G38, GK3", "role": "學徒", "times": "11:00, 12:00, 13:00" }
         ];
 
+        // 🏖️ 嵌入最新正式放假總數據[span_2](start_span)[span_2](end_span)
+        const defaultHolidaysData = {
+            "ALICE": [8, 17, 27, 7], "AMY": [9, 18, 19, 20, 1, 2, 3, 4], 
+            "Jackie": [1, 2, 3, 7, 8, 9, 10, 14, 15, 19, 20, 21, 22, 23, 24, 28, 29], 
+            "Lucia": [19, 27, 28], "Mandy婷": [5, 12, 19, 20, 21, 28], 
+            "RUBY": [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], 
+            "TT": [2, 3, 4, 7, 9, 10, 11, 12, 14, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 28, 30], 
+            "二妹": [2, 3], "如意": [2, 3, 8, 10, 11, 17, 24, 30], "妙妙": [4, 16, 23, 24, 30, 12], 
+            "小茹": [3, 4], "影": [13, 14, 15, 16, 10], "慧嫻": [6, 7, 21, 22, 15, 29], 
+            "澄澄": [3, 4, 17, 18], "葉子": [29, 30], "阿平": [1, 2, 3, 4, 5, 6, 7], "阿璇": [13, 14, 15, 16],
+            "Cici": [], "珍": [], "文君": []
+        };
+
+        // 🔄 嵌入手動微調數據[span_3](start_span)[span_3](end_span)
+        const defaultOverridesData = {
+            "day_1": {
+                "F79": [{"name": "", "time": "12:00"}, {"name": "影", "time": "13:00"}, {"name": "慧嫻", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}, {"name": "", "time": ""}],
+                "G2": [{"name": "", "time": ""}, {"name": "Mandy婷", "time": "11:00"}, {"name": "澄澄", "time": "12:00"}, {"name": "妙妙", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}],
+                "G38": [{"name": "TT", "time": "10:30"}, {"name": "", "time": ""}, {"name": "Cici", "time": "12:00"}, {"name": "阿璇", "time": "13:00"}, {"name": "ALICE", "time": "13:00"}, {"name": "", "time": ""}],
+                "GK3": [{"name": "葉子", "time": "11:00"}, {"name": "Lucia", "time": "12:00"}, {"name": "珍", "time": "12:00"}, {"name": "", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}]
+            },
+            "day_2": {
+                "F79": [{"name": "影", "time": "13:00"}, {"name": "慧嫻", "time": "13:00"}, {"name": "妙妙", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}, {"name": "", "time": ""}],
+                "G2": [{"name": "Mandy婷", "time": "11:00"}, {"name": "ALICE", "time": "12:00"}, {"name": "阿璇", "time": "12:00"}, {"name": "文君", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}],
+                "G38": [{"name": "Cici", "time": "11:00"}, {"name": "澄澄", "time": "12:00"}, {"name": "小茹", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}, {"name": "", "time": ""}],
+                "GK3": [{"name": "葉子", "time": "11:00"}, {"name": "珍", "time": "12:00"}, {"name": "Lucia", "time": "13:00"}, {"name": "", "time": ""}, {"name": "", "time": ""}, {"name": "", "time": ""}]
+            }
+        };
+
+        var database = null;
+        var isCloudMode = false;
         let state = { employees: [], currentYear: 2026, currentMonth: 5, currentDay: 1, holidays: {}, overrides: {}, notes: {}, pendingApprovals: {}, currentRole: 'employee', localHolidaysDraft: {} };
-
-        function getDaysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
-        function getDayOfWeekText(year, month, day) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(year, month - 1, day).getDay()]; }
-        function isSunday(year, month, day) { return new Date(year, month - 1, day).getDay() === 0; }
-
-        // ==========================================
-        // 🕗 核心優化一：依照「真實時鐘」全自動定位與跳轉日期
-        // ==========================================
-        function calculateAutoDefaultDate() {
-            const now = new Date();
-            let year = now.getFullYear();
-            let month = now.getMonth() + 1;
-            let day = now.getDate();
-            let hour = now.getHours();
-
-            let isJumped = false;
-            // 晚上 8 點（20點）開始一直到半夜，直接跳轉顯示「明天」
-            if (hour >= 20) {
-                isJumped = true;
-                // 取得明天的時間戳
-                const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                year = tomorrow.getFullYear();
-                month = tomorrow.getMonth() + 1;
-                day = tomorrow.getDate();
-            }
-
-            state.currentYear = year;
-            state.currentMonth = month;
-            state.currentDay = day;
-
-            // 在界面上繪製一行醒目的自動跳轉公告提示
-            const hintBanner = document.getElementById('time-switch-hint');
-            if (hintBanner) {
-                if (isJumped) {
-                    hintBanner.innerHTML = `🕗 系統提示：已過夜間 20:00，已自動為您預載【明天 ${month}月${day}日】排班表`;
-                    hintBanner.style.color = "#ea580c";
-                } else {
-                    hintBanner.innerHTML = `🌞 系統提示：目前為日間時段，正為您顯示【今日 ${month}月${day}日】排班表（今晚 20:00 自動切換明天）`;
-                    hintBanner.style.color = "#059669";
-                }
-            }
-        }
-
-        function checkAuthorization() {
-            const pass = document.getElementById('manager-pass-input').value;
-            if (pass === '8888') {
-                state.currentRole = 'manager';
-                document.getElementById('role-display-text').innerText = "👑 權限狀態：最高管理層模式（放假大表已解鎖）";
-                document.getElementById('manager-backup-zone').style.display = 'block';
-                document.getElementById('manager-approval-center').style.display = 'block';
-                document.getElementById('nav-holidays-tab').style.display = 'inline-block';
-                document.getElementById('manager-add-emp-btn').disabled = false;
-                document.getElementById('manager-add-emp-btn').style.opacity = 1;
-                const saveBtn = document.getElementById('employee-save-btn');
-                saveBtn.disabled = false; saveBtn.innerText = "💾 儲存員工名單職位"; saveBtn.style.background = 'var(--primary)'; saveBtn.style.color = 'white';
-                renderEmployeeTable(); renderPendingApprovalsBox(); renderHolidayTable(); renderIndividualMonthCalendar();
-            }
-        }
-
-        function clearAuth() {
-            state.currentRole = 'employee';
-            document.getElementById('manager-pass-input').value = '';
-            document.getElementById('role-display-text').innerText = "🔑 目前權限：普通員工模式（⚠️ 26號後假表需經理審批）";
-            document.getElementById('manager-backup-zone').style.display = 'none';
-            document.getElementById('manager-approval-center').style.display = 'none';
-            document.getElementById('nav-holidays-tab').style.display = 'none';
-            document.getElementById('manager-add-emp-btn').disabled = true;
-            document.getElementById('manager-add-emp-btn').style.opacity = 0.5;
-            if(document.getElementById('tab-holidays').style.display === 'block') switchTab('tab-schedule');
-            renderEmployeeTable(); renderHolidayTable(); renderIndividualMonthCalendar();
-        }
 
         var empRef, holRef, ovrRef, appRef, noteRef;
         function setupFirebaseListeners() {
@@ -360,14 +347,14 @@
 
             holRef = database.ref(`v8_holidays/${monthKey}`);
             holRef.on('value', (snapshot) => {
-                state.holidays = snapshot.exists() ? snapshot.val() : {};
+                state.holidays = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(defaultHolidaysData));
                 state.localHolidaysDraft = JSON.parse(JSON.stringify(state.holidays));
                 linkAndFillMissingHolidayShells();
             });
 
             ovrRef = database.ref(`v8_overrides/${monthKey}`);
             ovrRef.on('value', (snapshot) => {
-                state.overrides = snapshot.exists() ? snapshot.val() : {};
+                state.overrides = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(defaultOverridesData));
                 runScheduler(); renderMonthlyAnalysis(); renderIndividualMonthCalendar();
             });
 
@@ -382,6 +369,68 @@
                 state.pendingApprovals = snapshot.exists() ? snapshot.val() : {};
                 renderPendingApprovalsBox();
             });
+        }
+
+        // 🕗 晚上 8 點智動切換日期大腦
+        function calculateAutoDefaultDate() {
+            const now = new Date();
+            let year = now.getFullYear();
+            let month = now.getMonth() + 1;
+            let day = now.getDate();
+            let hour = now.getHours();
+
+            let isJumped = false;
+            if (hour >= 20) {
+                isJumped = true;
+                const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                year = tomorrow.getFullYear();
+                month = tomorrow.getMonth() + 1;
+                day = tomorrow.getDate();
+            }
+
+            state.currentYear = year;
+            state.currentMonth = month;
+            state.currentDay = day;
+
+            const hintBanner = document.getElementById('time-switch-hint');
+            if (hintBanner) {
+                if (isJumped) {
+                    hintBanner.innerHTML = `🕗 系統提示：已過夜間 20:00，已自動為您預載【明天 ${month}月${day}日】排班表`;
+                    hintBanner.style.color = "#ea580c";
+                } else {
+                    hintBanner.innerHTML = `🌞 系統提示：目前為日間時段，正為您顯示【今日 ${month}月${day}日】排班表（今晚 20:00 自動切換明天）`;
+                    hintBanner.style.color = "#059669";
+                }
+            }
+        }
+
+        function checkAuthorization() {
+            const pass = document.getElementById('manager-pass-input').value;
+            if (pass === '8888') {
+                state.currentRole = 'manager';
+                document.getElementById('role-display-text').innerText = "👑 權限狀態：最高管理層模式（歷史天數與放假表已解鎖）";
+                document.getElementById('manager-backup-zone').style.display = 'block';
+                document.getElementById('manager-approval-center').style.display = 'block';
+                document.getElementById('nav-holidays-tab').style.display = 'inline-block';
+                document.getElementById('manager-add-emp-btn').disabled = false;
+                document.getElementById('manager-add-emp-btn').style.opacity = 1;
+                const saveBtn = document.getElementById('employee-save-btn');
+                saveBtn.disabled = false; saveBtn.innerText = "💾 儲存員工名單職位"; saveBtn.style.background = 'var(--primary)'; saveBtn.style.color = 'white';
+                renderEmployeeTable(); renderPendingApprovalsBox(); renderHolidayTable(); renderIndividualMonthCalendar();
+            }
+        }
+
+        function clearAuth() {
+            state.currentRole = 'employee';
+            document.getElementById('manager-pass-input').value = '';
+            document.getElementById('role-display-text').innerText = "🔑 目前權限：普通員工模式（⚠️ 26號、人手不足或歷史日子鎖定防線已激活）";
+            document.getElementById('manager-backup-zone').style.display = 'none';
+            document.getElementById('manager-approval-center').style.display = 'none';
+            document.getElementById('nav-holidays-tab').style.display = 'none';
+            document.getElementById('manager-add-emp-btn').disabled = true;
+            document.getElementById('manager-add-emp-btn').style.opacity = 0.5;
+            if(document.getElementById('tab-holidays').style.display === 'block') switchTab('tab-schedule');
+            renderEmployeeTable(); renderHolidayTable(); renderIndividualMonthCalendar();
         }
 
         function linkAndFillMissingHolidayShells() {
@@ -432,6 +481,9 @@
             }
         }
 
+        // ==========================================================
+        // 👤 個人當月排班：加裝「歷史日子鎖定」防线
+        // ==========================================================
         function renderIndividualMonthCalendar() {
             const tbody = document.getElementById('my-month-calendar-body');
             tbody.innerHTML = '';
@@ -439,26 +491,55 @@
             if(!staffName) return;
 
             let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
+            
+            // 🕒 獲取今天的實際日期計數器，用於歷史鎖定
+            const realToday = new Date();
+            const realDayNum = realToday.getDate();
+            const realMonthNum = realToday.getMonth() + 1;
+            const realYearNum = realToday.getFullYear();
+
+            // 判斷按鈕是否該全面唯讀 (普通員工面對過去的日子)
+            const isManager = (state.currentRole === 'manager');
 
             for (let d = 1; d <= totalDays; d++) {
                 let isWknd = getDayOfWeekText(state.currentYear, state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : '';
                 let assignedShop = '<span style="color:#9ca3af;">-</span>';
                 let assignedTime = '<span style="color:#9ca3af;">-</span>';
 
+                // 🛑 核心防禦：判斷該列是否為「已過去的日子」
+                let isPastDay = false;
+                if (state.currentYear < realYearNum) isPastDay = true;
+                else if (state.currentYear === realYearNum && state.currentMonth < realMonthNum) isPastDay = true;
+                else if (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum) isPastDay = true;
+
+                let dayKey = `day_${d}`;
+                let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
+                let activeManiCount = 0;
+                ['F79', 'GK3', 'G38', 'G2'].forEach(s => {
+                    dayReport[s].forEach(slot => {
+                        if(slot.name) {
+                            const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''));
+                            if(staff && staff.role !== '學徒') activeManiCount++;
+                        }
+                    });
+                });
+
                 const isHolidayDraft = (state.localHolidaysDraft[staffName] || []).includes(d);
-                
                 if (isHolidayDraft) {
                     assignedShop = '<span style="color:var(--danger); font-weight:bold;">放假要求 🏖️</span>';
                     assignedTime = '<span style="color:var(--danger); font-size:11px;">(待存/放假)</span>';
                 } else {
-                    let dayKey = `day_${d}`;
-                    let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
                     ['F79', 'GK3', 'G38', 'G2'].forEach(s => {
                         if (dayReport[s]) {
                             dayReport[s].forEach(slot => {
                                 if (slot.name && slot.name.replace(/\s+/g, '') === staffName.replace(/\s+/g, '')) {
                                     assignedShop = `<b style="color:var(--primary);">${s} 店</b>`;
-                                    assignedTime = `<span style="font-weight:bold; color:#1e3a8a;">${slot.time}</span>`;
+                                    let tClean = slot.time;
+                                    if(tClean.includes('(')) {
+                                        let m = tClean.match(/\(([^)]+)\)/);
+                                        if(m && m[1]) tClean = m[1];
+                                    }
+                                    assignedTime = `<span style="font-weight:bold; color:#1e3a8a;">${tClean}</span>`;
                                 }
                             });
                         }
@@ -466,32 +547,58 @@
                 }
 
                 let currentNote = (state.notes && state.notes[staffName] && state.notes[staffName][`day_${d}`]) ? state.notes[staffName][`day_${d}`] : '';
-                let activeClass = isHolidayDraft ? 'active' : '';
+                
+                // 🛠️ 根據防線狀態渲染放假按鈕樣式與輸入框唯讀狀態
+                let btnHtml = "";
+                let inputDisabledHtml = "";
+                
+                if (isPastDay && !isManager) {
+                    // 過去的日子 且 不是經理 -> 鎖定變灰，不可點擊
+                    let lockedActive = isHolidayDraft ? 'active' : '';
+                    btnHtml = `<button class="holiday-btn locked ${lockedActive}" disabled title="歷史日子已被系統鎖定">已鎖</button>`;
+                    inputDisabledHtml = `disabled style="background:#f3f4f6; color:#9ca3af; cursor:not-allowed;" title="歷史備註不可修改"`;
+                } else {
+                    // 未來日子 或 經理模式下 -> 正常操作
+                    let activeClass = isHolidayDraft ? 'active' : '';
+                    btnHtml = `<button class="holiday-btn ${activeClass}" onclick="toggleLocalHolidayDraft('${staffName}', ${d}, this)">放假</button>`;
+                    inputDisabledHtml = ``;
+                }
+
+                let maniBadgeStyle = "background:#cef7e5; color:#03543f;";
+                if(activeManiCount <= 12) maniBadgeStyle = "background:#fde8e8; color:#9b1c1c; font-weight:bold;";
+                else if(activeManiCount === 13 || activeManiCount === 14) maniBadgeStyle = "background:#e6fbf4; color:#0d9488;";
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="text-align:center; font-weight:bold;">${d} 日</td>
+                        <td style="text-align:center; font-weight:bold; ${isPastDay?'color:#9ca3af;':''}">
+                            ${isPastDay ? '🔒 ' : ''}${d} 日
+                        </td>
                         <td style="text-align:center; ${isWknd}">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</td>
+                        <td style="text-align:center;"><span style="padding:2px 6px; border-radius:6px; font-size:11px; ${maniBadgeStyle}">${activeManiCount} 師</span></td>
                         <td style="text-align:center;">${assignedShop}</td>
                         <td style="text-align:center;">${assignedTime}</td>
-                        <td style="text-align:center;">
-                            <button class="holiday-btn ${activeClass}" onclick="toggleLocalHolidayDraft('${staffName}', ${d}, this)">放假</button>
-                        </td>
-                        <td><input type="text" class="calendar-special-note-input" data-day="${d}" data-staff="${staffName}" value="${currentNote}" placeholder="鍵入特殊備註..."></td>
+                        <td style="text-align:center;">${btnHtml}</td>
+                        <td><input type="text" class="calendar-special-note-input" data-day="${d}" data-staff="${staffName}" ${inputDisabledHtml} value="${currentNote}" placeholder="鍵入特殊備註..."></td>
                     </tr>`;
+            }
+
+            // 同步控制頂部反選按鈕的可點擊狀態
+            const invertBtn = document.getElementById('my-month-invert-btn');
+            if (invertBtn) {
+                // 如果是看過去的月份，普通員工直接禁用反選
+                if ((state.currentYear < realYearNum || (state.currentYear === realYearNum && state.currentMonth < realMonthNum)) && !isManager) {
+                    invertBtn.disabled = true; invertBtn.style.opacity = 0.4; invertBtn.style.cursor = 'not-allowed';
+                } else {
+                    invertBtn.disabled = false; invertBtn.style.opacity = 1; invertBtn.style.cursor = 'pointer';
+                }
             }
         }
 
         function toggleLocalHolidayDraft(name, day, btn) {
             if (!state.localHolidaysDraft[name]) state.localHolidaysDraft[name] = [];
             const idx = state.localHolidaysDraft[name].indexOf(day);
-            if (idx > -1) {
-                state.localHolidaysDraft[name].splice(idx, 1);
-                btn.classList.remove('active');
-            } else {
-                state.localHolidaysDraft[name].push(day);
-                btn.classList.add('active');
-            }
+            if (idx > -1) { state.localHolidaysDraft[name].splice(idx, 1); btn.classList.remove('active'); } 
+            else { state.localHolidaysDraft[name].push(day); btn.classList.add('active'); }
             setTimeout(renderIndividualMonthCalendar, 100);
         }
 
@@ -499,52 +606,119 @@
             const staffName = document.getElementById('my-month-staff-select').value;
             if(!staffName) return;
             
+            const realToday = new Date();
+            const realDayNum = realToday.getDate();
+            const realMonthNum = realToday.getMonth() + 1;
+            const realYearNum = realToday.getFullYear();
+            const isManager = (state.currentRole === 'manager');
+
             let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
             if (!state.localHolidaysDraft[staffName]) state.localHolidaysDraft[staffName] = [];
             
             let inverted = [];
             for (let d = 1; d <= totalDays; d++) {
-                if (!state.localHolidaysDraft[staffName].includes(d)) { inverted.push(d); }
+                // 如果反選時遇到過去的日子，且不是經理，維持原本狀態，不參與反選
+                let isPastDay = false;
+                if (state.currentYear < realYearNum) isPastDay = true;
+                else if (state.currentYear === realYearNum && state.currentMonth < realMonthNum) isPastDay = true;
+                else if (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum) isPastDay = true;
+
+                if (isPastDay && !isManager) {
+                    if (state.localHolidaysDraft[staffName].includes(d)) inverted.push(d);
+                } else {
+                    if (!state.localHolidaysDraft[staffName].includes(d)) inverted.push(d);
+                }
             }
             state.localHolidaysDraft[staffName] = inverted;
             renderIndividualMonthCalendar();
         }
 
+        // ==========================================
+        // 🔒 三重熔斷防線：歷史鎖定攔截 + 26號鎖定 + 人手告急熔斷
+        // ==========================================
         function saveSpecialNotesAndHolidaysData() {
             const inputs = document.querySelectorAll('.calendar-special-note-input');
             if(inputs.length === 0) return;
             const staffName = inputs[0].getAttribute('data-staff');
             
-            if(!state.notes[staffName]) state.notes[staffName] = {};
-            inputs.forEach(input => {
-                const d = input.getAttribute('data-day');
-                state.notes[staffName][`day_${d}`] = input.value.trim();
-            });
-
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-            
             const realToday = new Date();
             const realDayNum = realToday.getDate();
             const realMonthNum = realToday.getMonth() + 1; 
             const realYearNum = realToday.getFullYear();
 
-            const targetMonth = state.currentMonth;
-            const targetYear = state.currentYear;
+            // 🛡️ 歷史防禦：檢查普通員工是否透過非法手段提交了過去日子的變更
+            let isManager = (state.currentRole === 'manager');
+            let historyTamperTriggered = false;
+
+            if (!isManager) {
+                // 比對原本資料庫中的假期數據與當前草稿
+                const originalHols = state.holidays[staffName] || [];
+                const draftHols = state.localHolidaysDraft[staffName] || [];
+
+                // 檢查是否有任何過去的日子的放假狀態被篡改
+                let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
+                for (let d = 1; d <= totalDays; d++) {
+                    let isPastDay = false;
+                    if (state.currentYear < realYearNum) isPastDay = true;
+                    else if (state.currentYear === realYearNum && state.currentMonth < realMonthNum) isPastDay = true;
+                    else if (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum) isPastDay = true;
+
+                    if (isPastDay) {
+                        let wasHol = originalHols.includes(d);
+                        let isDraftHol = draftHols.includes(d);
+                        if (wasHol !== isDraftHol) {
+                            historyTamperTriggered = true;
+                        }
+                    }
+                }
+            }
+
+            if (historyTamperTriggered) {
+                alert("❌ 系統攔截：您嘗試修改已過去日子的放假紀錄！歷史考勤已被安全鎖定，無法提交申請。");
+                // 強制回滾草稿
+                state.localHolidaysDraft[staffName] = JSON.parse(JSON.stringify(state.holidays));
+                renderIndividualMonthCalendar();
+                return;
+            }
+
+            // 儲存未被禁用的特別事項備註
+            if(!state.notes[staffName]) state.notes[staffName] = {};
+            inputs.forEach(input => {
+                if (!input.disabled) {
+                    const d = input.getAttribute('data-day');
+                    state.notes[staffName][`day_${d}`] = input.value.trim();
+                }
+            });
 
             let requiresApproval = false;
+            let shortageTriggered = false;
 
-            if (state.currentRole === 'manager') {
-                requiresApproval = false; 
-            } else {
-                let limitYear = realYearNum;
-                let limitMonth = realMonthNum + 1;
+            if (!isManager) {
+                const draftHols = state.localHolidaysDraft[staffName] || [];
+                draftHols.forEach(d => {
+                    let dayKey = `day_${d}`;
+                    let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
+                    let currentManiCount = 0;
+                    ['F79', 'GK3', 'G38', 'G2'].forEach(s => {
+                        dayReport[s].forEach(slot => {
+                            if(slot.name) {
+                                const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''));
+                                if(staff && staff.role !== '學徒') currentManiCount++;
+                            }
+                        });
+                    });
+                    if (currentManiCount <= 13) { shortageTriggered = true; }
+                });
+
+                let limitYear = realYearNum; let limitMonth = realMonthNum + 1;
                 if (limitMonth > 12) { limitMonth = 1; limitYear += 1; }
-
                 if (realDayNum >= 26) {
-                    if (targetYear < limitYear || (targetYear === limitYear && targetMonth <= limitMonth)) {
+                    if (state.currentYear < limitYear || (state.currentYear === limitYear && state.currentMonth <= limitMonth)) {
                         requiresApproval = true;
                     }
                 }
+                if (shortageTriggered) requiresApproval = true;
             }
 
             if (requiresApproval) {
@@ -556,33 +730,214 @@
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
                     database.ref(`v8_special_notes/${monthKey}/${staffName}`).set(state.notes[staffName]);
-                    alert(`⏳ 月底鎖定限制啟動！您的要求已送往審批中心。`);
+                    let msg = shortageTriggered ? "⚠️ 當天上班美甲師已降至 13 人或以下（人手緊繃臨界點）！" : "⏳ 月底 26 號請假鎖定限制已啟動！";
+                    alert(`${msg}您的變更要求已送往審批中心，請等待核准。備註已先行同步！`);
                 }
             } else {
                 state.holidays[staffName] = JSON.parse(JSON.stringify(state.localHolidaysDraft[staffName]));
                 if (isCloudMode && database) {
                     database.ref(`v8_holidays/${monthKey}/${staffName}`).set(state.holidays[staffName]);
                     database.ref(`v8_special_notes/${monthKey}/${staffName}`).set(state.notes[staffName]);
-                    alert(`🟢 變更成功！假期與備註已直通發佈至總表！`);
+                    alert(`🟢 變更成功！假期與特別備註已 100% 直通同步發佈！`);
                 } else {
                     localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(state.holidays));
                     localStorage.setItem(`v8_notes_${monthKey}`, JSON.stringify(state.notes));
-                    alert(`💾 本地儲存變更成功！`);
-                    runScheduler();
+                    alert(`💾 本地儲存成功！`); runScheduler();
                 }
             }
         }
 
         function actionApproveHoliday(key, name, hols) {
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-            state.holidays[name] = hols;
-            state.localHolidaysDraft[name] = hols;
+            state.holidays[name] = hols; state.localHolidaysDraft[name] = hols;
             if(database) {
                 database.ref(`v8_holidays/${monthKey}/${name}`).set(hols).then(() => {
                     database.ref(`v8_pending_approvals/${monthKey}/${key}`).remove();
-                    alert(`🟢 已批准並點亮 [${name}] 的新假期！`);
+                    alert(`🟢 已批准並覆蓋 [${name}] 的新假期！`);
                 });
             }
+        }
+
+        function applyColumnFilter(type) {
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            if(type === 'all') {
+                document.getElementById('filter-all').classList.add('active');
+                document.querySelectorAll('.col-mani, .col-app, .col-shops').forEach(el => el.style.display = '');
+            } else if(type === 'mani') {
+                document.getElementById('filter-mani').classList.add('active');
+                document.querySelectorAll('.col-mani').forEach(el => el.style.display = '');
+                document.querySelectorAll('.col-app, .col-shops').forEach(el => el.style.display = 'none');
+            } else if(type === 'app') {
+                document.getElementById('filter-app').classList.add('active');
+                document.querySelectorAll('.col-app').forEach(el => el.style.display = '');
+                document.querySelectorAll('.col-mani, .col-shops').forEach(el => el.style.display = 'none');
+            } else if(type === 'shops') {
+                document.getElementById('filter-shops').classList.add('active');
+                document.querySelectorAll('.col-shops').forEach(el => el.style.display = '');
+                document.querySelectorAll('.col-mani, .col-app').forEach(el => el.style.display = 'none');
+            }
+        }
+
+        function renderMonthlyAnalysis() {
+            const tbody = document.getElementById('analysis-table-body'); tbody.innerHTML = '';
+            const lowBody = document.getElementById('low-staff-table-body'); lowBody.innerHTML = '';
+            const highBody = document.getElementById('high-staff-table-body'); highBody.innerHTML = '';
+            
+            let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
+            let lowStaffHtml = ""; let highStaffHtml = "";
+
+            for (let d = 1; d <= totalDays; d++) {
+                let dayKey = `day_${d}`; let finalCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 };
+                let totalWorkingApprentices = 0;
+                
+                let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
+                ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
+                    dayReport[s].forEach(slot => { 
+                        if(slot.name) { 
+                            const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                            if(staff && staff.role === '學徒') totalWorkingApprentices++;
+                            else if(staff && staff.role !== '學徒') finalCounts[s]++; 
+                        } 
+                    }); 
+                });
+                
+                let totalWorkingMani = finalCounts.F79 + finalCounts.GK3 + finalCounts.G38 + finalCounts.G2;
+
+                let alertBgClass = "bg-alert-red"; 
+                if (totalWorkingMani === 13 || totalWorkingMani === 14) alertBgClass = "bg-alert-lightgreen"; 
+                else if (totalWorkingMani >= 15) alertBgClass = "bg-alert-darkgreen";
+
+                let isWknd = getDayOfWeekText(state.currentYear, state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : '';
+
+                let rowHtml = `
+                    <tr>
+                        <td style="text-align:center; font-weight:bold; width:65px;">${d} 日</td>
+                        <td style="text-align:center; ${isWknd} width:55px;">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</td>
+                        <td class="col-mani ${alertBgClass}" style="width:100px;">${totalWorkingMani} 師</td>
+                        <td class="col-app" style="text-align:center; background:#f0fdf4; font-weight:bold; color:#0d9488; width:100px;">${totalWorkingApprentices} 徒</td>
+                        <td class="col-shops normal-cell">${finalCounts.F79}人</td>
+                        <td class="col-shops normal-cell">${finalCounts.GK3}人</td>
+                        <td class="col-shops normal-cell">${finalCounts.G38}人</td>
+                        <td class="col-shops normal-cell">${finalCounts.G2}人</td>
+                    </tr>`;
+
+                tbody.innerHTML += rowHtml;
+
+                if(totalWorkingMani <= 12) lowStaffHtml += rowHtml;
+                if(totalWorkingMani >= 15) highStaffHtml += rowHtml;
+            }
+            
+            lowBody.innerHTML = lowStaffHtml || "<tr><td style='text-align:center; padding:10px; color:#9ca3af;'>🙌 本月無美甲師 <= 12 人的緊繃日子</td></tr>";
+            highBody.innerHTML = highStaffHtml || "<tr><td style='text-align:center; padding:10px; color:#9ca3af;'>📊 本月無美甲師 >= 15 人的充沛日子</td></tr>";
+            applyColumnFilter('all'); 
+        }
+
+        function renderInteractiveReport(report) {
+            let cacheInput = document.getElementById('current-rendered-data-cache');
+            if(!cacheInput) { cacheInput = document.createElement('input'); cacheInput.id = 'current-rendered-data-cache'; cacheInput.type = 'hidden'; document.body.appendChild(cacheInput); }
+            cacheInput.value = JSON.stringify(report);
+
+            const reportContainer = document.getElementById('shops-report-container'); reportContainer.innerHTML = '';
+            const headerColors = { F79: '#4f46e5', GK3: '#9333ea', G38: '#d97706', G2: '#0d9488' };
+            let nameOptionsHtml = `<option value="">-- 空缺 --</option>`; state.employees.forEach(e => { nameOptionsHtml += `<option value="${e.name}">${e.name}</option>`; });
+
+            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
+                let slotsHtml = '';
+                for (let i = 0; i < 6; i++) {
+                    let slot = report[shop][i] || { name: '', time: '' }; 
+                    let currentSelectHtml = nameOptionsHtml.replace(`value="${slot.name}"`, `value="${slot.name}" selected`);
+                    const isDisabled = (state.currentRole !== 'manager') ? 'disabled style="opacity:0.8; background:#f3f4f6;"' : '';
+                    
+                    let noteTextHtml = '';
+                    if (slot.name && state.notes[slot.name] && state.notes[slot.name][`day_${state.currentDay}`]) {
+                        let matchedNote = state.notes[slot.name][`day_${state.currentDay}`];
+                        noteTextHtml = `<div class="slot-note-text" title="${matchedNote}">📝 ${matchedNote}</div>`;
+                    }
+
+                    let tClean = slot.time;
+                    if (tClean.includes('(')) {
+                        let matches = tClean.match(/\(([^)]+)\)/);
+                        if (matches && matches[1]) tClean = matches[1]; 
+                    }
+
+                    slotsHtml += `
+                        <div class="slot-box">
+                            <select class="manual-name-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'name', this.value)">${currentSelectHtml}</select>
+                            <input type="text" class="manual-time-input" ${isDisabled} value="${tClean}" placeholder="無班次" onchange="handleManualSlotChange('${shop}', ${i}, 'time', this.value)">
+                            ${noteTextHtml}
+                        </div>`;
+                }
+                let currentCount = 0; report[shop].forEach(s => { if(s.name) currentCount++; });
+                reportContainer.innerHTML += `<div class="shop-box"><div class="shop-header" style="background: ${headerColors[shop]};"><span>${shop} 店鋪</span><span>當前共：${currentCount} 人</span></div><div class="grid-6">${slotsHtml}</div></div>`;
+            });
+        }
+
+        function renderHolidayTable() {
+            const headerRow = document.getElementById('holiday-table-header-row');
+            const tbody = document.getElementById('holiday-table-body');
+            headerRow.innerHTML = ''; tbody.innerHTML = '';
+            let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
+            
+            headerRow.innerHTML += `<th class="sticky-col">員工放假總覽 📊</th>`;
+            
+            for(let d=1; d<=totalDays; d++) { 
+                let dayKey = `day_${d}`;
+                let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
+                let tMani = 0, tApp = 0;
+                
+                ['F79', 'GK3', 'G38', 'G2'].forEach(s => {
+                    dayReport[s].forEach(slot => {
+                        if(slot.name) {
+                            const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''));
+                            if(staff && staff.role === '學徒') tApp++;
+                            else if(staff && staff.role !== '學徒') tMani++;
+                        }
+                    });
+                });
+
+                headerRow.innerHTML += `
+                    <th style="text-align:center; min-width:42px; background:#f8fafc; padding:6px 4px;">
+                        <span style="font-size:9px; color:var(--primary); display:block; font-weight:900;">${tMani}師</span>
+                        <span style="font-size:9px; color:#0d9488; display:block; font-weight:900; margin-bottom:2px;">${tApp}徒</span>
+                        <b style="font-size:12px; color:#111827;">${d}</b><br>
+                        <span style="font-size:9px; font-weight:normal; color:#6b7280;">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</span>
+                    </th>`; 
+            }
+
+            state.employees.forEach(emp => {
+                let dotsHtml = ''; const userHols = state.holidays[emp.name] || [];
+                for(let d = 1; d <= totalDays; d++) { 
+                    let isActive = userHols.includes(d) ? 'active' : '';
+                    let dotText = userHols.includes(d) ? '假' : '-';
+                    dotsHtml += `<td><span class="holiday-display-dot ${isActive}">${dotText}</span></td>`; 
+                }
+                tbody.innerHTML += `<tr><td class="sticky-col"><span class="count-badge">${userHols.length}天</span><b style="font-size:13px;">${emp.name}</b></td>${dotsHtml}</tr>`;
+            });
+        }
+
+        function renderEmployeeTable() {
+            const tbody = document.getElementById('employee-table-body'); tbody.innerHTML = '';
+            const isReadonly = (state.currentRole !== 'manager') ? 'disabled' : '';
+            state.employees.forEach((emp) => {
+                let currentRole = emp.role || 'Full-time';
+                tbody.innerHTML += `<tr><td><input type="text" class="emp-name-input" ${isReadonly} value="${emp.name}"></td><td><select class="emp-type-select" ${isReadonly}><option value="Full-time" ${currentRole === 'Full-time' ? 'selected' : ''}>Full-time</option><option value="Part-time" ${currentRole === 'Part-time' ? 'selected' : ''}>Part-time</option><option value="學徒" ${currentRole === '學徒' ? 'selected' : ''}>學徒</option></select></td><td><input type="text" class="emp-shops-input" ${isReadonly} value="${emp.p_shops || ''}"></td><td><input type="text" class="emp-times-input" ${isReadonly} value="${emp.times || ''}"></td><td><button class="btn btn-del" ${isReadonly} onclick="this.closest('tr').remove()">刪除</button></td></tr>`;
+            });
+        }
+
+        function addEmployeeRow() {
+            if(state.currentRole !== 'manager') return;
+            document.getElementById('employee-table-body').innerHTML += `<tr><td><input type="text" class="emp-name-input" placeholder="新名字"></td><td><select class="emp-type-select"><option value="Full-time" selected>Full-time</option><option value="Part-time">Part-time</option><option value="學徒">學徒</option></select></td><td><input type="text" class="emp-shops-input" value="G2, G38, GK3"></td><td><input type="text" class="emp-times-input" value="11:00, 12:00, 13:00"></td><td><button class="btn btn-del" onclick="this.closest('tr').remove()">刪除</button></td></tr>`;
+        }
+
+        function renderPendingApprovalsBox() {
+            const container = document.getElementById('approval-list-container'); container.innerHTML = '';
+            const keys = Object.keys(state.pendingApprovals);
+            if (keys.length === 0) { container.innerHTML = `<span style="color:#9ca3af;">目前沒有待審批的假期申請。</span>`; return; }
+            keys.forEach(k => {
+                const item = state.pendingApprovals[k];
+                let holListStr = (item.requestedHolidays || []).sort((a,b)=>a-b).join(', ') || '全月無假';
+                container.innerHTML += `<div class="approval-item"><span>👤 <b>${item.name}</b> 申請變更全月假表為：[ <b>${holListStr} 日</b> ]</span><div><button class="btn" style="background:var(--success); color:white; padding:2px 6px; font-size:11px;" onclick="actionApproveHoliday('${k}', '${item.name}', [${item.requestedHolidays || ''}])">批准覆蓋</button> <button class="btn" style="background:var(--danger); color:white; padding:2px 6px; font-size:11px;" onclick="database.ref('v8_pending_approvals/${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}/${k}').remove()">拒絕</button></div></div>`;
+            });
         }
 
         function saveEmployeeData() {
@@ -607,22 +962,72 @@
             if(isCloudMode && database) { database.ref(`v8_holidays/${monthKey}`).set(state.holidays); alert('🏖️ 經理已強制覆蓋發佈全月放假大表！'); } 
         }
 
-        function renderPendingApprovalsBox() {
-            const container = document.getElementById('approval-list-container'); container.innerHTML = '';
-            const keys = Object.keys(state.pendingApprovals);
-            if (keys.length === 0) { container.innerHTML = `<span style="color:#9ca3af;">目前沒有待審批的假期申請。</span>`; return; }
-            keys.forEach(k => {
-                const item = state.pendingApprovals[k];
-                let holListStr = (item.requestedHolidays || []).sort((a,b)=>a-b).join(', ') || '全月無假';
-                container.innerHTML += `<div class="approval-item"><span>👤 <b>${item.name}</b> 申請變更全月假表為：[ <b>${holListStr} 日</b> ]</span><div><button class="btn" style="background:var(--success); color:white; padding:2px 6px; font-size:11px;" onclick="actionApproveHoliday('${k}', '${item.name}', [${item.requestedHolidays || ''}])">批准覆蓋</button> <button class="btn" style="background:var(--danger); color:white; padding:2px 6px; font-size:11px;" onclick="database.ref('v8_pending_approvals/${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}/${k}').remove()">拒絕</button></div></div>`;
+        function handleManualSlotChange(shop, index, field, value) {
+            const dayKey = `day_${state.currentDay}`;
+            if (!state.overrides[dayKey]) { state.overrides[dayKey] = JSON.parse(document.getElementById('current-rendered-data-cache').value); }
+            state.overrides[dayKey][shop][index][field] = value;
+            const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+            if(isCloudMode && database) { database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]); } 
+            else { localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); refreshBadgesOnly(state.overrides[dayKey]); }
+        }
+
+        function resetCurrentDayToAuto() {
+            const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+            if(isCloudMode && database) { database.ref(`v8_overrides/${monthKey}/day_${state.currentDay}`).remove(); } 
+            else { if(state.overrides[`day_${state.currentDay}`]) { delete state.overrides[`day_${state.currentDay}`]; localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); runScheduler(); } }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            if (event) event.target.classList.add('active');
+            if(tabId === 'tab-schedule') runScheduler();
+            if(tabId === 'tab-my-month') renderIndividualMonthCalendar();
+            if(tabId === 'tab-analysis') renderMonthlyAnalysis();
+        }
+
+        function refreshBadgesOnly(reportData) {
+            let shopCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 };
+            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => { reportData[shop].forEach(slot => { if(slot.name) shopCounts[shop]++; }); });
+            renderMonitorBadges(shopCounts);
+        }
+
+        function renderMonitorBadges(shopCounts) {
+            const monitorPanel = document.getElementById('monitor-panel'); monitorPanel.innerHTML = '';
+            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
+                const count = shopCounts[shop]; let badgeClass = 'bg-ok'; let txt = '正常';
+                if(shop === 'F79') { badgeClass = (count >= 2 && count <= 3) ? 'bg-ok' : 'bg-warn'; txt = `指標:${count}人`; } 
+                else { if (count < 3) { badgeClass = 'bg-warn'; txt = '缺美甲師'; } else if (count > 6) { badgeClass = 'bg-low'; txt = '爆人(多於6)'; } }
+                monitorPanel.innerHTML += `<div class="badge ${badgeClass}"><div style="font-weight:bold;">${shop}</div><div style="font-size:18px; font-weight:900; margin:2px 0;">${count}人</div><div style="font-size:10px; opacity:0.8;">${txt}</div></div>`;
             });
+        }
+
+        function runScheduler() {
+            let leavesToday = []; state.employees.forEach(emp => { if ((state.holidays[emp.name] || []).includes(state.currentDay)) leavesToday.push(emp.name); });
+            const dayKey = `day_${state.currentDay}`; let report = {};
+
+            let activeStaff = state.employees.filter(e => !(state.holidays[e.name] || []).includes(state.currentDay));
+            let manicurists = activeStaff.filter(e => e.role !== '學徒');
+            let apprentices = activeStaff.filter(e => e.role === '學徒');
+
+            if (state.overrides[dayKey]) {
+                report = state.overrides[dayKey];
+                document.getElementById('total-working-text').innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 核心美甲師：<b>${manicurists.length}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${activeStaff.length}</b> 人 (⚠️手動微調模式)`;
+                document.getElementById('today-leave-names-box').innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
+                refreshBadgesOnly(report); renderInteractiveReport(report); return;
+            }
+
+            let result = calculateDaySchedule(state.currentDay); report = result.report;
+            document.getElementById('total-working-text').innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 核心美甲師：<b>${result.manicuristCount}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${result.totalCount}</b> 人`;
+            document.getElementById('today-leave-names-box').innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
+            refreshBadgesOnly(report); renderInteractiveReport(report);
         }
 
         function calculateDaySchedule(dayNumber) {
             let report = { F79: [], GK3: [], G38: [], G2: [] };
             let isSun = isSunday(state.currentYear, state.currentMonth, dayNumber);
             const activeStaff = state.employees.filter(e => !(state.holidays[e.name] || []).includes(dayNumber));
-            
             const manicurists = activeStaff.filter(e => e.role !== '學徒');
             const apprentices = activeStaff.filter(e => e.role === '學徒');
             let M = manicurists.length;
@@ -688,21 +1093,6 @@
             return { report, manicuristCount: M, totalCount: activeStaff.length };
         }
 
-        function handleManualSlotChange(shop, index, field, value) {
-            const dayKey = `day_${state.currentDay}`;
-            if (!state.overrides[dayKey]) { state.overrides[dayKey] = JSON.parse(document.getElementById('current-rendered-data-cache').value); }
-            state.overrides[dayKey][shop][index][field] = value;
-            const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-            if(isCloudMode && database) { database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]); } 
-            else { localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); refreshBadgesOnly(state.overrides[dayKey]); }
-        }
-
-        function resetCurrentDayToAuto() {
-            const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-            if(isCloudMode && database) { database.ref(`v8_overrides/${monthKey}/day_${state.currentDay}`).remove(); } 
-            else { if(state.overrides[`day_${state.currentDay}`]) { delete state.overrides[`day_${state.currentDay}`]; localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); runScheduler(); } }
-        }
-
         function autoExtractTime(emp, shift, isSun, shop) {
             if (shop === 'F79') return (shift === '早班') ? (isSun ? '11:00' : '12:00') : '13:00';
             let userTimes = (emp.times || '').split(',').map(t => t.trim());
@@ -711,189 +1101,6 @@
             if (shift === '早班') { return primaryHour < 12 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) < 12) || '11:00'); } 
             else if (shift === '中班') { return primaryHour === 12 ? primaryTime : (userTimes.find(t => t === '12:00') || '12:00'); } 
             else { return primaryHour >= 13 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) >= 13) || '13:00'); }
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).style.display = 'block';
-            if (event) event.target.classList.add('active');
-            if(tabId === 'tab-schedule') runScheduler();
-            if(tabId === 'tab-my-month') renderIndividualMonthCalendar();
-            if(tabId === 'tab-analysis') renderMonthlyAnalysis();
-        }
-
-        function refreshBadgesOnly(reportData) {
-            let shopCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 };
-            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => { reportData[shop].forEach(slot => { if(slot.name) shopCounts[shop]++; }); });
-            renderMonitorBadges(shopCounts);
-        }
-
-        function renderMonitorBadges(shopCounts) {
-            const monitorPanel = document.getElementById('monitor-panel'); monitorPanel.innerHTML = '';
-            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
-                const count = shopCounts[shop]; let badgeClass = 'bg-ok'; let txt = '正常';
-                if(shop === 'F79') { badgeClass = (count >= 2 && count <= 3) ? 'bg-ok' : 'bg-warn'; txt = `指標:${count}人`; } 
-                else { if (count < 3) { badgeClass = 'bg-warn'; txt = '缺美甲師'; } else if (count > 6) { badgeClass = 'bg-low'; txt = '爆人(多於6)'; } }
-                monitorPanel.innerHTML += `<div class="badge ${badgeClass}"><div style="font-weight:bold;">${shop}</div><div style="font-size:18px; font-weight:900; margin:2px 0;">${count}人</div><div style="font-size:10px; opacity:0.8;">${txt}</div></div>`;
-            });
-        }
-
-        function runScheduler() {
-            let leavesToday = []; state.employees.forEach(emp => { if ((state.holidays[emp.name] || []).includes(state.currentDay)) leavesToday.push(emp.name); });
-            const dayKey = `day_${state.currentDay}`; let report = {};
-
-            let activeStaff = state.employees.filter(e => !(state.holidays[e.name] || []).includes(state.currentDay));
-            let manicurists = activeStaff.filter(e => e.role !== '學徒');
-            let apprentices = activeStaff.filter(e => e.role === '學徒');
-
-            if (state.overrides[dayKey]) {
-                report = state.overrides[dayKey];
-                document.getElementById('total-working-text').innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 核心美甲師：<b>${manicurists.length}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${activeStaff.length}</b> 人 (⚠️手動微調模式)`;
-                document.getElementById('today-leave-names-box').innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
-                refreshBadgesOnly(report); renderInteractiveReport(report); return;
-            }
-
-            let result = calculateDaySchedule(state.currentDay); report = result.report;
-            document.getElementById('total-working-text').innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 核心美甲師：<b>${result.manicuristCount}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${result.totalCount}</b> 人`;
-            document.getElementById('today-leave-names-box').innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
-            refreshBadgesOnly(report); renderInteractiveReport(report);
-        }
-
-        function renderMonthlyAnalysis() {
-            const tbody = document.getElementById('analysis-table-body'); tbody.innerHTML = '';
-            let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
-
-            for (let d = 1; d <= totalDays; d++) {
-                let dayKey = `day_${d}`; let finalCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 };
-                let totalWorkingApprentices = 0;
-                
-                if (state.overrides[dayKey]) {
-                    let ovr = state.overrides[dayKey];
-                    ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
-                        ovr[s].forEach(slot => { 
-                            if(slot.name) { 
-                                const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
-                                if(staff && staff.role === '學徒') totalWorkingApprentices++;
-                                else if(staff && staff.role !== '學徒') finalCounts[s]++; 
-                            } 
-                        }); 
-                    });
-                } else {
-                    let r = calculateDaySchedule(d).report;
-                    ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
-                        r[s].forEach(slot => { 
-                            if(slot.name) { 
-                                const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
-                                if(staff && staff.role === '學徒') totalWorkingApprentices++;
-                                else if(staff && staff.role !== '學徒') finalCounts[s]++; 
-                            } 
-                        }); 
-                    });
-                }
-                
-                let totalWorkingMani = finalCounts.F79 + finalCounts.GK3 + finalCounts.G38 + finalCounts.G2;
-
-                let alertBgClass = "bg-alert-red"; 
-                if (totalWorkingMani === 13 || totalWorkingMani === 14) {
-                    alertBgClass = "bg-alert-lightgreen"; 
-                } else if (totalWorkingMani >= 15) {
-                    alertBgClass = "bg-alert-darkgreen"; 
-                }
-
-                let f79Class = (finalCounts.F79 < 2) ? 'alert-cell' : 'normal-cell';
-                let gk3Class = (finalCounts.GK3 < 3) ? 'alert-cell' : 'normal-cell';
-                let g38Class = (finalCounts.G38 < 3) ? 'alert-cell' : 'normal-cell';
-                let g2Class  = (finalCounts.G2 < 3)  ? 'alert-cell' : 'normal-cell';
-                let isWknd = getDayOfWeekText(state.currentYear, state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : '';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="text-align:center; font-weight:bold;">${d} 日</td>
-                        <td style="text-align:center; ${isWknd}">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</td>
-                        <td class="${alertBgClass}">${totalWorkingMani} 師</td>
-                        <td style="text-align:center; background:#f0fdf4; font-weight:bold; color:#0d9488;">${totalWorkingApprentices} 徒</td>
-                        <td class="${f79Class}">${finalCounts.F79}人</td>
-                        <td class="${gk3Class}">${finalCounts.GK3}人</td>
-                        <td class="${g38Class}">${finalCounts.G38}人</td>
-                        <td class="${g2Class}">${finalCounts.G2}人</td>
-                    </tr>`;
-            }
-        }
-
-        function renderInteractiveReport(report) {
-            let cacheInput = document.getElementById('current-rendered-data-cache');
-            if(!cacheInput) { cacheInput = document.createElement('input'); cacheInput.id = 'current-rendered-data-cache'; cacheInput.type = 'hidden'; document.body.appendChild(cacheInput); }
-            cacheInput.value = JSON.stringify(report);
-
-            const reportContainer = document.getElementById('shops-report-container'); reportContainer.innerHTML = '';
-            const headerColors = { F79: '#4f46e5', GK3: '#9333ea', G38: '#d97706', G2: '#0d9488' };
-            let nameOptionsHtml = `<option value="">-- 空缺 --</option>`; state.employees.forEach(e => { nameOptionsHtml += `<option value="${e.name}">${e.name}</option>`; });
-
-            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
-                let slotsHtml = '';
-                for (let i = 0; i < 6; i++) {
-                    let slot = report[shop][i] || { name: '', time: '' }; 
-                    let currentSelectHtml = nameOptionsHtml.replace(`value="${slot.name}"`, `value="${slot.name}" selected`);
-                    const isDisabled = (state.currentRole !== 'manager') ? 'disabled style="opacity:0.8; background:#f3f4f6;"' : '';
-                    
-                    let noteTextHtml = '';
-                    if (slot.name && state.notes[slot.name] && state.notes[slot.name][`day_${state.currentDay}`]) {
-                        let matchedNote = state.notes[slot.name][`day_${state.currentDay}`];
-                        noteTextHtml = `<div class="slot-note-text" title="${matchedNote}">📝 ${matchedNote}</div>`;
-                    }
-
-                    slotsHtml += `
-                        <div class="slot-box">
-                            <select class="manual-name-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'name', this.value)">${currentSelectHtml}</select>
-                            <input type="text" class="manual-time-input" ${isDisabled} value="${slot.time}" placeholder="無班次" onchange="handleManualSlotChange('${shop}', ${i}, 'time', this.value)">
-                            ${noteTextHtml}
-                        </div>`;
-                }
-                let currentCount = 0; report[shop].forEach(s => { if(s.name) currentCount++; });
-                reportContainer.innerHTML += `<div class="shop-box"><div class="shop-header" style="background: ${headerColors[shop]};"><span>${shop} 店鋪</span><span>當前共：${currentCount} 人</span></div><div class="grid-6">${slotsHtml}</div></div>`;
-            });
-        }
-
-        function renderEmployeeTable() {
-            const tbody = document.getElementById('employee-table-body'); tbody.innerHTML = '';
-            const isReadonly = (state.currentRole !== 'manager') ? 'disabled' : '';
-            state.employees.forEach((emp) => {
-                let currentRole = emp.role || 'Full-time';
-                tbody.innerHTML += `<tr><td><input type="text" class="emp-name-input" ${isReadonly} value="${emp.name}"></td><td><select class="emp-type-select" ${isReadonly}><option value="Full-time" ${currentRole === 'Full-time' ? 'selected' : ''}>Full-time</option><option value="Part-time" ${currentRole === 'Part-time' ? 'selected' : ''}>Part-time</option><option value="學徒" ${currentRole === '學徒' ? 'selected' : ''}>學徒</option></select></td><td><input type="text" class="emp-shops-input" ${isReadonly} value="${emp.p_shops || ''}"></td><td><input type="text" class="emp-times-input" ${isReadonly} value="${emp.times || ''}"></td><td><button class="btn btn-del" ${isReadonly} onclick="this.closest('tr').remove()">刪除</button></td></tr>`;
-            });
-        }
-
-        function addEmployeeRow() {
-            if(state.currentRole !== 'manager') return;
-            document.getElementById('employee-table-body').innerHTML += `<tr><td><input type="text" class="emp-name-input" placeholder="新名字"></td><td><select class="emp-type-select"><option value="Full-time" selected>Full-time</option><option value="Part-time">Part-time</option><option value="學徒">學徒</option></select></td><td><input type="text" class="emp-shops-input" value="G2, G38, GK3"></td><td><input type="text" class="emp-times-input" value="11:00, 12:00, 13:00"></td><td><button class="btn btn-del" onclick="this.closest('tr').remove()">刪除</button></td></tr>`;
-        }
-
-        function renderHolidayTable() {
-            const headerRow = document.getElementById('holiday-table-header-row');
-            const tbody = document.getElementById('holiday-table-body');
-            headerRow.innerHTML = ''; tbody.innerHTML = '';
-            let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
-            
-            headerRow.innerHTML += `<th class="sticky-col">員工放假總覽 📊</th>`;
-            for(let d=1; d<=totalDays; d++) { headerRow.innerHTML += `<th style="text-align:center; min-width:36px;">${d}<br><span style="font-size:10px;font-weight:normal;">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</span></th>`; }
-
-            state.employees.forEach(emp => {
-                let dotsHtml = ''; const userHols = state.holidays[emp.name] || [];
-                for(let d = 1; d <= totalDays; d++) { 
-                    let isActive = userHols.includes(d) ? 'active' : '';
-                    let dotText = userHols.includes(d) ? '假' : '-';
-                    dotsHtml += `<td><span class="holiday-display-dot ${isActive}">${dotText}</span></td>`; 
-                }
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="sticky-col">
-                            <span class="count-badge">${userHols.length}天</span>
-                            <b style="font-size:13px;">${emp.name}</b>
-                        </td>
-                        ${dotsHtml}
-                    </tr>`;
-            });
         }
 
         function downloadTimeCapsuleBackup() {
@@ -928,22 +1135,20 @@
         }
 
         function loadLocalFallbackContext() {
-            calculateAutoDefaultDate(); // 執行自動跳轉
+            calculateAutoDefaultDate();
             const y = state.currentYear; const m = state.currentMonth; const monthKey = `${y}-${m < 10 ? '0'+m : m}`;
             state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(defaultEmployees));
-            state.overrides = JSON.parse(localStorage.getItem(`v8_overrides_${monthKey}`)) || {};
-            state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || {};
+            state.overrides = JSON.parse(localStorage.getItem(`v8_overrides_${monthKey}`)) || JSON.parse(JSON.stringify(defaultOverridesData));
+            state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || JSON.parse(JSON.stringify(defaultHolidaysData));
             state.notes = JSON.parse(localStorage.getItem(`v8_notes_${monthKey}`)) || {};
             state.localHolidaysDraft = JSON.parse(JSON.stringify(state.holidays));
-            linkAndFillMissingHolidayShells();
-            populateStaffDropdown();
+            linkAndFillMissingHolidayShells(); populateStaffDropdown();
         }
 
-        // 修改初始化邏輯順序
         window.onload = function() { 
-            calculateAutoDefaultDate(); // 1. 先計算時間
-            initYearMonthDropdowns();   // 2. 初始化下拉選單
-            handleDateContextChange();  // 3. 觸發雲端監聽
+            calculateAutoDefaultDate(); 
+            initYearMonthDropdowns();   
+            handleDateContextChange();  
         };
     </script>
 </body>
