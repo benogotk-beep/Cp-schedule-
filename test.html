@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>分店智能排班系統 V9.6-Test 終極精煉完全體</title>
+    <title>分店智能排班系統 V9.6-Ultimate 終極精煉完全體</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -11,8 +11,8 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--gray-bg); margin: 0; padding: 8px; color: #1f2937; -webkit-text-size-adjust: 100%; }
         
         .tab-bar { display: flex; background: white; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 1px solid #e5e7eb; flex-wrap: wrap; }
-        .tab-btn { flex: 1; min-width: 75px; text-align: center; padding: 10px 4px; font-size: 12px; font-weight: bold; border-radius: 8px; border: none; background: transparent; cursor: pointer; color: #4b5563; }
-        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn { flex: 1; min-width: 75px; text-align: center; padding: 10px 4px; font-size: 12px; font-weight: bold; border-radius: 8px; border: none; background: transparent; cursor: pointer; color: #4b5563; transition: all 0.2s ease; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }
 
         .card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); margin-bottom: 10px; border: 1px solid #e5e7eb; }
         .title { font-size: 17px; font-weight: bold; text-align: center; color: #111827; }
@@ -27,7 +27,7 @@
         .badge { padding: 6px; border-radius: 10px; text-align: center; border: 1px solid #e5e7eb; font-size: 12px; }
         .bg-ok { background-color: #def7ec; color: #03543f; border-color: #bcf0da; }
         .bg-warn { background-color: #fde8e8; color: #9b1c1c; border-color: #f8b4b4; }
-        .bg-low { background-color: #fef08a; color: #713f12; border-color: #fde047; }
+        .bg-low { background-color: #fef08a; color: #713f12; border-color: #fde0 yellow; }
         
         .scroll-box { overflow-x: auto; margin-top: 6px; border-radius: 8px; border: 1px solid #e5e7eb; position: relative; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; font-size: 12px; }
@@ -47,14 +47,22 @@
         .holiday-display-dot { width: 20px; height: 20px; border-radius: 50%; display: inline-block; background: #e5e7eb; line-height: 20px; text-align: center; font-weight: bold; font-size: 10px; color: #9ca3af; }
         .holiday-display-dot.active { background: #dc2626; color: white; box-shadow: 0 0 4px rgba(220,38,38,0.4); }
 
-        .shop-box { border-radius: 10px; margin-bottom: 10px; background: white; overflow: hidden; border: 1px solid #e5e7eb; }
-        .shop-header { padding: 6px 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; font-size: 13px; }
+        /* 👑 拖放美化與卡片優化效果 */
+        .shop-box { border-radius: 10px; margin-bottom: 10px; background: white; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .shop-header { padding: 8px 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; font-size: 13px; }
         .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; background: #f9fafb; }
         
-        .slot-box { border: 1px solid #bfdbfe; border-radius: 6px; padding: 4px; background: white; min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .manual-name-select { width: 100%; border: 1px solid #93c5fd; border-radius: 4px; font-weight: bold; font-size: 13px; color: #111827; background: #f8fafc; text-align: center; }
-        .manual-time-input { width: 100%; border: none; font-size: 12px; text-align: center; padding: 1px 0; color: #1d4ed8; background: transparent; font-weight: bold; margin-top: 1px; }
-        .slot-note-text { font-size: 10px; color: #ea580c; font-weight: bold; margin-top: 1px; text-align: center; max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .slot-box { border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px; background: white; min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.15s ease, box-shadow 0.15s ease; position: relative; }
+        
+        /* 管理員模式下的拖放提示 */
+        body.is-manager .slot-box { cursor: grab; }
+        body.is-manager .slot-box:active { cursor: grabbing; }
+        .slot-box.dragging { opacity: 0.4; transform: scale(0.95); border: 2px dashed #3b82f6; background: #eff6ff; }
+        .slot-box.drag-over { border: 2px dashed var(--success) !important; background: #f0fdf4; box-shadow: 0 0 8px rgba(13,148,136,0.2); }
+
+        .manual-name-select { width: 100%; border: 1px solid #93c5fd; border-radius: 4px; font-weight: bold; font-size: 13px; color: #111827; background: #f8fafc; text-align: center; padding: 2px; }
+        .manual-time-select { width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; text-align: center; padding: 2px; color: #1d4ed8; background: transparent; font-weight: bold; margin-top: 3px; }
+        .slot-note-text { font-size: 10px; color: #ea580c; font-weight: bold; margin-top: 3px; text-align: center; max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #fff7ed; padding: 1px 4px; border-radius: 4px; border: 1px solid #ffedd5; }
 
         .btn { padding: 6px 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
         .btn-add { background: var(--success); color: white; margin-bottom: 8px; }
@@ -89,7 +97,7 @@
 
     <div class="auth-banner">
         <div id="role-display-text">🔑 目前權限：普通員工模式（⚠️ 26號、人手不足或歷史日子鎖定防線已激活）</div>
-        <div style="color: #2563eb; font-size: 11px; font-weight: bold;">🧪 TEST SANDBOX V9.6</div>
+        <div style="color: #2563eb; font-size: 11px; font-weight: bold;">🧪 ULTIMATE SANDBOX V9.6</div>
         <div>
             <input type="password" id="manager-pass-input" class="auth-input" placeholder="管理口令" oninput="checkAuthorization()">
             <button class="btn" style="padding:4px 8px; background:#4b5563; color:white;" onclick="clearAuth()">登出</button>
@@ -122,7 +130,7 @@
         </div>
 
         <div class="card">
-            <div class="title">分店智能排班沙盒 <span style="color:var(--warning);">[V9.6-Test 完美無錯版]</span></div>
+            <div class="title">分店智能排班沙盒 <span style="color:var(--warning);">[V9.6-Ultimate 完美對調版]</span></div>
             <div class="date-panel">
                 <select id="schedule-year-select" class="select-yr" onchange="handleDateContextChange()"></select>
                 <select id="schedule-month-select" class="select-mo" onchange="handleDateContextChange()"></select>
@@ -146,7 +154,7 @@
                     <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()">
                     </select>
                 </div>
-                <button class="btn-invert" id="my-month-invert-btn" onclick="invertIndividualEmployeeHolidays()">🔄 員工一鍵反選假期</button>
+                <button class="btn-invert" id="my-month-invert-btn" onclick="invertIndividualEmployeeHolidays()">🔄 員工一鍵優化反選假期</button>
             </div>
             <div class="scroll-box" style="max-height: 65vh;">
                 <table>
@@ -180,7 +188,7 @@
                 <button class="btn-filter" id="filter-shops" onclick="applyColumnFilter('shops')">只看分店人手</button>
             </div>
 
-            <div class="scroll-box" style="max-height: 50vh;">
+            <div class="scroll-box" style="max-height: 40vh;">
                 <table id="main-analysis-table">
                     <thead>
                         <tr>
@@ -198,15 +206,30 @@
                 </table>
             </div>
 
+            <div class="sub-table-title">📈 員工當月出勤與放假月結統計大對帳表 (功能 D)</div>
+            <div class="scroll-box" style="max-height: 25vh; border: 1px solid #cbd5e1;">
+                <table>
+                    <thead>
+                        <tr style="background:#f1f5f9;">
+                            <th style="text-align:left; padding:6px 10px;">員工姓名</th>
+                            <th style="text-align:center; padding:6px 10px;">職位類型</th>
+                            <th style="text-align:center; padding:6px 10px; color:var(--success);">💼 總出勤天數</th>
+                            <th style="text-align:center; padding:6px 10px; color:var(--danger);">🏖️ 總放假天數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staff-month-summary-body"></tbody>
+                </table>
+            </div>
+
             <div class="sub-table-title">🚨 美甲師告急日子總覽 (小於或等於 12 人)</div>
-            <div class="scroll-box" style="max-height: 25vh; border: 1px solid #fca5a5;">
+            <div class="scroll-box" style="max-height: 20vh; border: 1px solid #fca5a5;">
                 <table style="background:#fffaf8;">
                     <tbody id="low-staff-table-body"></tbody>
                 </table>
             </div>
 
             <div class="sub-table-title">🟢 美甲師充沛優勢日子總覽 (大於或等於 15 人)</div>
-            <div class="scroll-box" style="max-height: 25vh; border: 1px solid #6ee7b7;">
+            <div class="scroll-box" style="max-height: 20vh; border: 1px solid #6ee7b7;">
                 <table style="background:#f6fffb;">
                     <tbody id="high-staff-table-body"></tbody>
                 </table>
@@ -251,7 +274,7 @@
             <button class="btn btn-save" style="background-color: var(--warning);" onclick="saveHolidayData()">💾 經理強制儲存並發佈放假表</button>
         </div>
     </div>
-    <script>
+        <script>
         // 📡 雲端天線核心連結變數
         var firebaseConfig = {
             apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
@@ -264,7 +287,6 @@
             measurementId: "G-W0L45WCMV2"
         };
 
-        // 📝 嵌入最新正式名單（已整合學徒：文君）
         const defaultEmployees = [
             { "name": "阿平", "p_shops": "G2, G38, GK3, F79", "role": "Full-time", "times": "12:00, 13:00" },
             { "name": "RUBY", "p_shops": "G2, G38, GK3", "role": "Part-time", "times": "11:00, 18:00" },
@@ -288,7 +310,6 @@
             { "name": "文君", "p_shops": "G2, G38, GK3", "role": "學徒", "times": "11:00, 12:00, 13:00" }
         ];
 
-        // 🏖️ 預載正式放假總數據
         const defaultHolidaysData = {
             "ALICE": [8, 17, 27, 7], "AMY": [9, 18, 19, 20, 1, 2, 3, 4], 
             "Jackie": [1, 2, 3, 7, 8, 9, 10, 14, 15, 19, 20, 21, 22, 23, 24, 28, 29], 
@@ -304,9 +325,11 @@
         var database = null; var isCloudMode = false;
         let state = { employees: [], currentYear: 2026, currentMonth: 5, currentDay: 1, holidays: {}, overrides: {}, notes: {}, pendingApprovals: {}, currentRole: 'employee', localHolidaysDraft: {} };
 
-        // 🛡️ 異步數據閘阻斷器：確保名單、假期、微調、備註四者全部從雲端載入完畢才解鎖畫面
         var empRef, holRef, ovrRef, appRef, noteRef;
         let cloudLoads = { emp: false, hol: false, ovr: false, note: false };
+
+        // 🌟 核心：拖放卡片時臨時記憶的數據源與目的標籤
+        let draggedSourceData = null;
 
         function setupFirebaseListeners() {
             if(!database || !isCloudMode) return;
@@ -378,6 +401,7 @@
             const pass = document.getElementById('manager-pass-input').value;
             if (pass === '8888') {
                 state.currentRole = 'manager';
+                document.body.classList.add('is-manager'); // 用於啟用 CSS 抓取手勢
                 document.getElementById('role-display-text').innerText = "👑 權限狀態：最高管理層模式（歷史天數與放假表已解鎖）";
                 document.getElementById('manager-backup-zone').style.display = 'block'; document.getElementById('manager-approval-center').style.display = 'block'; document.getElementById('nav-holidays-tab').style.display = 'inline-block'; document.getElementById('manager-add-emp-btn').disabled = false; document.getElementById('manager-add-emp-btn').style.opacity = 1;
                 const saveBtn = document.getElementById('employee-save-btn'); saveBtn.disabled = false; saveBtn.innerText = "💾 儲存員工名單職位"; saveBtn.style.background = 'var(--primary)'; saveBtn.style.color = 'white';
@@ -386,7 +410,9 @@
         }
 
         function clearAuth() {
-            state.currentRole = 'employee'; document.getElementById('manager-pass-input').value = '';
+            state.currentRole = 'employee';
+            document.body.classList.remove('is-manager');
+            document.getElementById('manager-pass-input').value = '';
             document.getElementById('role-display-text').innerText = "🔑 目前權限：普通員工模式（⚠️ 26號、人手不足或歷史日子鎖定防線已激活）";
             document.getElementById('manager-backup-zone').style.display = 'none'; document.getElementById('manager-approval-center').style.display = 'none'; document.getElementById('nav-holidays-tab').style.display = 'none'; document.getElementById('manager-add-emp-btn').disabled = true; document.getElementById('manager-add-emp-btn').style.opacity = 0.5;
             if(document.getElementById('tab-holidays').style.display === 'block') switchTab('tab-schedule');
@@ -426,6 +452,129 @@
         function getDayOfWeekText(year, month, day) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(year, month - 1, day).getDay()]; }
         function isSunday(year, month, day) { return new Date(year, month - 1, day).getDay() === 0; }
 
+        // ⏱️ 輔助生成 09:00 - 19:00 半小時間隔選單選項 (功能 B)
+        function generateTimeOptions(selectedValue) {
+            let optionsHtml = `<option value="">無班次</option>`;
+            let startHour = 9; let endHour = 19;
+            
+            // 提取純粹的時間部分，防範帶有班次標籤的情況（例如 "早班 (11:00)"）
+            let tClean = selectedValue || '';
+            if (tClean.includes('(')) {
+                let matches = tClean.match(/\(([^)]+)\)/);
+                if (matches && matches[1]) tClean = matches[1];
+            }
+            tClean = tClean.trim();
+
+            for (let h = startHour; h <= endHour; h++) {
+                ['00', '30'].forEach(m => {
+                    let timeStr = `${h < 10 ? '0' + h : h}:${m}`;
+                    let isSel = (tClean === timeStr) ? 'selected' : '';
+                    optionsHtml += `<option value="${timeStr}" ${isSel}>${timeStr}</option>`;
+                });
+            }
+            return optionsHtml;
+        }
+
+        // 🎨 新版交互式分店卡片渲染器 (支援拖拽對調 + 時間下拉選單) (功能 B)
+        function renderInteractiveReport(report) {
+            let cacheInput = document.getElementById('current-rendered-data-cache');
+            if(!cacheInput) { cacheInput = document.createElement('input'); cacheInput.id = 'current-rendered-data-cache'; cacheInput.type = 'hidden'; document.body.appendChild(cacheInput); }
+            cacheInput.value = JSON.stringify(report);
+
+            const reportContainer = document.getElementById('shops-report-container'); reportContainer.innerHTML = '';
+            const headerColors = { F79: '#4f46e5', GK3: '#9333ea', G38: '#d97706', G2: '#0d9488' };
+            
+            let nameOptionsHtml = `<option value="">-- 空缺 --</option>`; 
+            state.employees.forEach(e => { nameOptionsHtml += `<option value="${e.name}">${e.name}</option>`; });
+
+            const isManager = (state.currentRole === 'manager');
+
+            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
+                let slotsHtml = '';
+                for (let i = 0; i < 6; i++) {
+                    let slot = report[shop][i] || { name: '', time: '' }; 
+                    let currentSelectHtml = nameOptionsHtml.replace(`value="${slot.name}"`, `value="${slot.name}" selected`);
+                    const isDisabled = !isManager ? 'disabled style="opacity:0.8; background:#f3f4f6;"' : '';
+                    
+                    let noteTextHtml = '';
+                    if (slot.name && state.notes[slot.name] && state.notes[slot.name][`day_${state.currentDay}`]) {
+                        let matchedNote = state.notes[slot.name][`day_${state.currentDay}`];
+                        noteTextHtml = `<div class="slot-note-text" title="${matchedNote}">📝 ${matchedNote}</div>`;
+                    }
+
+                    // 🛠️ 將文字輸入框替換為 30分鐘規格化時間下拉選單 (功能 B)
+                    let timeDropdownHtml = `<select class="manual-time-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'time', this.value)">${generateTimeOptions(slot.time)}</select>`;
+
+                    // 👑 注入拖拽事件（僅經理權限時開啟 draggable="true"）
+                    let dragAttributes = isManager ? `draggable="true" ondragstart="handleSlotDragStart(event, '${shop}', ${i})" ondragover="handleSlotDragOver(event)" ondragleave="handleSlotDragLeave(event)" ondrop="handleSlotDrop(event, '${shop}', ${i})"` : '';
+
+                    slotsHtml += `<div class="slot-box" ${dragAttributes} data-shop="${shop}" data-index="${i}"><select class="manual-name-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'name', this.value)">${currentSelectHtml}</select>${timeDropdownHtml}${noteTextHtml}</div>`;
+                }
+                let currentCount = 0; report[shop].forEach(s => { if(s.name) currentCount++; });
+                reportContainer.innerHTML += `<div class="shop-box"><div class="shop-header" style="background: ${headerColors[shop]};"><span>${shop} 店鋪</span><span>當前共：${currentCount} 人</span></div><div class="grid-6">${slotsHtml}</div></div>`;
+            });
+        }
+
+        // 🔀 拖放核心事件：啟動拖動時紀錄來源店鋪與網格索引 (功能 B)
+        function handleSlotDragStart(e, shop, index) {
+            let report = JSON.parse(document.getElementById('current-rendered-data-cache').value);
+            draggedSourceData = { shop: shop, index: index, payload: report[shop][index] };
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleSlotDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleSlotDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        // 🤝 拖放核心事件：當 A 放落 B 上時，完美對調人名、時間和備註 (功能 B)
+        function handleSlotDrop(e, targetShop, targetIndex) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('dragging'));
+
+            if (!draggedSourceData) return;
+            const sourceShop = draggedSourceData.shop;
+            const sourceIndex = draggedSourceData.index;
+
+            // 如果自己放回自己度，就直接跳走
+            if (sourceShop === targetShop && sourceIndex === targetIndex) return;
+
+            const dayKey = `day_${state.currentDay}`;
+            if (!state.overrides[dayKey]) { 
+                state.overrides[dayKey] = JSON.parse(document.getElementById('current-rendered-data-cache').value); 
+            }
+
+            // 進行全字段互相對調
+            let temp = state.overrides[dayKey][targetShop][targetIndex];
+            state.overrides[dayKey][targetShop][targetIndex] = state.overrides[dayKey][sourceShop][sourceIndex];
+            state.overrides[dayKey][sourceShop][sourceIndex] = temp;
+
+            const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+            if(isCloudMode && database) { 
+                database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]); 
+            } else { 
+                localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); 
+                runScheduler(); 
+            }
+            draggedSourceData = null;
+        }
+        function renderMonitorBadges(shopCounts) {
+            const monitorPanel = document.getElementById('monitor-panel'); monitorPanel.innerHTML = '';
+            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
+                const count = shopCounts[shop]; let badgeClass = 'bg-ok'; let txt = '正常';
+                if(shop === 'F79') { badgeClass = (count >= 2 && count <= 3) ? 'bg-ok' : 'bg-warn'; txt = `指標:${count}人`; } 
+                else { if (count < 3) { badgeClass = 'bg-warn'; txt = '缺美甲師'; } else if (count > 6) { badgeClass = 'bg-low'; txt = '爆人(多於6)'; } }
+                monitorPanel.innerHTML += `<div class="badge ${badgeClass}"><div style="font-weight:bold;">${shop}</div><div style="font-size:18px; font-weight:900; margin:2px 0;">${count}人</div><div style="font-size:10px; opacity:0.8;">${txt}</div></div>`;
+            });
+        }
+
+        // 🛡️ 修復後的個人當月曆渲染器：不重複計算人數 + 嚴格鎖定 (功能 C)
         function renderIndividualMonthCalendar() {
             const tbody = document.getElementById('my-month-calendar-body'); tbody.innerHTML = '';
             const staffName = document.getElementById('my-month-staff-select').value; if(!staffName) return;
@@ -444,11 +593,18 @@
                 else if (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum) isPastDay = true;
 
                 let dayKey = `day_${d}`; let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
-                let activeManiCount = 0;
                 
+                // 🛑 修復 Bug C：使用 Set 建立不重複美甲師名單統計，防手動微調重複揀同一個人
+                let activeUniqueManiSet = new Set();
                 ['F79', 'GK3', 'G38', 'G2'].forEach(s => {
-                    dayReport[s].forEach(slot => { if(slot.name) { const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); if(staff && staff.role !== '學徒') activeManiCount++; } });
+                    dayReport[s].forEach(slot => { 
+                        if(slot.name) { 
+                            const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                            if(staff && staff.role !== '學徒') activeUniqueManiSet.add(staff.name); 
+                        } 
+                    });
                 });
+                let activeManiCount = activeUniqueManiSet.size;
 
                 const isHolidayDraft = (state.localHolidaysDraft[staffName] || []).includes(d);
                 if (isHolidayDraft) { assignedShop = '<span style="color:var(--danger); font-weight:bold;">放假要求 🏖️</span>'; assignedTime = '<span style="color:var(--danger); font-size:11px;">(待存/放假)</span>'; } 
@@ -502,6 +658,7 @@
             setTimeout(renderIndividualMonthCalendar, 100);
         }
 
+        // 🛡️ 修復 Bug C：優化反選假期防線，非經理權限時，絕不影響過去考勤
         function invertIndividualEmployeeHolidays() {
             const staffName = document.getElementById('my-month-staff-select').value; if(!staffName) return;
             const realToday = new Date(); const realDayNum = realToday.getDate(); const realMonthNum = realToday.getMonth() + 1; const realYearNum = realToday.getFullYear();
@@ -512,8 +669,13 @@
             let inverted = [];
             for (let d = 1; d <= totalDays; d++) {
                 let isPastDay = (state.currentYear < realYearNum || (state.currentYear === realYearNum && state.currentMonth < realMonthNum) || (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum));
-                if (isPastDay && !isManager) { if (state.localHolidaysDraft[staffName].includes(d)) inverted.push(d); } 
-                else { if (!state.localHolidaysDraft[staffName].includes(d)) inverted.push(d); }
+                if (isPastDay && !isManager) { 
+                    // 過去的日子維持原本已記錄的假期
+                    if ((state.holidays[staffName] || []).includes(d)) inverted.push(d); 
+                } else { 
+                    // 未來的日子才進行取反
+                    if (!state.localHolidaysDraft[staffName].includes(d)) inverted.push(d); 
+                }
             }
             state.localHolidaysDraft[staffName] = inverted; renderIndividualMonthCalendar();
         }
@@ -545,9 +707,17 @@
             if (!isManager) {
                 const draftHols = state.localHolidaysDraft[staffName] || [];
                 draftHols.forEach(d => {
-                    let dayKey = `day_${d}`; let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report; let currentManiCount = 0;
-                    ['F79', 'GK3', 'G38', 'G2'].forEach(s => { dayReport[s].forEach(slot => { if(slot.name) { const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); if(staff && staff.role !== '學徒') currentManiCount++; } }); });
-                    if (currentManiCount <= 13) { shortageTriggered = true; }
+                    let dayKey = `day_${d}`; let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report; 
+                    let activeUniqueManiSet = new Set();
+                    ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
+                        dayReport[s].forEach(slot => { 
+                            if(slot.name) { 
+                                const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                                if(staff && staff.role !== '學徒') activeUniqueManiSet.add(staff.name); 
+                            } 
+                        }); 
+                    });
+                    if (activeUniqueManiSet.size <= 13) { shortageTriggered = true; }
                 });
                 let limitYear = realYearNum; let limitMonth = realMonthNum + 1; if (limitMonth > 12) { limitMonth = 1; limitYear += 1; }
                 if (realDayNum >= 26 && (state.currentYear < limitYear || (state.currentYear === limitYear && state.currentMonth <= limitMonth))) { requiresApproval = true; }
@@ -589,6 +759,7 @@
             else if(type === 'shops') { document.getElementById('filter-shops').classList.add('active'); document.querySelectorAll('.col-shops').forEach(el => el.style.display = ''); document.querySelectorAll('.col-mani, .col-app').forEach(el => el.style.display = 'none'); }
         }
 
+        // 📊 全月分析大表與 (D) 新增員工全月對帳統計月結表
         function renderMonthlyAnalysis() {
             const tbody = document.getElementById('analysis-table-body'); tbody.innerHTML = '';
             const lowBody = document.getElementById('low-staff-table-body'); lowBody.innerHTML = '';
@@ -596,12 +767,36 @@
             let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
             let lowStaffHtml = ""; let highStaffHtml = "";
 
+            // 🛠️ 初始化全月每位員工放假與上班累計計數器 (功能 D)
+            let attendanceCounters = {};
+            state.employees.forEach(e => { attendanceCounters[e.name] = { totalLeave: 0, totalWork: 0, role: e.role || 'Full-time' }; });
+
             for (let d = 1; d <= totalDays; d++) {
                 let dayKey = `day_${d}`; let finalCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; let totalWorkingApprentices = 0;
                 let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
                 
+                // 動態紀錄計數
+                let todayWorkingSet = new Set();
                 ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
-                    dayReport[s].forEach(slot => { if(slot.name) { const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); if(staff && staff.role === '學徒') totalWorkingApprentices++; else if(staff && staff.role !== '學徒') finalCounts[s]++; } }); 
+                    dayReport[s].forEach(slot => { 
+                        if(slot.name) { 
+                            const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                            if(staff) {
+                                todayWorkingSet.add(staff.name);
+                                if(staff.role === '學徒') totalWorkingApprentices++; 
+                                else finalCounts[s]++; 
+                            }
+                        } 
+                    }); 
+                });
+
+                // 統計此人今天是在放假還是在上班 (功能 D)
+                state.employees.forEach(e => {
+                    if ((state.holidays[e.name] || []).includes(d)) {
+                        if(attendanceCounters[e.name]) attendanceCounters[e.name].totalLeave++;
+                    } else {
+                        if(attendanceCounters[e.name]) attendanceCounters[e.name].totalWork++;
+                    }
                 });
                 
                 let totalWorkingMani = finalCounts.F79 + finalCounts.GK3 + finalCounts.G38 + finalCounts.G2;
@@ -616,37 +811,17 @@
             }
             lowBody.innerHTML = lowStaffHtml || "<tr><td style='text-align:center; padding:10px; color:#9ca3af;'>🙌 本月無美甲師 <= 12 人的緊繃日子</td></tr>";
             highBody.innerHTML = highStaffHtml || "<tr><td style='text-align:center; padding:10px; color:#9ca3af;'>📊 本月無美甲師 >= 15 人的充沛日子</td></tr>";
+            
+            // 📊 渲染 (D) 新增的月結報表 DOM 內容
+            const summaryBody = document.getElementById('staff-month-summary-body');
+            if(summaryBody) {
+                summaryBody.innerHTML = '';
+                Object.keys(attendanceCounters).forEach(name => {
+                    let info = attendanceCounters[name];
+                    summaryBody.innerHTML += `<tr><td style="padding:6px 10px; font-weight:bold; color:#111827;">${name}</td><td style="text-align:center; color:#4b5563;">${info.role}</td><td style="text-align:center; font-weight:bold; color:var(--success); background:#f0fdf4;">${info.totalWork} 天</td><td style="text-align:center; font-weight:bold; color:var(--danger); background:#fdf2f2;">${info.totalLeave} 天</td></tr>`;
+                });
+            }
             applyColumnFilter('all'); 
-        }
-
-        function renderInteractiveReport(report) {
-            let cacheInput = document.getElementById('current-rendered-data-cache');
-            if(!cacheInput) { cacheInput = document.createElement('input'); cacheInput.id = 'current-rendered-data-cache'; cacheInput.type = 'hidden'; document.body.appendChild(cacheInput); }
-            cacheInput.value = JSON.stringify(report);
-
-            const reportContainer = document.getElementById('shops-report-container'); reportContainer.innerHTML = '';
-            const headerColors = { F79: '#4f46e5', GK3: '#9333ea', G38: '#d97706', G2: '#0d9488' };
-            let nameOptionsHtml = `<option value="">-- 空缺 --</option>`; state.employees.forEach(e => { nameOptionsHtml += `<option value="${e.name}">${e.name}</option>`; });
-
-            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
-                let slotsHtml = '';
-                for (let i = 0; i < 6; i++) {
-                    let slot = report[shop][i] || { name: '', time: '' }; let currentSelectHtml = nameOptionsHtml.replace(`value="${slot.name}"`, `value="${slot.name}" selected`);
-                    const isDisabled = (state.currentRole !== 'manager') ? 'disabled style="opacity:0.8; background:#f3f4f6;"' : '';
-                    
-                    let noteTextHtml = '';
-                    if (slot.name && state.notes[slot.name] && state.notes[slot.name][`day_${state.currentDay}`]) {
-                        let matchedNote = state.notes[slot.name][`day_${state.currentDay}`];
-                        noteTextHtml = `<div class="slot-note-text" title="${matchedNote}">📝 ${matchedNote}</div>`;
-                    }
-
-                    let tClean = slot.time; if (tClean.includes('(')) { let matches = tClean.match(/\(([^)]+)\)/); if (matches && matches[1]) tClean = matches[1]; }
-
-                    slotsHtml += `<div class="slot-box"><select class="manual-name-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'name', this.value)">${currentSelectHtml}</select><input type="text" class="manual-time-input" ${isDisabled} value="${tClean}" placeholder="無班次" onchange="handleManualSlotChange('${shop}', ${i}, 'time', this.value)">${noteTextHtml}</div>`;
-                }
-                let currentCount = 0; report[shop].forEach(s => { if(s.name) currentCount++; });
-                reportContainer.innerHTML += `<div class="shop-box"><div class="shop-header" style="background: ${headerColors[shop]};"><span>${shop} 店鋪</span><span>當前共：${currentCount} 人</span></div><div class="grid-6">${slotsHtml}</div></div>`;
-            });
         }
 
         function renderHolidayTable() {
@@ -657,7 +832,14 @@
             
             for(let d=1; d<=totalDays; d++) { 
                 let dayKey = `day_${d}`; let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report; let tMani = 0, tApp = 0;
-                ['F79', 'GK3', 'G38', 'G2'].forEach(s => { dayReport[s].forEach(slot => { if(slot.name) { const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); if(staff && staff.role === '學徒') tApp++; else if(staff && staff.role !== '學徒') tMani++; } }); });
+                let activeUniqueManiSet = new Set();
+                dayReport['F79'].concat(dayReport['GK3'], dayReport['G38'], dayReport['G2']).forEach(slot => {
+                    if(slot.name) {
+                        const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''));
+                        if(staff) { if(staff.role === '學徒') tApp++; else activeUniqueManiSet.add(staff.name); }
+                    }
+                });
+                tMani = activeUniqueManiSet.size;
                 headerRow.innerHTML += `<th style="text-align:center; min-width:42px; background:#f8fafc; padding:6px 4px;"><span style="font-size:9px; color:var(--primary); display:block; font-weight:900;">${tMani}師</span><span style="font-size:9px; color:#0d9488; display:block; font-weight:900; margin-bottom:2px;">${tApp}徒</span><b style="font-size:12px; color:#111827;">${d}</b><br><span style="font-size:9px; font-weight:normal; color:#6b7280;">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</span></th>`; 
             }
 
@@ -700,7 +882,7 @@
             });
             state.employees = newEmps;
             if(isCloudMode && database) { database.ref(`v8_employees`).set(state.employees); alert('👥 員工名單變更成功！'); } 
-            else { localStorage.setItem('v8_employees', JSON.stringify(state.employees)); alert('💾 本地儲存成功！'); linkAndFillMissingHolidayShells(); populateStaffDropdown(); }
+            else { localStorage.setItem('v8_employees', JSON.stringify(state.employees)); alert('💾 本地儲存成功！'); populateStaffDropdown(); }
         }
 
         function saveHolidayData() {
@@ -755,16 +937,6 @@
                 loadLocalFallbackContext();
             }
         }, 1500);
-
-        function renderMonitorBadges(shopCounts) {
-            const monitorPanel = document.getElementById('monitor-panel'); monitorPanel.innerHTML = '';
-            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
-                const count = shopCounts[shop]; let badgeClass = 'bg-ok'; let txt = '正常';
-                if(shop === 'F79') { badgeClass = (count >= 2 && count <= 3) ? 'bg-ok' : 'bg-warn'; txt = `指標:${count}人`; } 
-                else { if (count < 3) { badgeClass = 'bg-warn'; txt = '缺美甲師'; } else if (count > 6) { badgeClass = 'bg-low'; txt = '爆人(多於6)'; } }
-                monitorPanel.innerHTML += `<div class="badge ${badgeClass}"><div style="font-weight:bold;">${shop}</div><div style="font-size:18px; font-weight:900; margin:2px 0;">${count}人</div><div style="font-size:10px; opacity:0.8;">${txt}</div></div>`;
-            });
-        }
 
         function runScheduler() {
             let leavesToday = []; state.employees.forEach(emp => { if ((state.holidays[emp.name] || []).includes(state.currentDay)) leavesToday.push(emp.name); });
@@ -822,17 +994,17 @@
             });
 
             let shopGroups = { F79: [], GK3: [], G38: [], G2: [] }; activeStaff.forEach(emp => { let shop = assignment[emp.name] || 'G2'; shopGroups[shop].push(emp); });
-            shopGroups.F79.forEach((emp, idx) => { let shift = (idx === 0) ? "早班" : "晚班"; let t = autoExtractTime(emp, shift, isSun, 'F79'); report.F79.push({ name: emp.name, time: `${shift} (${t})` }); });
+            shopGroups.F79.forEach((emp, idx) => { let shift = (idx === 0) ? "早班" : "晚班"; let t = autoExtractTime(emp, shift, isSun, 'F79'); report.F79.push({ name: emp.name, time: t }); });
 
             ['G2', 'GK3', 'G38'].forEach(shop => {
                 let list = shopGroups[shop]; if (list.length === 0) return;
                 let earlyIdx = list.findIndex(emp => emp.role !== '學徒' && (emp.times || '').split(',').map(t => t.trim()).some(t => parseInt(t.split(':')[0]) < 12));
                 if (earlyIdx === -1) earlyIdx = 0; let earlyEmp = list[earlyIdx]; let remainingWorkers = list.filter((_, idx) => idx !== earlyIdx);
 
-                let earlyTime = autoExtractTime(earlyEmp, '早班', isSun, shop); report[shop].push({ name: earlyEmp.name, time: `早班 (${earlyTime})` });
+                let earlyTime = autoExtractTime(earlyEmp, '早班', isSun, shop); report[shop].push({ name: earlyEmp.name, time: earlyTime });
                 remainingWorkers.forEach((emp, remIdx) => {
                     let shift = isSun ? "中班" : ((remIdx < Math.ceil(remainingWorkers.length / 2)) ? "中班" : "晚班");
-                    let t = autoExtractTime(emp, shift, isSun, shop); report[shop].push({ name: emp.name, time: `${shift} (${t})` });
+                    let t = autoExtractTime(emp, shift, isSun, shop); report[shop].push({ name: emp.name, time: t });
                 });
             });
 
@@ -894,3 +1066,4 @@
     </script>
 </body>
 </html>
+
