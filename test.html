@@ -321,11 +321,11 @@
                 <span class="settings-label">📊 人手分析定義告急線</span>
                 <div class="settings-row">
                     <span>美甲師 ⚠️ 告急人手：少於或等於</span>
-                    <input type="number" id="cfg-limit-low" style="width:60px; text-align:center;"> 人
+                    <input type="number" id="cfg-limit-low" style="width:60px; text-align:center;" min="1"> 人
                 </div>
                 <div class="settings-row">
                     <span>美甲師 🟢 充沛人手：大於或等於</span>
-                    <input type="number" id="cfg-limit-high" style="width:60px; text-align:center;"> 人
+                    <input type="number" id="cfg-limit-high" style="width:60px; text-align:center;" min="1"> 人
                 </div>
             </div>
 
@@ -499,26 +499,6 @@
             }
         }
 
-        function generateTimeOptions(selectedValue) {
-            let optionsHtml = `<option value="">無班次</option>`;
-            let startHour = 9; let endHour = 19;
-            let tClean = selectedValue || '';
-            if (tClean.includes('(')) {
-                let matches = tClean.match(/\(([^)]+)\)/);
-                if (matches && matches[1]) tClean = matches[1];
-            }
-            tClean = tClean.trim();
-
-            for (let h = startHour; h <= endHour; h++) {
-                ['00', '30'].forEach(m => {
-                    let timeStr = `${h < 10 ? '0' + h : h}:${m}`;
-                    let isSel = (tClean === timeStr) ? 'selected' : '';
-                    optionsHtml += `<option value="${timeStr}" ${isSel}>${timeStr}</option>`;
-                });
-            }
-            return optionsHtml;
-        }
-
         function handleSlotDragStart(e, shop, index) {
             let report = JSON.parse(document.getElementById('current-rendered-data-cache').value);
             draggedSourceData = { shop: shop, index: index, payload: report[shop][index] };
@@ -550,7 +530,34 @@
             else { localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); runScheduler(); }
             draggedSourceData = null;
         }
-                function setupFirebaseListeners() {
+
+        // 🛠️ 補上核心 missing 函數：放假點擊反轉 draft 容器
+        function toggleLocalHolidayDraft(name, day, btn) {
+            if (!state.localHolidaysDraft[name]) state.localHolidaysDraft[name] = [];
+            const idx = state.localHolidaysDraft[name].indexOf(day);
+            if (idx > -1) {
+                state.localHolidaysDraft[name].splice(idx, 1);
+                btn.classList.remove('active');
+            } else {
+                state.localHolidaysDraft[name].push(day);
+                btn.classList.add('active');
+            }
+            setTimeout(renderIndividualMonthCalendar, 100);
+        }
+
+        // 🛠️ 補上核心 missing 函數：渲染儀表板四大狀態面板
+        function renderMonitorBadges(shopCounts) {
+            const monitorPanel = document.getElementById('monitor-panel'); if(!monitorPanel) return;
+            monitorPanel.innerHTML = '';
+            ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
+                const count = shopCounts[shop]; let badgeClass = 'bg-ok'; let txt = '正常';
+                if(shop === 'F79') { badgeClass = (count >= 2 && count <= 3) ? 'bg-ok' : 'bg-warn'; txt = `指標:${count}人`; } 
+                else { if (count < 3) { badgeClass = 'bg-warn'; txt = '缺美甲師'; } else if (count > 6) { badgeClass = 'bg-low'; txt = '爆人(多於6)'; } }
+                monitorPanel.innerHTML += `<div class="badge ${badgeClass}"><div style="font-weight:bold;">${shop}</div><div style="font-size:18px; font-weight:900; margin:2px 0;">${count}人</div><div style="font-size:10px; opacity:0.8;">${txt}</div></div>`;
+            });
+        }
+
+        function setupFirebaseListeners() {
             if(!database || !isCloudMode) return;
             const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
             cloudLoads = { emp: false, hol: false, ovr: false, note: false };
@@ -657,7 +664,6 @@
                         noteTextHtml = `<div class="slot-note-text" title="${matchedNote}">📝 ${matchedNote}</div>`;
                     }
 
-                    // 🛠️ 修正此處的 ${i} 變數串接 Bug
                     let timeDropdownHtml = `<select class="manual-time-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'time', this.value)">${generateTimeOptions(slot.time)}</select>`;
                     let dragAttributes = isManager ? `draggable="true" ondragstart="handleSlotDragStart(event, '${shop}', ${i})" ondragover="handleSlotDragOver(event)" ondragleave="handleSlotDragLeave(event)" ondrop="handleSlotDrop(event, '${shop}', ${i})"` : '';
 
@@ -1156,6 +1162,23 @@
             reader.readAsText(file);
         }
 
+        function calculateAutoDefaultDate() {
+            const now = new Date();
+            let year = now.getFullYear(); let month = now.getMonth() + 1; let day = now.getDate(); let hour = now.getHours();
+            let isJumped = false;
+            if (hour >= 20) {
+                isJumped = true; const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                year = tomorrow.getFullYear(); month = tomorrow.getMonth() + 1; day = tomorrow.getDate();
+            }
+            state.currentYear = year; state.currentMonth = month; state.currentDay = day;
+
+            const hintBanner = document.getElementById('time-switch-hint');
+            if (hintBanner) {
+                if (isJumped) { hintBanner.innerHTML = `🕗 系統提示：已過夜間 20:00，已自動預載【明天 ${month}月${day}日】排班表`; hintBanner.style.color = "#ea580c"; } 
+                else { hintBanner.innerHTML = `🌞 系統提示：目前為日間時段，正顯示【今日 ${month}月${day}日】排班表（20:00自動切換）`; hintBanner.style.color = "#059669"; }
+            }
+        }
+
         function loadLocalFallbackContext() {
             calculateAutoDefaultDate(); const y = state.currentYear; const m = state.currentMonth; const monthKey = `${y}-${m < 10 ? '0'+m : m}`;
             state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(defaultEmployees));
@@ -1166,27 +1189,20 @@
             cloudLoads = { emp: true, hol: true, ovr: true, note: true }; triggerSafeUIRender();
         }
 
-        function triggerSafeUIRender() {
-            if(cloudLoads.emp && cloudLoads.hol && cloudLoads.ovr && cloudLoads.note) {
-                state.employees.forEach(e => {
-                    if(!state.holidays[e.name]) state.holidays[e.name] = [];
-                    if(!state.localHolidaysDraft[e.name]) state.localHolidaysDraft[e.name] = [];
-                });
-                renderEmployeeTable(); populateStaffDropdown(); renderMonthlyAnalysis(); renderIndividualMonthCalendar(); renderHolidayTable();
-                const ind = document.getElementById('cloud-indicator');
-                if(ind && isCloudMode) {
-                    ind.className = "cloud-status status-online"; 
-                    ind.innerText = "🟢 雲端連線成功！跨月份智能排班大腦運作中";
-                }
-                runScheduler();
-            }
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none'); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block'; 
+            const navBtn = document.getElementById('nav-' + tabId.replace('tab-', ''));
+            if(navBtn) navBtn.classList.add('active');
+            if(tabId === 'tab-schedule') runScheduler(); if(tabId === 'tab-my-month') renderIndividualMonthCalendar(); if(tabId === 'tab-analysis') renderMonthlyAnalysis();
         }
 
         // 🚀 核心優化：將日期引導與選單初始化『提前』至最前線執行，消滅 NaN 死鎖
         calculateAutoDefaultDate(); 
         initYearMonthDropdowns();
 
-        if (typeof firebase !== 'undefined' && firebaseConfig) {
+        // 🛡️ 防死鎖安全檢測：確保即使沒填寫 firebaseConfig，網頁也絕對不會全白
+        if (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined') {
             try {
                 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
                 database = firebase.database();
@@ -1210,5 +1226,3 @@
     </script>
 </body>
 </html>
-
-                
