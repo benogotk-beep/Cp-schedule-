@@ -13,9 +13,11 @@
     <div id="login-overlay">
         <div class="login-box">
             <div class="login-logo">🔮</div>
-            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店排班主機系統</h2>
-            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" onkeydown="if(event.key==='Enter') triggerGateLogin()">
-            <button class="login-btn" onclick="triggerGateLogin()">安全登入驗證</button>
+            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店智能排班系統 V10.0</h2>
+            
+            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" inputmode="text" onkeydown="if(event.key==='Enter') { event.preventDefault(); triggerGateLogin(); }">
+            <button class="login-btn" onclick="triggerGateLogin()" style="cursor: pointer; -webkit-tap-highlight-color: transparent;">安全登入驗證</button>
+            
             <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 口令錯誤，請重新輸入！</div>
         </div>
     </div>
@@ -72,8 +74,8 @@
             <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
                 <div>
                     <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取姓名：</label>
-                    <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()">
-                </table>
+                    <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()"></select>
+                </div>
             </div>
             <button class="btn btn-save" style="background-color: var(--success);" onclick="saveSpecialNotesAndHolidaysData()">💾 儲存並提交當月變更要求</button>
         </div>
@@ -123,7 +125,7 @@
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #fca5a5;">
                 <table style="background:#fffaf8;"><tbody id="low-staff-table-body"></tbody></table>
             </div>
-            <div class="sub-table-title">🟢 美甲師充沛優勢日子總覽</div>
+            <div class="sub-table-title">📊 美甲師充沛優勢日子總覽</div>
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #6ee7b7;">
                 <table style="background:#f6fffb;"><tbody id="high-staff-table-body"></tbody></table>
             </div>
