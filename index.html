@@ -1,3 +1,5 @@
+Blame
+217 lines (204 loc) · 14.6 KB
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -73,25 +75,6 @@
                 <div>
                     <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取姓名：</label>
                     <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()">
-                    </select>
-                </div>
-                <button class="btn-invert" id="my-month-invert-btn" onclick="invertIndividualEmployeeHolidays()">🔄 員工一鍵優化反選假期</button>
-            </div>
-            <div class="scroll-box" style="max-height: 65vh;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="text-align:center; width:65px;">日期</th>
-                            <th style="text-align:center; width:55px;">星期</th>
-                            <th style="text-align:center; width:100px;">當天核心美甲師</th>
-                            <th style="text-align:center; width:90px;">分配店舖</th>
-                            <th style="text-align:center; width:90px;">班次時間</th>
-                            <th style="text-align:center; width:100px;">🏖️ 要求放假鈕</th>
-                            <th style="text-align:left;">📝 當天特別事項備註</th>
-                        </tr>
-                    </thead>
-                    <tbody id="my-month-calendar-body">
-                    </tbody>
                 </table>
             </div>
             <button class="btn btn-save" style="background-color: var(--success);" onclick="saveSpecialNotesAndHolidaysData()">💾 儲存並提交當月變更要求</button>
