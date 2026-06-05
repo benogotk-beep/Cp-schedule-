@@ -6,57 +6,44 @@
     <title>水晶閣 | 預約看板管理系統</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    
     <style>
         :root { --primary: #be185d; --bg-canvas: #f8fafc; --border-color: #e2e8f0; }
-        body { font-family: -apple-system, sans-serif; background-color: var(--bg-canvas); margin: 0; padding: 16px; color: #1e293b; }
-        .dashboard-header { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-        .title-zone h2 { margin: 0; font-size: 18px; color: #9d174d; }
-        .date-picker-zone { display: flex; align-items: center; gap: 8px; font-weight: bold; }
-        
-        /* 雙向直立式矩陣畫布 */
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg-canvas); margin: 0; padding: 12px; color: #1e293b; }
+        .dashboard-header { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .title-zone h2 { margin: 0; font-size: 16px; color: #9d174d; }
+        .date-picker-zone { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 13px; }
         .matrix-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid var(--border-color); }
-        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; }
-        
-        /* 橫軸與縱軸標頭 */
-        .matrix-table th, .matrix-table td { border: 1px solid var(--border-color); text-align: center; font-size: 12px; padding: 6px 4px; overflow: hidden; text-overflow: ellipsis; }
-        .matrix-table th { background: #f1f5f9; font-weight: bold; color: #475569; height: 36px; }
-        .time-col { width: 70px; background: #e2e8f0 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; }
-        
-        /* 預約格子顏色與智能符號狀態 */
+        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 900px; }
+        .matrix-table th, .matrix-table td { border: 1px solid var(--border-color); text-align: center; font-size: 11px; padding: 6px 4px; }
+        .matrix-table th { background: #f1f5f9; font-weight: bold; color: #475569; height: 38px; }
+        .time-col { width: 65px; background: #e2e8f0 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; }
         .cell-free { background: white; }
-        .cell-booked { background: #fce7f3; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 6px !important; font-weight: 500; }
-        
-        /* 頂級指示標籤樣式 */
-        .status-badge { display: inline-block; padding: 1px 4px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 2px; margin-top: 2px; }
+        .cell-booked { background: #fdf2f8; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 6px !important; }
+        .status-badge { display: inline-block; padding: 1px 4px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-right: 2px; margin-top: 2px; }
         .badge-rush { background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; }
         .badge-noremove { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
         .badge-sameday { background: #e2fbf0; color: #10b981; border: 1px solid #a7f3d0; }
-        .badge-review { background: #fef3c7; color: #d97706; border: 1px solid #fef08a; animation: pulse 2s infinite; }
-        
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .badge-review { background: #fef3c7; color: #d97706; border: 1px solid #fef08a; }
     </style>
 </head>
 <body>
 
     <div class="dashboard-header">
         <div class="title-zone">
-            <h2>🔮 水晶閣 | 📅 直立式預約看板主機</h2>
-            <div style="font-size: 11px; color:#64748b; margin-top:2px;">實時讀取雲端大腦 V10.0 排班與預約數據</div>
+            <h2>🔮 水晶閣 | 📅 直立式雙向預約看板</h2>
+            <div style="font-size: 11px; color:#64748b; margin-top:2px;">排班與雲端預約即時互鎖畫布</div>
         </div>
         <div class="date-picker-zone">
             <label>查詢日期 / Date:</label>
-            <input type="date" id="query-date" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:14px;" onchange="loadScheduleMatrix()">
+            <input type="date" id="query-date" style="padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="loadScheduleMatrix()">
         </div>
     </div>
 
     <div class="matrix-container">
-        <table class="matrix-table" id="matrix-table-canvas">
-            </table>
+        <table class="matrix-table" id="matrix-table-canvas"></table>
     </div>
 
     <script>
-        // 雲端資料庫配置
         const firebaseConfig = {
             apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
             authDomain: "cp-schedule.firebaseapp.com",
@@ -69,7 +56,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 完美跳過「4」的幸運員工編號矩陣
         const staffIds = {
             "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
             "二妹": "107", "TT": "108", "Cici": "109", "珍": "110", "Jackie": "111",
@@ -77,12 +63,13 @@
             "葉子": "119", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
         };
 
-        // 預設日期設為今天
-        const now = new Date();
-        document.getElementById('query-date').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        // ✅ 修正 iPad 預設日期填補邏輯，確保加載時即時抓取渲染
+        const t = new Date();
+        const formattedDate = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+        document.getElementById('query-date').value = formattedDate;
         
-        // 初始載入
-        loadScheduleMatrix();
+        // 強制執行網格初次建立
+        setTimeout(loadScheduleMatrix, 600);
 
         function loadScheduleMatrix() {
             const dateVal = document.getElementById('query-date').value;
@@ -93,25 +80,21 @@
             const dayNum = parseInt(parts[2]);
             const dayKey = `day_${dayNum}`;
 
-            // 全面聯動抽調 Firebase 排班、假表與歷史預約數據
             Promise.all([
                 database.ref('v8_employees').once('value'),
                 database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
-                database.ref(`v8_bookings/${yearMonthKey}`).once('value`)
+                database.ref(`v8_bookings/${yearMonthKey}`).once('value')
             ]).then(([empSnap, holSnap, bookSnap]) => {
                 const employees = empSnap.exists() ? empSnap.val() : [];
                 const holidays = holSnap.exists() ? holSnap.val() : {};
                 const allBookings = bookSnap.exists() ? bookSnap.val() : {};
-
-                // 1. 篩選出今天「沒有放假」的上班員工
                 const workingStaffs = employees.filter(e => !(holidays[e.name] || []).includes(dayNum));
                 
-                // 2. 生成直立式時間軸 (從上午 09:00 直通晚上 23:00，每 30 分鐘一格)
+                // 補齊縱軸：上午 09:00 至 晚上 23:00 (每半小時一格)
                 let timeSlots = [];
                 for (let h = 9; h <= 23; h++) {
                     ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); });
                 }
-
                 renderMatrixCanvas(workingStaffs, timeSlots, allBookings, dayKey);
             });
         }
@@ -120,7 +103,6 @@
             const table = document.getElementById('matrix-table-canvas');
             table.innerHTML = '';
 
-            // A. 構建橫軸表頭 (頂部員工名字與三位數幸運編號)
             let headerHtml = `<tr><th class="time-col">時間軸</th>`;
             staffs.forEach(s => {
                 let code = staffIds[s.name] || "000";
@@ -129,52 +111,47 @@
             headerHtml += `</tr>`;
             table.innerHTML += headerHtml;
 
-            // B. 縱向構建直立式時間格
             timeSlots.forEach(slotTime => {
                 let rowHtml = `<tr><td class="time-col">${slotTime}</td>`;
                 let currentSlotMins = timeToMins(slotTime);
 
                 staffs.forEach(staff => {
-                    // 抽取該員工在當天的預約陣列
-                    let staffDayBookings = bookings[staff.name]?.[dayKey] || [];
+                    let rawBook = bookings[staff.name]?.[dayKey] || {};
+                    // ✅ 修正：完美將 Firebase Object 轉化為 Array 進行防撞過濾
+                    let staffDayBookings = Array.isArray(rawBook) ? rawBook : Object.values(rawBook);
                     
-                    // 尋找當前 30 分鐘區間落在客人的哪一筆預約內
                     let matchedBooking = staffDayBookings.find(b => {
                         let startMins = timeToMins(b.start);
                         let endMins = timeToMins(b.end);
-                        // 10 分鐘緩衝允許判定，如果重疊區段大於 10 分鐘，則判定此格子屬於該客人
                         let overlap = Math.max(0, Math.min(currentSlotMins + 30, endMins) - Math.max(currentSlotMins, startMins));
                         return overlap > 10;
                     });
 
                     if (matchedBooking) {
-                        // 如果這格是被剛好開始的起點格，顯示精美標籤與資訊，其餘重疊格染成粉紅底色
                         if (currentSlotMins === timeToMins(matchedBooking.start) || slotTime.endsWith('00')) {
                             let badges = '';
-                            if (matchedBooking.status && matchedBooking.status.includes('⏳')) badges += `<span class="status-badge badge-review">⏳ 待審</span>`;
+                            if (matchedBooking.status && matchedBooking.status.includes('待審')) badges += `<span class="status-badge badge-review">⏳ 待審</span>`;
                             if (matchedBooking.status && matchedBooking.status.includes('特殊')) badges += `<span class="status-badge badge-review">⏰ 自選</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('🟢')) badges += `<span class="status-badge badge-sameday">🟢 吉時</span>`;
+                            if (matchedBooking.status && matchedBooking.status.includes('吉時')) badges += `<span class="status-badge badge-sameday">🟢 吉時</span>`;
                             
-                            // 快捷備註解碼
                             if (matchedBooking.remarks) {
                                 if (matchedBooking.remarks.includes('趕時間')) badges += `<span class="status-badge badge-rush">⚡ 趕</span>`;
-                                if (matchedBooking.remarks.includes('免拆甲') || matchedBooking.remarks.includes('不需要拆甲')) badges += `<span class="status-badge badge-noremove">🚫 免</span>`;
+                                if (matchedBooking.remarks.includes('免拆甲')) badges += `<span class="status-badge badge-noremove">🚫 免</span>`;
                                 if (matchedBooking.remarks.includes('手腳同做')) badges += `<span class="status-badge badge-sameday">🤝 同</span>`;
                             }
 
                             rowHtml += `<td class="cell-booked">
-                                        <div style="font-weight:bold; font-size:11px;">${matchedBooking.item || '已預約'}</div>
-                                        <div style="font-size:9px; color:#475569; margin-top:2px;">⏰ ${matchedBooking.start}-${matchedBooking.end}</div>
+                                        <div style="font-weight:bold; font-size:11px; color:#9d174d;">${matchedBooking.item}</div>
+                                        <div style="font-size:9px; color:#64748b; margin-top:1px;">⏰ ${matchedBooking.start}-${matchedBooking.end}</div>
                                         ${badges}
                                        </td>`;
                         } else {
-                            rowHtml += `<td class="cell-booked" style="border-top:none; border-bottom:none; opacity:0.8;"></td>`;
+                            rowHtml += `<td class="cell-booked" style="border-top:none; border-bottom:none; opacity:0.4;"></td>`;
                         }
                     } else {
-                        rowHtml += `<td class="cell-free"></td>`; // 空白無預約
+                        rowHtml += `<td class="cell-free"></td>`;
                     }
                 });
-
                 rowHtml += `</tr>`;
                 table.innerHTML += rowHtml;
             });
