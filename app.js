@@ -1,3 +1,4 @@
+// 🔮 雲端資料庫連線鎖匙
 var firebaseConfig = {
     apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
     authDomain: "cp-schedule.firebaseapp.com",
