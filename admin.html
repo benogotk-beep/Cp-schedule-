@@ -40,7 +40,9 @@
     </div>
 
     <div class="matrix-container">
-        <table class="matrix-table" id="matrix-table-canvas"></table>
+        <table class="matrix-table" id="matrix-table-canvas">
+            <tr><td style="text-align:center; padding:20px; color:#94a3b8;">雲端大腦連線中... / Connecting to Cloud...</td></tr>
+        </table>
     </div>
 
     <script>
@@ -63,13 +65,14 @@
             "葉子": "119", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
         };
 
-        // ✅ 修正 iPad 預設日期填補邏輯，確保加載時即時抓取渲染
+        // 確保初始載入日期正確
         const t = new Date();
-        const formattedDate = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-        document.getElementById('query-date').value = formattedDate;
+        document.getElementById('query-date').value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         
-        // 強制執行網格初次建立
-        setTimeout(loadScheduleMatrix, 600);
+        // 綁定頁面完全加載事件，防止 iPad 讀取過快
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadScheduleMatrix, 800);
+        });
 
         function loadScheduleMatrix() {
             const dateVal = document.getElementById('query-date').value;
@@ -90,18 +93,25 @@
                 const allBookings = bookSnap.exists() ? bookSnap.val() : {};
                 const workingStaffs = employees.filter(e => !(holidays[e.name] || []).includes(dayNum));
                 
-                // 補齊縱軸：上午 09:00 至 晚上 23:00 (每半小時一格)
                 let timeSlots = [];
                 for (let h = 9; h <= 23; h++) {
                     ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); });
                 }
                 renderMatrixCanvas(workingStaffs, timeSlots, allBookings, dayKey);
+            }).catch(err => {
+                // 💡 如果雲端連線被拒絕，這裡會直接跳彈窗告知原因！
+                alert("🔮 雲端看板加載失敗，原因 / Error: " + err.message);
             });
         }
 
         function renderMatrixCanvas(staffs, timeSlots, bookings, dayKey) {
             const table = document.getElementById('matrix-table-canvas');
             table.innerHTML = '';
+
+            if (staffs.length === 0) {
+                table.innerHTML = `<tr><td style="padding:20px; color:#ef4444; font-weight:bold;">⚠️ 今日全員放假或未設定班次</td></tr>`;
+                return;
+            }
 
             let headerHtml = `<tr><th class="time-col">時間軸</th>`;
             staffs.forEach(s => {
@@ -117,7 +127,6 @@
 
                 staffs.forEach(staff => {
                     let rawBook = bookings[staff.name]?.[dayKey] || {};
-                    // ✅ 修正：完美將 Firebase Object 轉化為 Array 進行防撞過濾
                     let staffDayBookings = Array.isArray(rawBook) ? rawBook : Object.values(rawBook);
                     
                     let matchedBooking = staffDayBookings.find(b => {
@@ -135,9 +144,9 @@
                             if (matchedBooking.status && matchedBooking.status.includes('吉時')) badges += `<span class="status-badge badge-sameday">🟢 吉時</span>`;
                             
                             if (matchedBooking.remarks) {
-                                if (matchedBooking.remarks.includes('趕時間')) badges += `<span class="status-badge badge-rush">⚡ 趕</span>`;
-                                if (matchedBooking.remarks.includes('免拆甲')) badges += `<span class="status-badge badge-noremove">🚫 免</span>`;
-                                if (matchedBooking.remarks.includes('手腳同做')) badges += `<span class="status-badge badge-sameday">🤝 同</span>`;
+                                if (matchedBooking.remarks.includes('趕時間') || matchedBooking.remarks.includes('趕')) badges += `<span class="status-badge badge-rush">⚡ 趕</span>`;
+                                if (matchedBooking.remarks.includes('免拆甲') || matchedBooking.remarks.includes('🚫')) badges += `<span class="status-badge badge-noremove">🚫 免</span>`;
+                                if (matchedBooking.remarks.includes('手腳同做') || matchedBooking.remarks.includes('🤝')) badges += `<span class="status-badge badge-sameday">🤝 同</span>`;
                             }
 
                             rowHtml += `<td class="cell-booked">
