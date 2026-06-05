@@ -30,7 +30,6 @@ function executeWhatsAppBooking() {
     let endM = endMins % 60;
     let endTimeStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
 
-    // 🌐 建立寫入雲端的核心資料結構
     let cloudBookingData = {
         customer: "WhatsApp 客人",
         item: zhItems.join(' + '),
@@ -40,21 +39,23 @@ function executeWhatsAppBooking() {
         remarks: allRemarks
     };
 
-    // 分拆日期鎖定 Firebase 路徑
     const parts = dateVal.split('-');
     const yearMonthKey = `${parts[0]}-${parts[1]}`;
     const dayKey = `day_${parseInt(parts[2])}`;
 
-    // 🔒 第一步：直接向雲端資料庫「插旗寫入」紀錄
+    // 🔒 核心重組：必須先成功寫入 Firebase，才准跳轉 WhatsApp
     database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
         
-        // 🔒 第二步：雲端寫入成功後，隨即喚醒 WhatsApp 傳送對數訊息
+        // 彈窗實時肉眼實證連結成功
+        alert("✅ 預約已成功同步至水晶閣雲端大腦！\n(Click OK to open WhatsApp)");
+
         let timeStatusText = isCust ? '⏳ 自選特殊時段 (⚠️非保證)' : (isRev ? '⏳ 接近下班安全線 (⚠️需審批)' : '🟢 系統自動即時預留');
         let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定員工 / Stylist: ${staffName}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
         if(allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
         msg += `------------------------------------\n（此訊息由系統排班大腦生成，請按傳送，我們將為您核對確認。）`;
 
         const shopWhatsAppNumber = "85293436973";
-        window.open(`https://api.whatsapp.com/send?phone=${shopWhatsAppNumber}&text=${encodeURIComponent(msg)}`, '_blank');
-    }).catch(err => alert("雲端同步失敗，請檢查網路：" + err));
+        // 使用 location.href 完美避開 iPad 彈出視窗攔截器
+        window.location.href = `https://api.whatsapp.com/send?phone=${shopWhatsAppNumber}&text=${encodeURIComponent(msg)}`;
+    }).catch(err => alert("❌ 雲端寫入失敗，請檢查網路：" + err));
 }
