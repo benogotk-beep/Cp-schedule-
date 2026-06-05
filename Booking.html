@@ -1,1 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>水晶閣智能預約中心 | Crystal Pavilion Appointment Center</title>
+    <!-- 引入 Firebase SDK 核心元件 (與排班系統共用同一個雲端晶片) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        :root { --primary: #db2777; --primary-hover: #be185d; --bg-main: #fdf2f8; --card-border: #fbcfe8; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-main); margin: 0; padding: 12px; color: #1f2937; -webkit-text-size-adjust: 100%; }
+        .booking-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(219,39,119,0.1); border: 1px solid var(--card-border); }
+        .shop-banner { text-align: center; margin-bottom: 20px; border-bottom: 2px dashed var(--card-border); padding-bottom: 15px; }
+        .shop-title { font-size: 22px; font-weight: 800; color: #9d174d; margin: 0; }
+        .shop-subtitle { font-size: 13px; color: #c084fc; font-weight: bold; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 16px; border-radius: 14px; margin-bottom: 16px; }
+        .step-title { font-size: 15px; font-weight: bold; color: #4c0519; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; border-left: 4px solid var(--primary); padding-left: 8px; }
+        .en-sub { font-size: 11px; color: #6b7280; font-weight: normal; display: block; margin-top: 1px; }
+        
+        /* 網格與按鈕樣式 */
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        
+        /* 項目卡片勾選框樣式 */
+        .check-card { border: 2px solid #e5e7eb; border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer; background: white; transition: all 0.2s ease; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .check-card input[type="checkbox"], .check-card input[type="radio"] { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; accent-color: var(--primary); }
+        .check-card.selected { border-color: var(--primary); background: #fdf2f8; box-shadow: 0 4px 6px -1px rgba(219,39,119,0.1); }
+        .card-name { font-size: 13px; font-weight: bold; color: #111827; }
+        .card-time { font-size: 11px; color: var(--primary); font-weight: bold; margin-top: 4px; background: #fce7f3; padding: 1px 6px; border-radius: 6px; }
+        
+        /* 手腳獨立分拆次面板 */
+        .sub-panel { background: white; border: 1px solid #fbcfe8; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .sub-panel-title { font-size: 12px; font-weight: bold; color: #be185d; margin-bottom: 8px; background: #fce7f3; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+        
+        /* 總計浮動提示 */
+        .summary-bar { background: #9d174d; color: white; padding: 12px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(157,23,77,0.2); }
+        
+        .slot-btn { background: white; border: 1px solid #cbd5e1; padding: 10px 4px; text-align: center; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; color: #334155; }
+        .slot-btn.selected { background: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+        .slot-btn.review-mode { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
+        .slot-btn:disabled { background: #f1f5f9; color: #cbd5e1; border-color: #e2e8f0; cursor: not-allowed; }
+        
+        .tag-btn { border: 1px solid #cbd5e1; background: white; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; position: relative; }
+        .tag-btn input { position: absolute; opacity: 0; }
+        .tag-btn.active { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
+        
+        .submit-btn { width: 100%; background: #0d9488; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(13,148,136,0.2); }
+        .submit-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; }
+    </style>
+</head>
+<body>
+
+    <div class="booking-container">
+        
+        <!-- 店舖頂部 Banner -->
+        <div class="shop-banner">
+            <h1 class="shop-title">水晶閣私人定制美容美甲紋綉中心</h1>
+            <div class="shop-subtitle">Crystal Pavilion Beauty & Nail Center</div>
+        </div>
+
+        <!-- 總時間預測即時顯示欄 -->
+        <div class="summary-bar" id="live-timer-bar">
+            ⏱️ 預計總時長 / Estimated Duration: 0 分鐘 (mins)
+        </div>
+
+        <!-- STEP 1: 選擇核心服務 -->
+        <div class="step-section">
+            <div class="step-title">
+                <div>1. 選擇項目清單 <span class="en-sub">Select Services (Multiple Selection Allowed)</span></div>
+            </div>
+            
+            <!-- 服務大類選擇 (美甲、美睫、美容、紋綉) -->
+            <div class="grid-2" style="margin-bottom: 12px;">
+                <div class="check-card" id="cate-card-nail" onclick="toggleMainCategory('nail')">
+                    <input type="checkbox" id="main-chk-nail" pointer-events="none">
+                    <span class="card-name">💅 藝術美甲系列</span>
+                    <span class="en-sub" style="font-size:10px;">Nail Art Series</span>
+                </div>
+                <div class="check-card" id="cate-card-lash" onclick="toggleMainCategory('lash')">
+                    <input type="checkbox" id="main-chk-lash" pointer-events="none">
+                    <span class="card-name">👁️ 嫁接美睫系列</span>
+                    <span class="en-sub" style="font-size:10px;">Eyelash Extension</span>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="check-card" id="cate-card-facial" onclick="toggleMainCategory('facial')">
+                    <input type="checkbox" id="main-chk-facial" pointer-events="none">
+                    <span class="card-name">💆 專業面部護理</span>
+                    <span class="en-sub" style="font-size:10px;">Facial Care</span>
+                </div>
+                <div class="check-card" id="cate-card-brows" onclick="toggleMainCategory('brows')">
+                    <input type="checkbox" id="main-chk-brows" pointer-events="none">
+                    <span class="card-name">✒️ 定制紋綉系列</span>
+                    <span class="en-sub" style="font-size:10px;">Eyebrows Tattoo</span>
+                </div>
+            </div>
+
+            <!-- 【核心互鎖：美甲部位動態選單】當點選美甲系列時才會彈出 -->
+            <div id="nail-part-selector-zone" class="sub-panel" style="display: none; border-color: #f472b6; background: #fff5f7;">
+                <div class="sub-panel-title">📍 請選擇服務部位 / Select Area</div>
+                <div class="grid-2">
+                    <div class="check-card" id="part-card-hand" onclick="toggleNailPart('hand')">
+                        <input type="checkbox" id="part-chk-hand">
+                        <span class="card-name">🖐️ 手部服務 (Hands)</span>
+                    </div>
+                    <div class="check-card" id="part-card-foot" onclick="toggleNailPart('foot')">
+                        <input type="checkbox" id="part-chk-foot">
+                        <span class="card-name">🦶 腳部服務 (Feet)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 次面板庫：存放細項勾選 -->
+            <div id="sub-details-render-zone"></div>
+        </div>
+        <div class="step-section">
+            <div class="step-title">
+                <div>2. 選擇日期與指定美甲師 <span class="en-sub">Select Date & Stylist</span></div>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <label style="font-size:12px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">預約日期 / Date:</label>
+                    <input type="date" id="booking-date" style="width:90%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-weight:bold; font-size:14px;" onchange="handleBookingDateOrStaffChange()">
+                </div>
+                <div>
+                    <label style="font-size:12px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">指定美甲師 / Stylist:</label>
+                    <select id="booking-staff" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-weight:bold; font-size:14px;" onchange="handleBookingDateOrStaffChange()">
+                        <option value="auto">🌟 由系統分配 (Auto Allocate)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title">
+                <div>3. 選擇預約時間空檔 <span class="en-sub">Select Appointment Time Slot</span></div>
+            </div>
+            <div style="font-size:11px; color:#6b7280; margin-bottom:10px; text-align:center; line-height:1.4;">
+                🟢 綠色：系統自動即時確認 / Instant Confirmation<br>
+                🟡 黃色：接近下班安全線，需待店舖人工審批 / Requires Manual Approval
+            </div>
+            
+            <div class="grid-3" id="time-slots-container">
+                <div style="grid-column: span 3; text-align:center; padding:20px; color:#9ca3af; font-size:13px; font-weight:bold; line-height:1.6;">
+                    請先選好項目、日期與美甲師<br>Please select services, date & stylist first
+                </div>
+            </div>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title">
+                <div>4. 貼心特別備註 <span class="en-sub">Special Remarks (Optional)</span></div>
+            </div>
+            <div class="grid-2" style="margin-bottom:12px;">
+                <div class="tag-btn" id="tag-rush" onclick="toggleQuickTag('rush')">
+                    <input type="checkbox" id="chk-tag-rush">
+                    ⚡ 特別趕時間<br><span style="font-size:10px; font-weight:normal;">Very tight schedule</span>
+                </div>
+                <div class="tag-btn" id="tag-noremove" onclick="toggleQuickTag('noremove')">
+                    <input type="checkbox" id="chk-tag-noremove">
+                    🚫 不需要拆甲<br><span style="font-size:10px; font-weight:normal;">No gel removal needed</span>
+                </div>
+            </div>
+            <textarea id="custom-remarks" rows="3" style="width:96%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; resize:none;" placeholder="如有其他特別要求（例如指甲斷裂需修補、指定複雜手繪款式等），請在此填寫... / Any other requests, please enter here..."></textarea>
+        </div>
+
+        <div style="font-size:11px; color:#854d0e; background:#fefce8; border:1px solid #fef08a; padding:12px; border-radius:12px; margin-bottom:18px; line-height:1.5;">
+            💡 <b>溫馨提示 / Notice:</b><br>
+            請注意：以上顯示的時間均為系統根據項目預測之估算時長，現場實際操作時間可能會因每位客人的個體指甲/睫毛狀況而有所落差。<br>
+            Please note: The duration displayed above is a system-predicted estimation. Actual service time may vary depending on individual nail or eyelash conditions.
+        </div>
+
+        <button class="submit-btn" id="btn-submit-booking" onclick="executeWhatsAppBooking()" disabled>
+            🚀 立即發送 WhatsApp 預約申請<br>
+            <span style="font-size:12px; font-weight:normal;">Send Appointment Request via WhatsApp</span>
+        </button>
+
+    </div> <script src="booking.js"></script>
+</body>
+</html>
 
