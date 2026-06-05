@@ -10,13 +10,14 @@
 </head>
 <body>
 
-    <div id="login-overlay">
+    <div id="login-overlay" style="position: fixed; z-index: 999999;">
         <div class="login-box">
             <div class="login-logo">🔮</div>
             <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店智能排班系統 V10.0</h2>
             
             <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" inputmode="text" onkeydown="if(event.key==='Enter') { event.preventDefault(); triggerGateLogin(); }">
-            <button class="login-btn" onclick="triggerGateLogin()" style="cursor: pointer; -webkit-tap-highlight-color: transparent;">安全登入驗證</button>
+            
+            <button class="login-btn" onclick="triggerGateLogin()" style="position: relative; z-index: 999999 !important; touch-action: manipulation; cursor: pointer; -webkit-tap-highlight-color: transparent;">安全登入驗證</button>
             
             <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 口令錯誤，請重新輸入！</div>
         </div>
@@ -195,6 +196,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=10.0.5"></script>
 </body>
 </html>
