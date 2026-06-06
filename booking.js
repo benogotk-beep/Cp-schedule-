@@ -1,4 +1,4 @@
-// 🔮 雲端資料庫連線鎖匙
+// 🔮 雲端資料庫連線鎖匙 (自動對接你水晶閣的 Firebase)
 var firebaseConfig = {
     apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
     authDomain: "cp-schedule.firebaseapp.com",
@@ -10,7 +10,7 @@ var firebaseConfig = {
     measurementId: "G-W0L45WCMV2"
 };
 
-// 初始化 Firebase
+// 初始化 Firebase 連線
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
@@ -48,147 +48,220 @@ const servicesMetadata = {
     ]
 };
 
-// 📊 預約狀態暫存大腦
+// 📊 預約狀態控制面板暫存大腦
 let bookingState = {
+    mainCategories: { nail: false, lash: false, brows: false },
+    nailParts: { hand: false, foot: false },
     selectedItems: new Set(),
-    totalDuration: 0,
-    selectedSlot: null
+    selectedSlot: null,
+    totalDuration: 0
 };
 
-// 🚀 初始化綁定與動態選單渲染
+// 🚀 網頁載入時初始化
 window.addEventListener('DOMContentLoaded', () => {
-    setupMainCategoryToggles();
-    renderAllServicesCheckboxes();
-    
-    // 監聽日期變更自動重算空檔
+    // 預設日期為今天
     const dateInput = document.getElementById('booking-date');
-    if(dateInput) {
-        // 設定最少只能選今天
-        const todayStr = new Date().toISOString().split('T')[0];
-        dateInput.min = todayStr;
-        dateInput.addEventListener('change', fetchAvailableSlotsFromCloud);
+    if (dateInput) {
+        dateInput.min = new Date().toISOString().split('T')[0];
     }
+    
+    // 從雲端抓取在職美甲師名單，動態填入下拉選單
+    database.ref('v8_employees').once('value').then(snap => {
+        const selectEl = document.getElementById('booking-staff');
+        if (!selectEl) return;
+        const emps = snap.exists() ? snap.val() : [];
+        const cleanEmps = Array.isArray(emps) ? emps.filter(Boolean) : Object.values(emps).filter(Boolean);
+        cleanEmps.forEach(e => {
+            if (e && e.name && e.role !== '學徒') {
+                const opt = document.createElement('option');
+                opt.value = e.name;
+                opt.innerText = `👤 ${e.name} [${e.role}]`;
+                selectEl.appendChild(opt);
+            }
+        });
+    });
 });
 
-// 🛠️ 主類別展開/收合控制引擎
-function setupMainCategoryToggles() {
-    const mainCats = [
-        { chkId: "cat-nail", zoneId: "sub-zone-nail" },
-        { chkId: "cat-lash", zoneId: "sub-zone-lash" },
-        { chkId: "cat-brow", zoneId: "sub-zone-brow" }
-    ];
-    mainCats.forEach(cat => {
-        const chk = document.getElementById(cat.chkId);
-        const zone = document.getElementById(cat.zoneId);
-        if(chk && zone) {
-            chk.addEventListener('change', () => {
-                zone.style.display = chk.checked ? "block" : "none";
-                if(!chk.checked) {
-                    // 如果取消大類，順便清空該大類下已選的項目
-                    clearCategorySelection(cat.chkId);
-                }
-            });
+// 🛠️ 1. 控制三大主類別展開/收合 (對應 HTML onclick="toggleMainCategory")
+function toggleMainCategory(cat) {
+    bookingState.mainCategories[cat] = !bookingState.mainCategories[cat];
+    
+    const card = document.getElementById(`cate-card-${cat}`);
+    const chk = document.getElementById(`main-chk-${cat}`);
+    
+    if (chk) chk.checked = bookingState.mainCategories[cat];
+    if (card) {
+        if (bookingState.mainCategories[cat]) card.classList.add('selected');
+        else card.classList.remove('selected');
+    }
+
+    // 如果是美甲，聯動顯示/隱藏手腳部位選擇區
+    if (cat === 'nail') {
+        const partZone = document.getElementById('nail-part-selector-zone');
+        if (partZone) partZone.style.display = bookingState.mainCategories.nail ? "block" : "none";
+        if (!bookingState.mainCategories.nail) {
+            // 取消美甲時，清空手腳勾選
+            clearNailParts();
         }
-    });
+    }
+
+    // 如果取消勾選，順便清空該大類下已勾選的項目
+    if (!bookingState.mainCategories[cat]) {
+        clearSelectedItemsByCat(cat);
+    }
+
+    renderSubDetailsAndRecalc();
 }
 
-// 📐 清空特定大類下所有勾選狀態
-function clearCategorySelection(catId) {
-    let targetKeys = [];
-    if(catId === "cat-nail") targetKeys = ["nail_hand_base", "nail_hand_addons", "nail_foot_base", "nail_foot_addons"];
-    if(catId === "cat-lash") targetKeys = ["lash"];
-    if(catId === "cat-brow") targetKeys = ["brows"];
+// 🛠️ 2. 控制美甲手腳部位選擇 (對應 HTML onclick="toggleNailPart")
+function toggleNailPart(part) {
+    bookingState.nailParts[part] = !bookingState.nailParts[part];
+    
+    const card = document.getElementById(`part-card-${part}`);
+    const chk = document.getElementById(`part-chk-${part}`);
+    
+    if (chk) chk.checked = bookingState.nailParts[part];
+    if (card) {
+        if (bookingState.nailParts[part]) card.classList.add('selected');
+        else card.classList.remove('selected');
+    }
 
-    targetKeys.forEach(key => {
-        servicesMetadata[key].forEach(item => {
-            bookingState.selectedItems.delete(item.id);
-            const box = document.getElementById(`chk-item-${item.id}`);
-            if(box) box.checked = false;
-        });
-    });
-    recalculateTotalDuration();
+    if (!bookingState.nailParts[part]) {
+        clearSelectedItemsByPart(part);
+    }
+
+    renderSubDetailsAndRecalc();
 }
 
-// 🛒 動態畫出所有的細項核取方塊
-function renderAllServicesCheckboxes() {
-    const map = {
-        "h-base-container": servicesMetadata.nail_hand_base,
-        "h-add-container": servicesMetadata.nail_hand_addons,
-        "f-base-container": servicesMetadata.nail_foot_base,
-        "f-add-container": servicesMetadata.nail_foot_addons,
-        "lash-container": servicesMetadata.lash,
-        "brow-container": servicesMetadata.brows
-    };
+function clearNailParts() {
+    bookingState.nailParts.hand = false;
+    bookingState.nailParts.foot = false;
+    document.querySelectorAll('#nail-part-selector-zone .check-card').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#nail-part-selector-zone input').forEach(el => el.checked = false);
+    clearSelectedItemsByPart('hand');
+    clearSelectedItemsByPart('foot');
+}
 
-    Object.keys(map).forEach(containerId => {
-        const wrapper = document.getElementById(containerId);
-        if(!wrapper) return;
-        wrapper.innerHTML = '';
+function clearSelectedItemsByCat(cat) {
+    let keys = [];
+    if (cat === 'lash') keys = ['lash'];
+    if (cat === 'brows') keys = ['brows'];
+    keys.forEach(k => servicesMetadata[k].forEach(item => bookingState.selectedItems.delete(item.id)));
+}
 
-        map[containerId].forEach(item => {
-            const div = document.createElement('div');
-            div.className = "service-item-row";
-            div.innerHTML = `
-                <label class="service-item-label" style="display:flex; align-items:center; gap:8px; margin: 6px 0; font-size:13px; cursor:pointer;">
-                    <input type="checkbox" id="chk-item-${item.id}" value="${item.id}" data-duration="${item.duration}" onchange="handleItemClick('${item.id}', ${item.duration}, this.checked)">
-                    <div style="flex:1;">
-                        <span style="font-weight:bold; color:#1e293b;">${item.zh}</span>
-                        <div style="font-size:11px; color:#64748b;">${item.en} ⏱️ ${item.duration}mins</div>
-                    </div>
-                </label>
+function clearSelectedItemsByPart(part) {
+    let keys = [];
+    if (part === 'hand') keys = ['nail_hand_base', 'nail_hand_addons'];
+    if (part === 'foot') keys = ['nail_foot_base', 'nail_foot_addons'];
+    keys.forEach(k => servicesMetadata[k].forEach(item => bookingState.selectedItems.delete(item.id)));
+}
+
+// 🎨 3. 核心選單嚙合點：根據勾選動態渲染所有細項 (使用 HTML 既有的 addon-card 樣式)
+function renderSubDetailsAndRecalc() {
+    const zone = document.getElementById('sub-details-render-zone');
+    if (!zone) return;
+    zone.innerHTML = '';
+
+    let activeSections = [];
+    if (bookingState.mainCategories.nail && bookingState.nailParts.hand) {
+        activeSections.push({ title: "💅 手部美甲服務 (Hand Services)", data: [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons] });
+    }
+    if (bookingState.mainCategories.nail && bookingState.nailParts.foot) {
+        activeSections.push({ title: "🦶 腳部美甲服務 (Foot Services)", data: [...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons] });
+    }
+    if (bookingState.mainCategories.lash) {
+        activeSections.push({ title: "👁️ 嫁接美睫項目 (Eyelash Services)", data: servicesMetadata.lash });
+    }
+    if (bookingState.mainCategories.brows) {
+        activeSections.push({ title: "✒️ 定制紋綉項目 (Brows Tattoo)", data: servicesMetadata.brows });
+    }
+
+    activeSections.forEach(sec => {
+        const panel = document.createElement('div');
+        panel.className = "sub-panel";
+        panel.style.marginBottom = "12px";
+        
+        let html = `<div class="sub-panel-title">${sec.title}</div>`;
+        html += `<div class="grid-2" style="gap:6px; margin-top:4px;">`;
+        
+        sec.data.forEach(item => {
+            const isChecked = bookingState.selectedItems.has(item.id);
+            const selClass = isChecked ? "selected" : "";
+            const chkAttr = isChecked ? "checked" : "";
+            html += `
+                <div class="addon-card ${selClass}" id="card-item-${item.id}" onclick="handleSubItemToggle('${item.id}')">
+                    <input type="checkbox" id="chk-item-${item.id}" ${chkAttr} style="pointer-events:none;">
+                    <div style="font-weight:bold;">${item.zh}</div>
+                    <div style="font-size:9px; opacity:0.7; font-weight:normal;">⏱️ ${item.duration} mins</div>
+                </div>
             `;
-            wrapper.appendChild(div);
         });
+        html += `</div>`;
+        panel.innerHTML = html;
+        zone.appendChild(panel);
     });
+
+    recalcDurationAndSlots();
 }
 
-// ⚡ 點擊項目勾選框觸發點
-function handleItemClick(id, duration, isChecked) {
-    if(isChecked) {
+// ⚡ 4. 點擊細項卡片切換
+function handleSubItemToggle(id) {
+    const chk = document.getElementById(`chk-item-${id}`);
+    const card = document.getElementById(`card-item-${id}`);
+    if (!chk) return;
+
+    chk.checked = !chk.checked;
+    if (chk.checked) {
         bookingState.selectedItems.add(id);
+        if (card) card.classList.add('selected');
     } else {
         bookingState.selectedItems.delete(id);
+        if (card) card.classList.remove('selected');
     }
-    recalculateTotalDuration();
+
+    recalcDurationAndSlots();
 }
 
-// 🧮 重新精算總時長
-function recalculateTotalDuration() {
+// 🧮 5. 精算預計總時長
+function recalcDurationAndSlots() {
     let durationSum = 0;
     const allMeta = [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons, ...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons, ...servicesMetadata.lash, ...servicesMetadata.brows];
     
     allMeta.forEach(item => {
-        if(bookingState.selectedItems.has(item.id)) {
+        if (bookingState.selectedItems.has(item.id)) {
             durationSum += item.duration;
         }
     });
 
     bookingState.totalDuration = durationSum;
-    
-    // 更新排版計時UI面版
-    const txtEl = document.getElementById('total-duration-text');
-    if(txtEl) txtEl.innerText = durationSum;
+    const bar = document.getElementById('live-timer-bar');
+    if (bar) bar.innerText = `⏱️ 預計總時長 / Estimated Duration: ${durationSum} 分鐘 (mins)`;
 
-    // 時長改變，空檔必須重新計算渲染
     fetchAvailableSlotsFromCloud();
 }
 
-// 🔍 連線雲端大腦，精算當天美甲師的預約空檔
+// 📅 6. 日期或美甲師變更觸發 (對應 HTML onchange="handleBookingDateOrStaffChange")
+function handleBookingDateOrStaffChange() {
+    fetchAvailableSlotsFromCloud();
+}
+
+// 🔍 7. 連線雲端雷達計算空檔
 function fetchAvailableSlotsFromCloud() {
     const dateVal = document.getElementById('booking-date').value;
-    const slotsWrapper = document.getElementById('available-slots-pool-zone');
-    if(!slotsWrapper) return;
+    const staffChoice = document.getElementById('booking-staff').value;
+    const container = document.getElementById('time-slots-container');
+    if (!container) return;
 
-    if(!dateVal) {
-        slotsWrapper.innerHTML = `<div class="hint-alert-box">📅 請先選取預約日期 / Please select a date first.</div>`;
+    if (!dateVal) {
+        container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">📅 請先選取預約日期<br>Please select a date first</div>`;
         return;
     }
-    if(bookingState.totalDuration <= 0) {
-        slotsWrapper.innerHTML = `<div class="hint-alert-box">💅 請先至少勾選一個服務項目 / Please select at least one service item.</div>`;
+    if (bookingState.totalDuration <= 0) {
+        container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">💅 請先選好服務項目<br>Please select services first</div>`;
         return;
     }
 
-    slotsWrapper.innerHTML = `<div style="text-align:center; padding:15px; color:#64748b; font-weight:bold;">⚡ 水晶閣雲端雷達精算空檔中...</div>`;
+    container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#db2777; font-size:12px; font-weight:bold;">⚡ 水晶閣雲端雷達精算空檔中...</div>`;
 
     const parts = dateVal.split('-');
     const yearMonthKey = `${parts[0]}-${parts[1]}`;
@@ -204,11 +277,15 @@ function fetchAvailableSlotsFromCloud() {
         const holidays = holSnap.exists() ? holSnap.val() : {};
         const bookings = bookSnap.exists() ? bookSnap.val() : {};
 
-        // 過濾當天有上班的員工（沒放假、且不是學徒）
         const cleanEmployees = Array.isArray(employees) ? employees.filter(Boolean) : Object.values(employees).filter(Boolean);
-        const workingStaffs = cleanEmployees.filter(e => e && e.name && e.role !== '學徒' && !(holidays[e.name] || []).includes(dayNum));
+        
+        // 篩選出上班人手
+        let workingStaffs = cleanEmployees.filter(e => e && e.name && e.role !== '學徒' && !(holidays[e.name] || []).includes(dayNum));
+        if (staffChoice !== 'auto') {
+            workingStaffs = workingStaffs.filter(e => e.name === staffChoice);
+        }
 
-        // 產生全天 30 分鐘一格的時間軸 (09:00 - 22:00 可供預約起始)
+        // 產生可選時間範圍格 (09:00 - 22:00)
         let timeSlots = [];
         for (let h = 9; h <= 21; h++) {
             ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); });
@@ -216,7 +293,6 @@ function fetchAvailableSlotsFromCloud() {
 
         let validSlotsPool = [];
 
-        // 雙重迴圈交叉比對人手空檔
         workingStaffs.forEach(staff => {
             let staffRawBookings = bookings[staff.name]?.[dayKey] || {};
             let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
@@ -226,113 +302,126 @@ function fetchAvailableSlotsFromCloud() {
                 let startMins = timeToMins(slotTime);
                 let endMins = startMins + bookingState.totalDuration;
 
-                // 限制最晚不能超過 23:30 完工
-                if(endMins > 1410) return; 
+                if (endMins > 1410) return; // 最晚不跨過 23:30
 
-                // 檢查是否與現有預約重疊
                 let isOverlap = staffBookedList.some(b => {
                     let bStart = timeToMins(b.start);
                     let bEnd = timeToMins(b.end);
                     return Math.max(startMins, bStart) < Math.min(endMins, bEnd);
                 });
 
-                if(!isOverlap) {
-                    // 根據完工時間給予優化評級狀態標籤
-                    let isReview = (endMins > 1200); // 超過 20:00 屬於接近下班線
-                    let isCustom = false; // 系統預留常規
-
+                if (!isOverlap) {
                     validSlotsPool.push({
                         staff: staff.name,
                         time: slotTime,
-                        isReview: isReview,
-                        isCustom: isCustom
+                        isReview: (endMins > 1200), // 超過20:00需審批
+                        isCustom: false
                     });
                 }
             });
         });
 
-        renderAvailableSlotsGrid(validSlotsPool);
+        // 如果是智能分流模式，合併相同時間段
+        let uniqueTimesMap = new Map();
+        validSlotsPool.forEach(s => {
+            if (!uniqueTimesMap.has(s.time)) uniqueTimesMap.set(s.time, s);
+        });
+        let uniqueSlots = Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time));
+
+        renderSlotsGridUI(uniqueSlots);
     }).catch(err => {
-        slotsWrapper.innerHTML = `<div style="color:red; font-weight:bold; padding:10px;">❌ 雲端雷達連線失敗：${err.message}</div>`;
+        container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`;
     });
 }
 
-// 🎨 渲染出精美彩色、可點選的時間空檔網格
-function renderAvailableSlotsGrid(slots) {
-    const wrapper = document.getElementById('available-slots-pool-zone');
-    if(!wrapper) return;
-    wrapper.innerHTML = '';
+// 🎨 8. 動態畫出符合 HTML 樣式的時間按鈕
+function renderSlotsGridUI(slots) {
+    const container = document.getElementById('time-slots-container');
+    if (!container) return;
+    container.innerHTML = '';
 
-    if(slots.length === 0) {
-        wrapper.innerHTML = `<div class="hint-alert-box" style="color:#ef4444; border-color:#fca5a5; background:#fdf2f2;">⚠️ 抱歉！當天此時段已被約滿，請更換其他日期試試。</div>`;
+    if (slots.length === 0) {
+        container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold; background:#fdf2f2; border:1px solid #fca5a5; border-radius:10px;">⚠️ 抱歉！當天此項目已被約滿，請另選日期。</div>`;
         return;
     }
 
-    // 依時間排序
-    slots.sort((a,b) => timeToMins(a.time) - timeToMins(b.time));
+    slots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.className = "slot-btn";
+        if (slot.isReview) btn.classList.add('review-mode');
+        btn.innerText = slot.time;
 
-    const grid = document.createElement('div');
-    grid.className = "slots-flex-grid";
-    grid.style.display = "grid";
-    grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(130px, 1fr))";
-    grid.style.gap = "8px";
-    grid.style.marginTop = "10px";
-
-    slots.forEach((slot, index) => {
-        const btn = document.createElement('div');
-        btn.className = "slot-select-card";
-        
-        let badgeText = "🟢 吉時";
-        let cardStyle = "background:white; border:2px solid #cbd5e1; border-radius:10px; padding:8px; text-align:center; cursor:pointer;";
-        if(slot.isReview) {
-            badgeText = "⏳ 需批";
-            cardStyle += " border-color:#fef08a; background:#fffdf5;";
-        }
-
-        btn.style.cssText = cardStyle;
-        btn.innerHTML = `
-            <div style="font-size:14px; font-weight:900; color:#1e293b;">${slot.time}</div>
-            <div style="font-size:11px; color:#475569; margin:2px 0;">美甲師: ${slot.staff}</div>
-            <span style="display:inline-block; font-size:9px; padding:1px 4px; border-radius:4px; font-weight:bold; background:#e2fbf0; color:#10b981;">${badgeText}</span>
-        `;
-
-        btn.addEventListener('click', () => {
-            // 清除先前選取的樣式
-            document.querySelectorAll('.slot-select-card').forEach(el => {
-                el.style.borderColor = el.innerHTML.includes('⏳ 需批') ? "#fef08a" : "#cbd5e1";
-                el.style.background = el.innerHTML.includes('⏳ 需批') ? "#fffdf5" : "white";
-            });
-            // 高亮選中
-            btn.style.borderColor = "#db2777";
-            btn.style.background = "#fdf2f8";
+        btn.onclick = () => {
+            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
             
-            bookingState.selectedSlot = slot;
-            
-            // 啟用底部發送按鈕
-            const submitBtn = document.getElementById('whatsapp-submit-btn');
-            if(submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = 1;
-                submitBtn.style.background = "#25D366";
-            }
-        });
+            bookingState.selectedSlot = {
+                staff: slot.staff,
+                time: slot.time,
+                isReview: slot.isReview,
+                isCustom: false
+            };
 
-        grid.appendChild(btn);
+            // 清空自選特殊時間選單的數值
+            document.getElementById('custom-time-select').value = "";
+            unlockSubmitButton();
+        };
+
+        container.appendChild(btn);
     });
-
-    wrapper.appendChild(grid);
 }
 
-// ⏳ 輔助函數：時間字串轉分鐘數
+// 📌 9. 處理自選特殊時間段 (對應 HTML onchange="handleCustomTimeSelectChange")
+function handleCustomTimeSelectChange() {
+    const customTime = document.getElementById('custom-time-select').value;
+    const staffChoice = document.getElementById('booking-staff').value;
+    if (!customTime) return;
+
+    // 清空常規時間按鈕的高亮
+    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+
+    bookingState.selectedSlot = {
+        staff: (staffChoice === 'auto') ? "由店鋪分派" : staffChoice,
+        time: customTime,
+        isReview: false,
+        isCustom: true
+    };
+
+    unlockSubmitButton();
+}
+
+function unlockSubmitButton() {
+    const submitBtn = document.getElementById('btn-submit-booking');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.backgroundColor = "#25D366"; // 變成亮麗的 WhatsApp 綠色
+    }
+}
+
+// 🏷️ 10. 處理備註貼心標籤 (對應 HTML onclick="toggleQuickTag")
+function toggleQuickTag(tag) {
+    const chk = document.getElementById(`chk-tag-${tag}`);
+    const btn = document.getElementById(`tag-${tag}`);
+    if (!chk) return;
+
+    chk.checked = !chk.checked;
+    if (chk.checked) {
+        if (btn) btn.classList.add('active');
+    } else {
+        if (btn) btn.classList.remove('active');
+    }
+}
+
 function timeToMins(tStr) {
-    if(!tStr) return 0;
+    if (!tStr) return 0;
     let p = tStr.split(':');
     return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
 }
 
-// 🚀 最終站：打包所有項目，先寫入 Firebase 鎖定時段，再跳轉 WhatsApp
+// 🚀 11. 最終站：先寫入雲端鎖時，再跳轉 WhatsApp (對應 HTML onclick="executeWhatsAppBooking")
 function executeWhatsAppBooking() {
-    if(!bookingState.selectedSlot) return;
+    if (!bookingState.selectedSlot) return;
     
     const dateVal = document.getElementById('booking-date').value;
     const staffName = bookingState.selectedSlot.staff;
@@ -343,8 +432,8 @@ function executeWhatsAppBooking() {
     let zhItems = []; let enItems = [];
     const allMeta = [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons, ...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons, ...servicesMetadata.lash, ...servicesMetadata.brows];
     allMeta.forEach(item => {
-        if(bookingState.selectedItems.has(item.id)) {
-            zhItems.push(item.zh.replace('💅','').replace('👁️','').replace('✒️','').trim());
+        if (bookingState.selectedItems.has(item.id)) {
+            zhItems.push(item.zh.replace('💅','').replace('🦶','').replace('👁️','').replace('✒️','').replace('✨','').trim());
             enItems.push(item.en.trim());
         }
     });
@@ -355,7 +444,7 @@ function executeWhatsAppBooking() {
     let customRem = document.getElementById('custom-remarks').value.trim();
     let allRemarks = [rushChecked, noRemoveChecked, sameDayChecked, customRem].filter(Boolean).join(' ');
 
-    // 計算預計結束時間
+    // 計算結束時間
     let startMins = timeToMins(timeVal);
     let endMins = startMins + bookingState.totalDuration;
     let endH = Math.floor(endMins / 60);
@@ -375,19 +464,19 @@ function executeWhatsAppBooking() {
     const yearMonthKey = `${parts[0]}-${parts[1]}`;
     const dayKey = `day_${parseInt(parts[2])}`;
 
-    // 🔒 核心重組：必須先成功寫入 Firebase，才准跳轉 WhatsApp
+    // 🔒 互鎖防線：必須先成功向 Firebase 插旗，才准跳轉 WhatsApp
     database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
         
-        // 彈窗實時肉眼實證連結成功
-        alert("✅ 預約已成功同步至水晶閣雲端大腦！\n(Click OK to open WhatsApp)");
+        // 實時跳窗肉眼確證連結成功
+        alert("✅ 預約已成功同步至水晶閣雲端大腦！\n(點擊確定開啟 WhatsApp 發送對數訊息)");
 
         let timeStatusText = isCust ? '⏳ 自選特殊時段 (⚠️非保證)' : (isRev ? '⏳ 接近下班安全線 (⚠️需審批)' : '🟢 系統自動即時預留');
         let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定員工 / Stylist: ${staffName}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
-        if(allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
+        if (allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
         msg += `------------------------------------\n（此訊息由系統排班大腦生成，請按傳送，我們將為您核對確認。）`;
 
         const shopWhatsAppNumber = "85293436973";
-        // 使用 location.href 完美避開 iPad 彈出視窗攔截器
+        // 採用 location.href，完美避開 iPad/手機 的彈出視窗封鎖機制
         window.location.href = `https://api.whatsapp.com/send?phone=${shopWhatsAppNumber}&text=${encodeURIComponent(msg)}`;
     }).catch(err => alert("❌ 雲端寫入失敗，請檢查網路：" + err));
 }
