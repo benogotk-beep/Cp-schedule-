@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -334,6 +335,158 @@
 
         function handleBookingDateOrStaffChange() { fetchAvailableSlotsFromCloud(); }
 
+        // 📅 輔助推算公用函數：計算特定日期該員工排班開工時間（一秒完美對齊 app.js 的排班大腦）
+        function getStaffShiftForDay(staffName, dateVal, employees, holidays, overrides) {
+            const parts = dateVal.split('-');
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]);
+            const day = parseInt(parts[2]);
+            const dayKey = `day_${day}`;
+            const isSun = (new Date(year, month - 1, day).getDay() === 0);
+
+            // 1. 優先查詢：經理手動微調拖拽數據
+            if (overrides && overrides[dayKey]) {
+                const daySched = overrides[dayKey];
+                let foundTime = "";
+                Object.keys(daySched).forEach(shop => {
+                    if (Array.isArray(daySched[shop])) {
+                        daySched[shop].forEach(slot => {
+                            if (slot && slot.name && slot.name.replace(/\s+/g,'') === staffName.replace(/\s+/g,'')) {
+                                foundTime = slot.time;
+                            }
+                        });
+                    }
+                });
+                if (foundTime) return cleanTimeStr(foundTime);
+            }
+
+            // 2. 演算法推算：常規排班大腦複製
+            const activeStaff = employees.filter(e => !(holidays[e.name] || []).includes(day));
+            const manicurists = activeStaff.filter(e => e.role !== '學徒');
+            const apprentices = activeStaff.filter(e => e.role === '學徒');
+            
+            let M = manicurists.length;
+            let targets = { F79: 3, G2: 3, GK3: 3, G38: 3 };
+            if (M <= 11) {
+                targets.F79 = 2;
+                let rem = M - 2;
+                targets.G2 = Math.max(0, Math.min(3, rem)); rem -= targets.G2;
+                targets.GK3 = Math.max(0, Math.min(3, rem)); rem -= targets.GK3;
+                targets.G38 = Math.max(0, Math.min(3, rem)); rem -= targets.G38;
+            } else {
+                targets.F79 = 3; targets.GK3 = 3;
+                let surplus = M - 12;
+                let baseSurplus = Math.floor(surplus / 2);
+                let remSurplus = surplus % 2;
+                targets.G2 = 3 + baseSurplus + remSurplus;
+                targets.G38 = 3 + baseSurplus;
+            }
+
+            let sortedMani = [...manicurists].sort((a,b) => (a.p_shops || 'G2').split(',').length - (b.p_shops || 'G2').split(',').length);
+            let assignment = {};
+            let currentCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 };
+            let unassignedMani = [];
+
+            sortedMani.forEach(emp => {
+                let allowed = (emp.p_shops || 'G2').split(',').map(s => s.trim());
+                let primaryShop = allowed[0] || 'G2';
+                if (currentCounts[primaryShop] < targets[primaryShop]) {
+                    currentCounts[primaryShop]++;
+                    assignment[emp.name] = primaryShop;
+                } else {
+                    unassignedMani.push(emp);
+                }
+            });
+
+            unassignedMani.forEach(emp => {
+                let allowed = (emp.p_shops || 'G2').split(',').map(s => s.trim());
+                let assigned = false;
+                for (let shop of allowed) {
+                    if (currentCounts[shop] < targets[shop]) {
+                        currentCounts[shop]++;
+                        assignment[emp.name] = shop;
+                        assigned = true;
+                        break;
+                    }
+                }
+                if (!assigned) {
+                    let primaryShop = allowed[0] || 'G2';
+                    currentCounts[primaryShop]++;
+                    assignment[emp.name] = primaryShop;
+                }
+            });
+
+            apprentices.forEach(app => {
+                let allowed = (app.p_shops || 'G2').split(',').map(s => s.trim());
+                let bestShop = allowed[0] || 'G2';
+                let minCount = 999;
+                for(let shop of allowed) {
+                    if(currentCounts[shop] < minCount) {
+                        minCount = currentCounts[shop];
+                        bestShop = shop;
+                    }
+                }
+                assignment[app.name] = bestShop;
+                currentCounts[bestShop]++;
+            });
+
+            let shopGroups = { F79: [], GK3: [], G38: [], G2: [] };
+            activeStaff.forEach(emp => {
+                let shop = assignment[emp.name] || 'G2';
+                shopGroups[shop].push(emp);
+            });
+
+            const myShop = assignment[staffName];
+            if (!myShop) return "12:00"; 
+
+            const staffObj = employees.find(e => e.name === staffName);
+            if (!staffObj) return "12:00";
+
+            if (myShop === 'F79') {
+                const idx = shopGroups.F79.findIndex(emp => emp.name === staffName);
+                let shift = (idx === 0) ? "早班" : "晚班";
+                return isSun ? (shift === '早班' ? '11:00' : '13:00') : (shift === '早班' ? '12:00' : '13:00');
+            } else {
+                let list = shopGroups[myShop];
+                if (list.length === 0) return "12:00";
+                let earlyIdx = list.findIndex(emp => emp.role !== '學徒' && (emp.times || '').split(',').map(t => t.trim()).some(t => parseInt(t.split(':')[0]) < 12));
+                if (earlyIdx === -1) earlyIdx = 0;
+                
+                if (list[earlyIdx].name === staffName) {
+                    return autoExtractTime(staffObj, '早班', isSun, myShop);
+                } else {
+                    let remainingWorkers = list.filter((_, idx) => idx !== earlyIdx);
+                    let remIdx = remainingWorkers.findIndex(emp => emp.name === staffName);
+                    let shift = isSun ? "中班" : ((remIdx < Math.ceil(remainingWorkers.length / 2)) ? "中班" : "晚班");
+                    return autoExtractTime(staffObj, shift, isSun, myShop);
+                }
+            }
+        }
+
+        function autoExtractTime(emp, shift, isSun, shop) {
+            if (shop === 'F79') return (shift === '早班') ? (isSun ? '11:00' : '12:00') : '13:00';
+            let userTimes = (emp.times || '').split(',').map(t => t.trim());
+            if (isSun) return (shift === '早班') ? '10:00' : '12:00';
+            let primaryTime = userTimes[0] || '12:00';
+            let primaryHour = parseInt(primaryTime.split(':')[0]);
+            if (shift === '早班') {
+                return primaryHour < 12 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) < 12) || '11:00');
+            } else if (shift === '中班') {
+                return primaryHour === 12 ? primaryTime : (userTimes.find(t => t === '12:00') || '12:00');
+            } else {
+                return primaryHour >= 13 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) >= 13) || '13:00');
+            }
+        }
+
+        function cleanTimeStr(timeStr) {
+            if (!timeStr) return "12:00";
+            if (timeStr.includes('(')) {
+                let m = timeStr.match(/\(([^)]+)\)/);
+                if (m && m[1]) timeStr = m[1];
+            }
+            return timeStr.trim();
+        }
+
         function fetchAvailableSlotsFromCloud() {
             const dateVal = document.getElementById('booking-date').value;
             const staffChoice = document.getElementById('booking-staff').value;
@@ -358,13 +511,14 @@
                 const employees = empSnap.exists() ? empSnap.val() : [];
                 const holidays = holSnap.exists() ? holSnap.val() : {};
                 const bookings = bookSnap.exists() ? bookSnap.val() : {};
+                const overrides = ovrSnap.exists() ? ovrSnap.val() : {};
                 const cleanEmployees = Array.isArray(employees) ? employees.filter(Boolean) : Object.values(employees).filter(Boolean);
                 
-                // 學徒不作過濾，全體一起歸位上班
+                // 學徒參與排班，不再排除
                 let workingStaffs = cleanEmployees.filter(e => e && e.name && !(holidays[e.name] || []).includes(dayNum));
                 if (staffChoice !== 'auto') { workingStaffs = workingStaffs.filter(e => e.name === staffChoice); }
 
-                // 🌟 核心進化：每 15 分鐘為一個精細選擇區間 (09:00 - 22:45)
+                // 🌟 精細 15 分鐘為一個點選網格 (09:00 - 22:45)
                 let timeSlots = [];
                 for (let h = 9; h <= 22; h++) { 
                     ['00', '15', '30', '45'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); }); 
@@ -376,47 +530,28 @@
                     let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
                     staffBookedList = staffBookedList.filter(Boolean);
 
-                    // 🎯 獲取當前員工精準下班時間
-                    let startTimeStr = "";
-                    if (ovrSnap.exists() && ovrSnap.val()[dayKey]) {
-                        let daySched = ovrSnap.val()[dayKey];
-                        Object.values(daySched).forEach(shopSlots => {
-                            if (Array.isArray(shopSlots)) {
-                                shopSlots.forEach(slot => {
-                                    if (slot && slot.name && slot.name.replace(/\s+/g,'') === staff.name.replace(/\s+/g,'')) {
-                                        startTimeStr = slot.time;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                    if (!startTimeStr && staff.times) {
-                        startTimeStr = staff.times.split(',')[0].trim();
-                    }
-                    if (!startTimeStr) startTimeStr = "12:00";
-                    if (startTimeStr.includes('(')) {
-                        let m = startTimeStr.match(/\(([^)]+)\)/); if (m && m[1]) startTimeStr = m[1];
-                    }
-                    startTimeStr = startTimeStr.trim();
-
+                    // 🎯 自動推算該名員工在該日期精確開工時間
+                    let startTimeStr = getStaffShiftForDay(staff.name, dateVal, cleanEmployees, holidays, overrides);
                     let startWorkMins = timeToMins(startTimeStr);
                     let offWorkMins = startWorkMins + 540; // 9小時標準工時 = 540分鐘
-                    let safetyLineMins = offWorkMins - 30;  // 收工前 30 分鐘防線
+                    let safetyLineMins = offWorkMins - 30;  // 下班收工前 30 分鐘界線
 
                     timeSlots.forEach(slotTime => {
                         let startMins = timeToMins(slotTime); 
                         let endMins = startMins + bookingState.totalDuration;
 
-                        if (endMins > 1425) return; // 最晚不可超越 23:45 跨夜
+                        // 🔍 嚴格限制：客人的「預約開始時間」必須落在該員工「當天排班時段 [S, E]」之內！
+                        if (startMins < startWorkMins || startMins > offWorkMins) return;
+                        if (endMins > 1440) return; // 預防超過午夜跨日
 
-                        // 判斷防撞 (預約佔用時段是否重疊)
+                        // 判斷防撞 (此區段是否已被佔用)
                         let isOverlap = staffBookedList.some(b => {
                             return Math.max(startMins, timeToMins(b.start)) < Math.min(endMins, timeToMins(b.end));
                         });
 
                         if (!isOverlap) {
-                            // 🌟 簡化判定：只認客人的預約開始時間是否 > (下班時間 - 30分鐘)
-                            let isReview = (startMins > safetyLineMins);
+                            // 🌟 精簡邏輯：只認預約開始時間是否落於下班前30分鐘之內
+                            let isReview = (startMins >= safetyLineMins);
                             validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: isReview, isCustom: false });
                         }
                     });
@@ -428,6 +563,7 @@
                     if (!uniqueTimesMap.has(s.time)) {
                         uniqueTimesMap.set(s.time, s); 
                     } else {
+                        // 如果在同一個時間，既有綠格人員又有黃格人員，優先採用綠格直過！
                         if (uniqueTimesMap.get(s.time).isReview && !s.isReview) {
                             uniqueTimesMap.set(s.time, s);
                         }
@@ -436,15 +572,17 @@
                 
                 let sortedSlots = Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time));
                 renderSlotsGridUI(sortedSlots);
-            }).catch(err => { container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`; });
+            }).catch(err => { 
+                container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`; 
+            });
         }
 
-        function renderSlotsGridUI(slotsList) {
+        function renderSlotsGridUI(slots) {
             const container = document.getElementById('time-slots-container'); if (!container) return; container.innerHTML = '';
-            if (slotsList.length === 0) {
+            if (slots.length === 0) {
                 container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold; background:#fdf2f2; border:1px solid #fca5a5; border-radius:10px;">⚠️ 抱歉！當天此項目已被約滿，請另選日期。</div>`; return;
             }
-            slotsList.forEach(slot => {
+            slots.forEach(slot => {
                 const btn = document.createElement('button'); btn.type = "button"; btn.className = "slot-btn";
                 if (slot.isReview) btn.classList.add('review-mode'); btn.innerText = slot.time;
                 btn.onclick = () => {
@@ -516,8 +654,34 @@
             let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定人員 / Stylist: ${staffDisplay}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
             if (allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
             msg += `------------------------------------\n（此訊息由系統排班大腦生成，請按傳送，我們將為您核對確認。）`;
-            window.location.href = `https://api.whatsapp.com/send?phone=85293436973&text=${encodeURIComponent(msg)}`;
+
+            const phone = "85293436973";
+            const encodedMsg = encodeURIComponent(msg);
+
+            // 📱 iPad 專屬一秒原生喚醒 + 自動降級網頁之核心底層引擎
+            const nativeUrl = `whatsapp://send?phone=${phone}&text=${encodedMsg}`;
+            const webUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedMsg}`;
+
+            // 精確偵測是否為 iPad / iPhone 
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            if (isIOS) {
+                // iPad/iOS 優先執行原生協定，確保無縫彈出「要開啟 WhatsApp 嗎？」並進入 App
+                window.location.href = nativeUrl;
+                
+                // 設定彈性安全鎖，如未裝 App 或阻擋則引流至 Web 版
+                setTimeout(() => {
+                    if (document.hasFocus()) {
+                        window.location.href = webUrl;
+                    }
+                }, 800);
+            } else {
+                // 電腦或 Android 等其他設備走標準瀏覽器鏈接
+                window.location.href = webUrl;
+            }
         }
     </script>
 </body>
 </html>
+
+```
