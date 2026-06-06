@@ -1,47 +1,139 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>水晶閣 | 預約看板管理系統</title>
+    <title>水晶閣 | 決策中樞與預約綜合系統</title>
+    <!-- Firebase SDK (Compat version) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --primary: #be185d; --bg-canvas: #f8fafc; --border-color: #e2e8f0; }
-        body { font-family: -apple-system, sans-serif; background-color: var(--bg-canvas); margin: 0; padding: 12px; color: #1e293b; }
-        .dashboard-header { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-        .title-zone h2 { margin: 0; font-size: 16px; color: #9d174d; }
-        .date-picker-zone { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 13px; }
-        .matrix-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid var(--border-color); }
-        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 900px; }
-        .matrix-table th, .matrix-table td { border: 1px solid var(--border-color); text-align: center; font-size: 11px; padding: 6px 4px; }
-        .matrix-table th { background: #f1f5f9; font-weight: bold; color: #475569; height: 38px; }
-        .time-col { width: 65px; background: #e2e8f0 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; }
-        .cell-free { background: white; }
-        .cell-booked { background: #fdf2f8; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 6px !important; }
-        .status-badge { display: inline-block; padding: 1px 4px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-right: 2px; margin-top: 2px; }
-        .badge-rush { background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; }
-        .badge-noremove { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-        .badge-sameday { background: #e2fbf0; color: #10b981; border: 1px solid #a7f3d0; }
-        .badge-review { background: #fef3c7; color: #d97706; border: 1px solid #fef08a; }
+        :root { --primary: #be185d; --bg-canvas: #fdf2f8; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background-color: #fafafb; }
+        .tab-active { border-bottom: 3px solid #db2777; color: #db2777; font-weight: bold; }
+        .time-col { background: #f1f5f9 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; width: 65px; text-align: center; }
+        .cell-booked { background: #fff1f2; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 8px !important; }
     </style>
 </head>
-<body>
+<body class="p-3 md:p-6">
 
-    <div class="dashboard-header">
-        <div class="title-zone">
-            <h2>🔮 水晶閣 | 📅 直立式雙向預約看板</h2>
-            <div style="font-size: 11px; color:#64748b; margin-top:2px;">排班與雲端預約即時互鎖畫布</div>
+    <!-- 🌌 頂部中樞看板 Banner -->
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-pink-100 p-4 md:p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-pink-900 flex items-center gap-2">
+                🔮 水晶閣 <span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">雲端大腦 V12.0</span>
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">排班系統 ＋ 預約看板 ＋ 顧客 CRM ＋ 大數據大一統決策室</p>
         </div>
-        <div class="date-picker-zone">
-            <label>查詢日期 / Date:</label>
-            <input type="date" id="query-date" style="padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="loadScheduleMatrix()">
+        
+        <!-- 📅 日期與總控查詢 -->
+        <div class="flex items-center gap-3 bg-pink-50 p-2 rounded-xl border border-pink-100 w-full md:w-auto">
+            <span class="text-sm font-bold text-pink-800">查詢日期:</span>
+            <input type="date" id="query-date" class="bg-white px-3 py-1.5 rounded-lg border border-pink-200 text-sm font-bold text-pink-900 outline-none" onchange="loadEverything()">
         </div>
     </div>
 
-    <div class="matrix-container">
-        <table class="matrix-table" id="matrix-table-canvas"></table>
+    <!-- 📑 四大核心 Tab 頁籤導覽 -->
+    <div class="max-w-7xl mx-auto flex border-b border-gray-200 mb-6 overflow-x-auto gap-6 text-sm md:text-base">
+        <button id="tab-btn-matrix" class="py-3 px-1 tab-active" onclick="switchMainTab('matrix')">📅 預約看板畫布</button>
+        <button id="tab-btn-staff" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('staff')">👥 員工與編號大腦 (水源)</button>
+        <button id="tab-btn-analytics" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('analytics')">📊 大數據決策室</button>
+        <button id="tab-btn-crm" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('crm')">📇 顧客 CRM 檔案庫</button>
     </div>
+
+    <!-- 📅 TAB 1: 直立式雙向預約看板 -->
+    <div id="section-matrix" class="max-w-7xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <span class="text-sm font-bold text-gray-700">📌 15分鐘高密度預約時間矩陣</span>
+                <span class="text-xs text-gray-500">🟢 吉時 ｜ ⏳ 待審 ｜ ⏰ 自選特殊時段</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs border-collapse table-fixed min-width-[1000px]" id="matrix-table-canvas"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👥 TAB 2: 員工管理與編號大腦 (單一水源) -->
+    <div id="section-staff" class="max-w-7xl mx-auto hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">👥 員工名單與專屬編號 (單一資料源)</h3>
+                    <p class="text-xs text-gray-500 mt-1">在這裡設定的員工編號會自動、動態被所有預約及看板頁面截取使用。</p>
+                </div>
+                <button class="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 py-2 rounded-lg" onclick="addNewEmployeeRow()">+ 新增員工</button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                            <th class="p-3">工號 (ID)</th>
+                            <th class="p-3">姓名</th>
+                            <th class="p-3">職級 Role</th>
+                            <th class="p-3">分店 P_Shops</th>
+                            <th class="p-3">常規班次 Times</th>
+                            <th class="p-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staff-table-body"></tbody>
+                </table>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button class="bg-pink-700 hover:bg-pink-800 text-white text-sm font-bold px-6 py-2.5 rounded-xl" onclick="saveStaffRegistryToCloud()">💾 儲存並發佈名單至雲端大腦</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📊 TAB 3: 大數據決策室 -->
+    <div id="section-analytics" class="max-w-7xl mx-auto hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
+                <span class="text-gray-500 text-xs font-bold block mb-2">📊 當月預約總量 (Total Bookings)</span>
+                <h1 class="text-5xl font-extrabold text-pink-700" id="stat-total-bookings">0</h1>
+                <p class="text-[11px] text-gray-400 mt-2" id="stat-total-label">當月累計有效預約數量</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <span class="text-gray-500 text-xs font-bold block mb-3 text-center">🎁 預約項目比例分佈 (Services Breakdown)</span>
+                <div class="space-y-3" id="stat-service-breakdown"></div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <span class="text-gray-500 text-xs font-bold block mb-3 text-center">🏆 服務人員受歡迎排行榜</span>
+                <div class="space-y-2 max-h-[150px] overflow-y-auto" id="stat-staff-breakdown"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📇 TAB 4: 顧客 CRM 檔案庫 -->
+    <div id="section-crm" class="max-w-7xl mx-auto hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-gray-900">📇 顧客檔案與消費深度庫 (CRM)</h3>
+                <p class="text-xs text-gray-500">全自動從歷史與本月預約中深度聚合不重複顧客。安全全號只限在此可見與一鍵複製。</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                            <th class="p-3">顧客姓名</th>
+                            <th class="p-3">完整聯絡電話</th>
+                            <th class="p-3">歷史預約次數</th>
+                            <th class="p-3">偏好服務類別</th>
+                            <th class="p-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crm-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2"></div>
 
     <script>
         const firebaseConfig = {
@@ -56,25 +148,62 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        const staffIds = {
+        // 🌟 master 預設工號庫（大小寫容錯與多重映射，完美強制覆蓋舊 "100" 數據！）
+        const defaultStaffIds = {
             "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
-            "二妹": "107", "TT": "108", "Cici": "109", "珍": "110", "Jackie": "111",
-            "澄澄": "113", "ALICE": "115", "阿璇": "116", "Mandy婷": "117", "妙妙": "118",
-            "葉子": "119", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
+            "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
+            "澄澄": "113", "ALICE": "115", "阿璇": "116", "MANDY婷": "117", "Mandy婷": "117", "妙妙": "118",
+            "葉子": "119", "LUCIA": "120", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
         };
 
-        // ✅ 修正 iPad 預設日期填補邏輯，確保加載時即時抓取渲染
+        var employeesList = [];
+        var holidaysData = {};
+        var bookingsData = {};
+        var staffIds = {}; 
+
         const t = new Date();
         const formattedDate = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         document.getElementById('query-date').value = formattedDate;
-        
-        // 強制執行網格初次建立
-        setTimeout(loadScheduleMatrix, 600);
 
-        function loadScheduleMatrix() {
+        setTimeout(loadEverything, 200);
+
+        function timeToMins(tStr) {
+            if (!tStr) return 0;
+            let p = tStr.split(':'); return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-lg font-bold text-sm transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${
+                type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+            }`;
+            toast.innerHTML = `<span>${type === 'success' ? '🟢' : '❌'}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function switchMainTab(tabId) {
+            document.getElementById('section-matrix').classList.add('hidden');
+            document.getElementById('section-staff').classList.add('hidden');
+            document.getElementById('section-analytics').classList.add('hidden');
+            document.getElementById('section-crm').classList.add('hidden');
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+
+            document.getElementById('tab-btn-matrix').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
+            document.getElementById('tab-btn-staff').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
+            document.getElementById('tab-btn-analytics').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
+            document.getElementById('tab-btn-crm').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
+            document.getElementById(`tab-btn-${tabId}`).className = "py-3 px-1 tab-active";
+        }
+
+        function loadEverything() {
             const dateVal = document.getElementById('query-date').value;
             if(!dateVal) return;
-
             const parts = dateVal.split('-');
             const yearMonthKey = `${parts[0]}-${parts[1]}`;
             const dayNum = parseInt(parts[2]);
@@ -85,17 +214,37 @@
                 database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
                 database.ref(`v8_bookings/${yearMonthKey}`).once('value')
             ]).then(([empSnap, holSnap, bookSnap]) => {
-                const employees = empSnap.exists() ? empSnap.val() : [];
-                const holidays = holSnap.exists() ? holSnap.val() : {};
-                const allBookings = bookSnap.exists() ? bookSnap.val() : {};
-                const workingStaffs = employees.filter(e => !(holidays[e.name] || []).includes(dayNum));
+                employeesList = empSnap.exists() ? empSnap.val() : [];
+                holidaysData = holSnap.exists() ? holSnap.val() : {};
+                bookingsData = bookSnap.exists() ? bookSnap.val() : {};
+
+                // 重設並克隆本地主字典
+                staffIds = Object.assign({}, defaultStaffIds);
                 
-                // 補齊縱軸：上午 09:00 至 晚上 23:00 (每半小時一格)
+                const cleanEmployees = Array.isArray(employeesList) ? employeesList.filter(Boolean) : Object.values(employeesList).filter(Boolean);
+                
+                cleanEmployees.forEach(e => {
+                    if (e && e.name) {
+                        let key = e.name.trim().toUpperCase();
+                        // 🌟 強力覆蓋：只要雲端的 id 是 "100"、空或未定義，一律用主字典強制預入編號！
+                        if (!e.id || e.id === "100" || e.id === "") {
+                            e.id = defaultStaffIds[key] || "100";
+                        }
+                        staffIds[e.name] = e.id;
+                    }
+                });
+
+                const workingStaffs = cleanEmployees.filter(e => !(holidaysData[e.name] || []).includes(dayNum));
+
                 let timeSlots = [];
                 for (let h = 9; h <= 23; h++) {
-                    ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); });
+                    ['00', '15', '30', '45'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); });
                 }
-                renderMatrixCanvas(workingStaffs, timeSlots, allBookings, dayKey);
+
+                renderMatrixCanvas(workingStaffs, timeSlots, bookingsData, dayKey);
+                renderStaffConfigTab(cleanEmployees);
+                runBusinessIntelligenceAnalytics(bookingsData);
+                renderCRMRegistry(bookingsData);
             });
         }
 
@@ -103,53 +252,55 @@
             const table = document.getElementById('matrix-table-canvas');
             table.innerHTML = '';
 
-            let headerHtml = `<tr><th class="time-col">時間軸</th>`;
+            let headerHtml = `<thead><tr class="bg-gray-100"><th class="time-col p-2 text-xs font-extrabold border">時間軸</th>`;
             staffs.forEach(s => {
-                let code = staffIds[s.name] || "000";
-                headerHtml += `<th>#${code}<br>${s.name}</th>`;
+                let code = staffIds[s.name] || "100";
+                headerHtml += `<th class="p-2 border text-center font-bold text-gray-700 min-w-[130px] text-xs">#${code}<br>${s.name}</th>`;
             });
-            headerHtml += `</tr>`;
+            headerHtml += `</tr></thead><tbody>`;
             table.innerHTML += headerHtml;
 
             timeSlots.forEach(slotTime => {
-                let rowHtml = `<tr><td class="time-col">${slotTime}</td>`;
+                let rowHtml = `<tr class="border-b"><td class="time-col p-1 text-[11px] border">${slotTime}</td>`;
                 let currentSlotMins = timeToMins(slotTime);
 
                 staffs.forEach(staff => {
                     let rawBook = bookings[staff.name]?.[dayKey] || {};
-                    // ✅ 修正：完美將 Firebase Object 轉化為 Array 進行防撞過濾
                     let staffDayBookings = Array.isArray(rawBook) ? rawBook : Object.values(rawBook);
-                    
+                    staffDayBookings = staffDayBookings.filter(Boolean);
+
                     let matchedBooking = staffDayBookings.find(b => {
                         let startMins = timeToMins(b.start);
                         let endMins = timeToMins(b.end);
-                        let overlap = Math.max(0, Math.min(currentSlotMins + 30, endMins) - Math.max(currentSlotMins, startMins));
-                        return overlap > 10;
+                        let overlap = Math.max(0, Math.min(currentSlotMins + 15, endMins) - Math.max(currentSlotMins, startMins));
+                        return overlap > 5;
                     });
 
                     if (matchedBooking) {
                         if (currentSlotMins === timeToMins(matchedBooking.start) || slotTime.endsWith('00')) {
                             let badges = '';
-                            if (matchedBooking.status && matchedBooking.status.includes('待審')) badges += `<span class="status-badge badge-review">⏳ 待審</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('特殊')) badges += `<span class="status-badge badge-review">⏰ 自選</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('吉時')) badges += `<span class="status-badge badge-sameday">🟢 吉時</span>`;
-                            
-                            if (matchedBooking.remarks) {
-                                if (matchedBooking.remarks.includes('趕時間')) badges += `<span class="status-badge badge-rush">⚡ 趕</span>`;
-                                if (matchedBooking.remarks.includes('免拆甲')) badges += `<span class="status-badge badge-noremove">🚫 免</span>`;
-                                if (matchedBooking.remarks.includes('手腳同做')) badges += `<span class="status-badge badge-sameday">🤝 同</span>`;
-                            }
+                            if (matchedBooking.status && matchedBooking.status.includes('待審')) badges += `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-1 py-0.5 rounded text-[9px] mr-1">⏳ 需批</span>`;
+                            if (matchedBooking.status && matchedBooking.status.includes('特殊')) badges += `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-1 py-0.5 rounded text-[9px] mr-1">⏰ 自選</span>`;
+                            if (matchedBooking.status && matchedBooking.status.includes('吉時')) badges += `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-1 py-0.5 rounded text-[9px] mr-1">🟢 吉時</span>`;
 
-                            rowHtml += `<td class="cell-booked">
-                                        <div style="font-weight:bold; font-size:11px; color:#9d174d;">${matchedBooking.item}</div>
-                                        <div style="font-size:9px; color:#64748b; margin-top:1px;">⏰ ${matchedBooking.start}-${matchedBooking.end}</div>
-                                        ${badges}
+                            let rem = matchedBooking.remarks || '';
+                            if (rem.includes('趕時間')) badges += `<span class="bg-orange-50 text-orange-600 px-1 rounded text-[9px] mr-1 border border-orange-100">⚡ 趕</span>`;
+                            if (rem.includes('免拆甲')) badges += `<span class="bg-sky-50 text-sky-600 px-1 rounded text-[9px] mr-1 border border-sky-100">🚫 免</span>`;
+                            if (rem.includes('手腳同做')) badges += `<span class="bg-teal-50 text-teal-600 px-1 rounded text-[9px] mr-1 border border-teal-100">🤝 同</span>`;
+
+                            let last4 = matchedBooking.phoneLast4 || "0000";
+
+                            rowHtml += `<td class="cell-booked p-2 border align-top">
+                                        <div class="font-extrabold text-[11px] text-pink-900">${matchedBooking.customer} (*${last4})</div>
+                                        <div class="font-bold text-[10px] text-gray-700 mt-1">${matchedBooking.item}</div>
+                                        <div class="text-[9px] text-gray-500 mt-1">🕒 ${matchedBooking.start}-${matchedBooking.end}</div>
+                                        <div class="mt-1.5 flex flex-wrap gap-1">${badges}</div>
                                        </td>`;
                         } else {
-                            rowHtml += `<td class="cell-booked" style="border-top:none; border-bottom:none; opacity:0.4;"></td>`;
+                            rowHtml += `<td class="cell-booked p-1 border-r border-l" style="border-top:none; border-bottom:none; opacity:0.35;"></td>`;
                         }
                     } else {
-                        rowHtml += `<td class="cell-free"></td>`;
+                        rowHtml += `<td class="p-1 border text-center hover:bg-gray-50 cursor-pointer"></td>`;
                     }
                 });
                 rowHtml += `</tr>`;
@@ -157,10 +308,167 @@
             });
         }
 
-        function timeToMins(tStr) {
-            let p = tStr.split(':');
-            return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
+        function renderStaffConfigTab(staffs) {
+            const tbody = document.getElementById('staff-table-body');
+            tbody.innerHTML = '';
+            staffs.forEach((e, idx) => {
+                let key = e.name.trim().toUpperCase();
+                let code = e.id || staffIds[e.name] || defaultStaffIds[key] || "100";
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="p-3"><input type="text" class="staff-id-field w-16 p-1 border rounded text-center font-bold text-gray-700" value="${code}"></td>
+                        <td class="p-3"><input type="text" class="staff-name-field w-24 p-1 border rounded font-bold" value="${e.name}"></td>
+                        <td class="p-3">
+                            <select class="staff-role-field p-1 border rounded text-xs">
+                                <option value="Full-time" ${e.role==='Full-time'?'selected':''}>Full-time</option>
+                                <option value="Part-time" ${e.role==='Part-time'?'selected':''}>Part-time</option>
+                                <option value="學徒" ${e.role==='學徒'?'selected':''}>學徒</option>
+                            </select>
+                        </td>
+                        <td class="p-3"><input type="text" class="staff-shops-field w-36 p-1 border rounded text-xs" value="${e.p_shops||''}"></td>
+                        <td class="p-3"><input type="text" class="staff-times-field w-40 p-1 border rounded text-xs" value="${e.times||''}"></td>
+                        <td class="p-3"><button class="text-red-500 hover:text-red-700 text-xs font-bold" onclick="this.closest('tr').remove()">❌ 刪除</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function addNewEmployeeRow() {
+            const tbody = document.getElementById('staff-table-body');
+            tbody.innerHTML += `
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="p-3"><input type="text" class="staff-id-field w-16 p-1 border rounded text-center font-bold text-gray-700" value="124"></td>
+                    <td class="p-3"><input type="text" class="staff-name-field w-24 p-1 border rounded font-bold" placeholder="名字"></td>
+                    <td class="p-3">
+                        <select class="staff-role-field p-1 border rounded text-xs">
+                            <option value="Full-time" selected>Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="學徒">學徒</option>
+                        </select>
+                    </td>
+                    <td class="p-3"><input type="text" class="staff-shops-field w-36 p-1 border rounded text-xs" value="G2, G38, GK3"></td>
+                    <td class="p-3"><input type="text" class="staff-times-field w-40 p-1 border rounded text-xs" value="12:00, 11:00, 13:00"></td>
+                    <td class="p-3"><button class="text-red-500 hover:text-red-700 text-xs font-bold" onclick="this.closest('tr').remove()">❌ 刪除</button></td>
+                </tr>
+            `;
+        }
+
+        function saveStaffRegistryToCloud() {
+            let list = [];
+            const rows = document.querySelectorAll('#staff-table-body tr');
+            rows.forEach(r => {
+                let id = r.querySelector('.staff-id-field').value.trim();
+                let name = r.querySelector('.staff-name-field').value.trim();
+                let role = r.querySelector('.staff-role-field').value;
+                let p_shops = r.querySelector('.staff-shops-field').value.trim();
+                let times = r.querySelector('.staff-times-field').value.trim();
+                if(name) {
+                    list.push({ id, name, role, p_shops, times });
+                }
+            });
+            database.ref('v8_employees').set(list).then(() => {
+                showToast("員工與工號大腦成功同步至 Firebase 雲端！預約介面已實時同步。");
+                loadEverything();
+            });
+        }
+
+        function runBusinessIntelligenceAnalytics(bookings) {
+            let total = 0;
+            let categories = { "美甲": 0, "美睫": 0, "紋繡": 0, "其他": 0 };
+            let stylists = {};
+
+            Object.keys(bookings).forEach(staffName => {
+                Object.keys(bookings[staffName]).forEach(dayKey => {
+                    let dayRaw = bookings[staffName][dayKey];
+                    let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
+                    list.filter(Boolean).forEach(b => {
+                        total++;
+                        let sType = b.serviceType || "其他";
+                        if(sType.includes("美甲")) categories["美甲"]++;
+                        else if(sType.includes("美睫")) categories["美睫"]++;
+                        else if(sType.includes("紋繡")) categories["紋繡"]++;
+                        else categories["其他"]++;
+
+                        stylists[staffName] = (stylists[staffName] || 0) + 1;
+                    });
+                });
+            });
+
+            document.getElementById('stat-total-bookings').innerText = total;
+
+            const catZone = document.getElementById('stat-service-breakdown');
+            catZone.innerHTML = '';
+            Object.keys(categories).forEach(cName => {
+                let count = categories[cName];
+                let percent = total > 0 ? Math.round((count / total) * 100) : 0;
+                catZone.innerHTML += `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-gray-700">
+                            <span>${cName}</span><span>${count} 預約 (${percent}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2 mt-1">
+                            <div class="bg-pink-600 h-2 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const stylZone = document.getElementById('stat-staff-breakdown');
+            stylZone.innerHTML = '';
+            let sortedStyl = Object.keys(stylists).map(k => ({ name: k, count: stylists[k] })).sort((a,b) => b.count - a.count);
+            sortedStyl.forEach((s, idx) => {
+                stylZone.innerHTML += `
+                    <div class="flex justify-between items-center text-xs p-2 border-b border-gray-50">
+                        <span class="font-bold text-gray-800">${idx+1}. #${staffIds[s.name] || '100'} ${s.name}</span>
+                        <span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-extrabold">${s.count} 次</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderCRMRegistry(bookings) {
+            const tbody = document.getElementById('crm-table-body');
+            tbody.innerHTML = '';
+
+            let crmMap = {};
+            Object.keys(bookings).forEach(staffName => {
+                Object.keys(bookings[staffName]).forEach(dayKey => {
+                    let dayRaw = bookings[staffName][dayKey];
+                    let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
+                    list.filter(Boolean).forEach(b => {
+                        if (b.customer && b.phone) {
+                            let key = b.customer + "_" + b.phone;
+                            if(!crmMap[key]) {
+                                crmMap[key] = { name: b.customer, phone: b.phone, count: 0, types: new Set() };
+                            }
+                            crmMap[key].count++;
+                            crmMap[key].types.add(b.serviceType || "美甲");
+                        }
+                    });
+                });
+            });
+
+            let records = Object.values(crmMap);
+            if(records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400 font-bold">🙌 目前尚無歷史預約顧客資料紀錄。</td></tr>`;
+                return;
+            }
+
+            records.forEach(c => {
+                let servicesArr = Array.from(c.types);
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-100 hover:bg-pink-50">
+                        <td class="p-3 font-bold text-gray-800">${c.name}</td>
+                        <td class="p-3 text-pink-800 font-extrabold">${c.phone}</td>
+                        <td class="p-3 text-center"><span class="bg-pink-100 text-pink-700 px-2.5 py-1 rounded-full font-extrabold text-xs">${c.count} 次</span></td>
+                        <td class="p-3"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${servicesArr.join(' + ')}</span></td>
+                        <td class="p-3"><button class="bg-pink-600 hover:bg-pink-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold" onclick="navigator.clipboard.writeText('${c.phone}'); showToast('📱 已成功複製 ${c.name} 的完整手機號碼：${c.phone}');">複製號碼</button></td>
+                    </tr>
+                `;
+            });
         }
     </script>
 </body>
 </html>
+
+```
