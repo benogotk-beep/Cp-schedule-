@@ -14,6 +14,7 @@
         .shop-title { font-size: 19px; font-weight: 800; color: #9d174d; margin: 0; }
         .shop-subtitle { font-size: 11px; color: #c084fc; font-weight: bold; margin-top: 2px; text-transform: uppercase; }
         .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 14px; border-radius: 14px; margin-bottom: 14px; }
+        .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 14px; border-radius: 14px; margin-bottom: 14px; }
         .step-title { font-size: 14px; font-weight: bold; color: #4c0519; margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
         .en-sub { font-size: 10px; color: #6b7280; font-weight: normal; display: block; margin-top: 1px; }
         .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -68,15 +69,15 @@
             <div class="step-title">2. 選擇服務項目 <span class="en-sub">Select Services (Multiple Selection Allowed)</span></div>
             <div class="grid-3" style="margin-bottom: 10px;">
                 <div class="check-card" id="cate-card-nail" onclick="toggleMainCategory('nail')">
-                    <input type="checkbox" id="main-chk-nail" pointer-events="none">
+                    <input type="checkbox" id="main-chk-nail" style="pointer-events:none;">
                     <span class="card-name">💅 藝術美甲<br><span style="font-size:10px; font-weight:normal; color:#6b7280;">Nail Art</span></span>
                 </div>
                 <div class="check-card" id="cate-card-lash" onclick="toggleMainCategory('lash')">
-                    <input type="checkbox" id="main-chk-lash" pointer-events="none">
+                    <input type="checkbox" id="main-chk-lash" style="pointer-events:none;">
                     <span class="card-name">👁️ 嫁接美睫<br><span style="font-size:10px; font-weight:normal; color:#6b7280;">Eyelash</span></span>
                 </div>
                 <div class="check-card" id="cate-card-brows" onclick="toggleMainCategory('brows')">
-                    <input type="checkbox" id="main-chk-brows" pointer-events="none">
+                    <input type="checkbox" id="main-chk-brows" style="pointer-events:none;">
                     <span class="card-name">✒️ 定制紋綉<br><span style="font-size:10px; font-weight:normal; color:#6b7280;">Brows Tattoo</span></span>
                 </div>
             </div>
@@ -85,11 +86,11 @@
                 <div class="sub-panel-title">📍 請選擇服務部位 / Select Area</div>
                 <div class="grid-2">
                     <div class="check-card" id="part-card-hand" onclick="toggleNailPart('hand')" style="padding:10px 4px;">
-                        <input type="checkbox" id="part-chk-hand">
+                        <input type="checkbox" id="part-chk-hand" style="pointer-events:none;">
                         <span class="card-name">🖐️ 手部服務 (Hands)</span>
                     </div>
                     <div class="check-card" id="part-card-foot" onclick="toggleNailPart('foot')" style="padding:10px 4px;">
-                        <input type="checkbox" id="part-chk-foot">
+                        <input type="checkbox" id="part-chk-foot" style="pointer-events:none;">
                         <span class="card-name">🦶 腳部服務 (Feet)</span>
                     </div>
                 </div>
@@ -138,9 +139,9 @@
         <div class="step-section" style="margin-bottom: 20px;">
             <div class="step-title">4. 貼心特別備註 <span class="en-sub">Special Remarks (Optional)</span></div>
             <div class="grid-3" style="margin-bottom:10px;">
-                <div class="tag-btn" id="tag-rush" onclick="toggleQuickTag('rush')"><input type="checkbox" id="chk-tag-rush">⚡ 特別趕時間</div>
-                <div class="tag-btn" id="tag-noremove" onclick="toggleQuickTag('noremove')"><input type="checkbox" id="chk-tag-noremove">🚫 不需要拆甲</div>
-                <div class="tag-btn" id="tag-sameday" onclick="toggleQuickTag('sameday')"><input type="checkbox" id="chk-tag-sameday">🤝 手腳同做</div>
+                <div class="tag-btn" id="tag-rush" onclick="toggleQuickTag('rush')"><input type="checkbox" id="chk-tag-rush" style="pointer-events:none;">⚡ 特別趕時間</div>
+                <div class="tag-btn" id="tag-noremove" onclick="toggleQuickTag('noremove')"><input type="checkbox" id="chk-tag-noremove" style="pointer-events:none;">🚫 不需要拆甲</div>
+                <div class="tag-btn" id="tag-sameday" onclick="toggleQuickTag('sameday')"><input type="checkbox" id="chk-tag-sameday" style="pointer-events:none;">🤝 手腳同做</div>
             </div>
             <textarea id="custom-remarks" rows="2" style="width:96%; padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; resize:none;" placeholder="如有其他自訂要求，請在此填寫... / Any other requests, enter here..."></textarea>
         </div>
@@ -156,6 +157,320 @@
             <button class="submit-btn" id="btn-submit-booking" onclick="executeWhatsAppBooking()" disabled>🚀 立即發送 WhatsApp 預約申請 / Send Request via WhatsApp</button>
         </div>
     </div>
-    <script src="booking.js?v=999"></script>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
+            authDomain: "cp-schedule.firebaseapp.com",
+            databaseURL: "https://cp-schedule-default-rtdb.firebaseio.com/",
+            projectId: "cp-schedule",
+            storageBucket: "cp-schedule.firebasestorage.app",
+            messagingSenderId: "136891249500",
+            appId: "1:136891249500:web:f3278b3ce642dc8d454799",
+            measurementId: "G-W0L45WCMV2"
+        };
+
+        var database = null; var isCloudMode = false;
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                database = firebase.database(); isCloudMode = true;
+            }
+        } catch (e) { console.error("Firebase安全繞過:", e); }
+
+        const servicesMetadata = {
+            nail_hand_base: [
+                { id: "h_base_1", zh: "💅 手部單色 Soak Off Gel", en: "Hand Single Color Soak Off Gel", duration: 60 },
+                { id: "h_base_2", zh: "💅 手部雙色/貓眼 Soak Off Gel", en: "Hand Two-Tone/Cat Eye Soak Off", duration: 75 },
+                { id: "h_base_3", zh: "💅 手部單色 Hard Gel", en: "Hand Single Color Hard Gel", duration: 75 },
+                { id: "h_base_4", zh: "💅 手部雙色/貓眼 Hard Gel", en: "Hand Two-Tone/Cat Eye Hard Gel", duration: 90 }
+            ],
+            nail_hand_addons: [
+                { id: "h_add_1", zh: "✨ 手部局部藝術款式 (2-4指)", en: "Hand Partial Art Style (2-4 fingers)", duration: 20 },
+                { id: "h_add_2", zh: "✨ 手部全套複雜藝術款式", en: "Hand Full Set Complex Art Style", duration: 45 },
+                { id: "h_add_3", zh: "✨ 手部水晶/聚膠全套延長", en: "Hand Full Set Extension", duration: 60 },
+                { id: "h_add_4", zh: "✨ 卸除外店甲 (意向附加)", en: "Remove Professional Gel (Other Shop)", duration: 20 }
+            ],
+            nail_foot_base: [
+                { id: "f_base_1", zh: "🦶 腳部單色 Soak Off Gel", en: "Foot Single Color Soak Off Gel", duration: 60 },
+                { id: "f_base_2", zh: "🦶 腳部雙色/貓眼 Soak Off Gel", en: "Foot Two-Tone/Cat Eye Soak Off", duration: 75 },
+                { id: "f_base_3", zh: "🦶 腳部單色 Hard Gel", en: "Foot Single Color Hard Gel", duration: 75 }
+            ],
+            nail_foot_addons: [
+                { id: "f_add_1", zh: "✨ 腳部全套深層去死皮護理", en: "Foot Deep Dead Skin Care", duration: 30 },
+                { id: "f_add_2", zh: "✨ 腳部全套藝術款式設計", en: "Foot Full Set Art Style Design", duration: 30 }
+            ],
+            lash: [
+                { id: "lash_1", zh: "👁️ 日式單根自然美睫 (100根)", en: "Japanese Natural Lashes (100pcs)", duration: 60 },
+                { id: "lash_2", zh: "👁️ 網紅濃密山茶花美睫 (滿種)", en: "Dense Camellia Lashes (Full)", duration: 90 },
+                { id: "lash_3", zh: "👁️ 角蛋白美睫大師護理", en: "Keratin Lash Lift Master Care", duration: 60 }
+            ],
+            brows: [
+                { id: "brow_1", zh: "✒️ 半永久韓式霧眉/絲霧眉", en: "Semi-Permanent Korean Powder Brows", duration: 120 },
+                { id: "brow_2", zh: "✒️ 半永久美瞳線/隱形眼線", en: "Semi-Permanent Eyeliner", duration: 90 }
+            ]
+        };
+
+        let bookingState = {
+            mainCategories: { nail: false, lash: false, brows: false },
+            nailParts: { hand: false, foot: false },
+            selectedItems: new Set(), selectedSlot: null, totalDuration: 0
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('booking-date');
+            if (dateInput) { dateInput.min = new Date().toISOString().split('T')[0]; }
+            
+            if (isCloudMode && database) {
+                database.ref('v8_employees').once('value').then(snap => {
+                    const selectEl = document.getElementById('booking-staff'); if (!selectEl) return;
+                    const emps = snap.exists() ? snap.val() : [];
+                    const cleanEmps = Array.isArray(emps) ? emps.filter(Boolean) : Object.values(emps).filter(Boolean);
+                    cleanEmps.forEach(e => {
+                        if (e && e.name && e.role !== '學徒') {
+                            const opt = document.createElement('option'); opt.value = e.name; opt.innerText = `👤 ${e.name} [${e.role}]`; selectEl.appendChild(opt);
+                        }
+                    });
+                });
+            } else {
+                const selectEl = document.getElementById('booking-staff');
+                if (selectEl) {
+                    ["阿平", "二妹", "珍", "ALICE", "阿璇"].forEach(n => {
+                        const opt = document.createElement('option'); opt.value = n; opt.innerText = `👤 ${n} [備用上線]`; selectEl.appendChild(opt);
+                    });
+                }
+            }
+        });
+
+        function toggleMainCategory(cat) {
+            bookingState.mainCategories[cat] = !bookingState.mainCategories[cat];
+            const card = document.getElementById(`cate-card-${cat}`);
+            const chk = document.getElementById(`main-chk-${cat}`);
+            if (chk) chk.checked = bookingState.mainCategories[cat];
+            if (card) { if (bookingState.mainCategories[cat]) card.classList.add('selected'); else card.classList.remove('selected'); }
+            if (cat === 'nail') {
+                const partZone = document.getElementById('nail-part-selector-zone');
+                if (partZone) partZone.style.display = bookingState.mainCategories.nail ? "block" : "none";
+                if (!bookingState.mainCategories.nail) { clearNailParts(); }
+            }
+            if (!bookingState.mainCategories[cat]) { clearSelectedItemsByCat(cat); }
+            renderSubDetailsAndRecalc();
+        }
+
+        function toggleNailPart(part) {
+            bookingState.nailParts[part] = !bookingState.nailParts[part];
+            const card = document.getElementById(`part-card-${part}`);
+            const chk = document.getElementById(`part-chk-${part}`);
+            if (chk) chk.checked = bookingState.nailParts[part];
+            if (card) { if (bookingState.nailParts[part]) card.classList.add('selected'); else card.classList.remove('selected'); }
+            if (!bookingState.nailParts[part]) { clearSelectedItemsByPart(part); }
+            renderSubDetailsAndRecalc();
+        }
+
+        function clearNailParts() {
+            bookingState.nailParts.hand = false; bookingState.nailParts.foot = false;
+            document.querySelectorAll('#nail-part-selector-zone .check-card').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('#nail-part-selector-zone input').forEach(el => el.checked = false);
+            clearSelectedItemsByPart('hand'); clearSelectedItemsByPart('foot');
+        }
+
+        function clearSelectedItemsByCat(cat) {
+            let keys = (cat === 'lash') ? ['lash'] : (cat === 'brows' ? ['brows'] : []);
+            keys.forEach(k => servicesMetadata[k].forEach(item => bookingState.selectedItems.delete(item.id)));
+        }
+
+        function clearSelectedItemsByPart(part) {
+            let keys = (part === 'hand') ? ['nail_hand_base', 'nail_hand_addons'] : (part === 'foot' ? ['nail_foot_base', 'nail_foot_addons'] : []);
+            keys.forEach(k => servicesMetadata[k].forEach(item => bookingState.selectedItems.delete(item.id)));
+        }
+
+        function renderSubDetailsAndRecalc() {
+            const zone = document.getElementById('sub-details-render-zone'); if (!zone) return; zone.innerHTML = '';
+            let activeSections = [];
+            if (bookingState.mainCategories.nail && bookingState.nailParts.hand) {
+                activeSections.push({ title: "💅 手部美甲服務 (Hand Services)", data: [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons] });
+            }
+            if (bookingState.mainCategories.nail && bookingState.nailParts.foot) {
+                activeSections.push({ title: "🦶 腳部美甲服務 (Foot Services)", data: [...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons] });
+            }
+            if (bookingState.mainCategories.lash) { activeSections.push({ title: "👁️ 嫁接美睫項目 (Eyelash Services)", data: servicesMetadata.lash }); }
+            if (bookingState.mainCategories.brows) { activeSections.push({ title: "✒️ 定制紋綉項目 (Brows Tattoo)", data: servicesMetadata.brows }); }
+
+            activeSections.forEach(sec => {
+                const panel = document.createElement('div'); panel.className = "sub-panel"; panel.style.marginBottom = "12px";
+                let html = `<div class="sub-panel-title">${sec.title}</div><div class="grid-2" style="gap:6px; margin-top:4px;">`;
+                sec.data.forEach(item => {
+                    const isChecked = bookingState.selectedItems.has(item.id);
+                    html += `
+                        <div class="addon-card ${isChecked?'selected':''}" id="card-item-${item.id}" onclick="handleSubItemToggle('${item.id}')">
+                            <input type="checkbox" id="chk-item-${item.id}" ${isChecked?'checked':''} style="pointer-events:none;">
+                            <div style="font-weight:bold;">${item.zh}</div>
+                            <div style="font-size:9px; opacity:0.7; font-weight:normal;">⏱️ ${item.duration} mins</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`; panel.innerHTML = html; zone.appendChild(panel);
+            });
+            recalcDurationAndSlots();
+        }
+
+        function handleSubItemToggle(id) {
+            const chk = document.getElementById(`chk-item-${id}`);
+            const card = document.getElementById(`card-item-${id}`);
+            if (!chk) return;
+            chk.checked = !chk.checked;
+            if (chk.checked) { bookingState.selectedItems.add(id); if (card) card.classList.add('selected'); } 
+            else { bookingState.selectedItems.delete(id); if (card) card.classList.remove('selected'); }
+            recalcDurationAndSlots();
+        }
+
+        function recalcDurationAndSlots() {
+            let durationSum = 0;
+            const allMeta = [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons, ...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons, ...servicesMetadata.lash, ...servicesMetadata.brows];
+            allMeta.forEach(item => { if (bookingState.selectedItems.has(item.id)) durationSum += item.duration; });
+            bookingState.totalDuration = durationSum;
+            const bar = document.getElementById('live-timer-bar');
+            if (bar) bar.innerText = `⏱️ 預計總時長 / Estimated Duration: ${durationSum} 分鐘 (mins)`;
+            fetchAvailableSlotsFromCloud();
+        }
+
+        function handleBookingDateOrStaffChange() { fetchAvailableSlotsFromCloud(); }
+
+        function fetchAvailableSlotsFromCloud() {
+            const dateVal = document.getElementById('booking-date').value;
+            const staffChoice = document.getElementById('booking-staff').value;
+            const container = document.getElementById('time-slots-container'); if (!container) return;
+
+            if (!dateVal) {
+                container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">📅 請先選取預約日期<br>Please select a date first</div>`; return;
+            }
+            if (bookingState.totalDuration <= 0) {
+                container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">💅 請先選好服務項目<br>Please select services first</div>`; return;
+            }
+
+            if (!isCloudMode || !database) {
+                let timeSlots = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30", "19:00", "20:30"];
+                let fakeSlots = timeSlots.map(t => ({ staff: (staffChoice==='auto')?"展示專家":staffChoice, time: t, isReview: timeToMins(t)>1200, isCustom: false }));
+                renderSlotsGridUI(fakeSlots); return;
+            }
+
+            container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#db2777; font-size:12px; font-weight:bold;">⚡ 水晶閣雲端雷達精算空檔中...</div>`;
+            const parts = dateVal.split('-'); const yearMonthKey = `${parts[0]}-${parts[1]}`; const dayNum = parseInt(parts[2]); const dayKey = `day_${dayNum}`;
+
+            Promise.all([
+                database.ref('v8_employees').once('value'),
+                database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
+                database.ref(`v8_bookings/${yearMonthKey}`).once('value')
+            ]).then(([empSnap, holSnap, bookSnap]) => {
+                const employees = empSnap.exists() ? empSnap.val() : [];
+                const holidays = holSnap.exists() ? holSnap.val() : {};
+                const bookings = bookSnap.exists() ? bookSnap.val() : {};
+                const cleanEmployees = Array.isArray(employees) ? employees.filter(Boolean) : Object.values(employees).filter(Boolean);
+                let workingStaffs = cleanEmployees.filter(e => e && e.name && e.role !== '學徒' && !(holidays[e.name] || []).includes(dayNum));
+                if (staffChoice !== 'auto') { workingStaffs = workingStaffs.filter(e => e.name === staffChoice); }
+
+                let timeSlots = [];
+                for (let h = 9; h <= 21; h++) { ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); }); }
+                let validSlotsPool = [];
+
+                workingStaffs.forEach(staff => {
+                    let staffRawBookings = bookings[staff.name]?.[dayKey] || {};
+                    let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
+                    staffBookedList = staffBookedList.filter(Boolean);
+
+                    timeSlots.forEach(slotTime => {
+                        let startMins = timeToMins(slotTime); let endMins = startMins + bookingState.totalDuration;
+                        if (endMins > 1410) return;
+                        let isOverlap = staffBookedList.some(b => {
+                            return Math.max(startMins, timeToMins(b.start)) < Math.min(endMins, timeToMins(b.end));
+                        });
+                        if (!isOverlap) { validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: (endMins > 1200), isCustom: false }); }
+                    });
+                });
+
+                let uniqueTimesMap = new Map(); slots.forEach(s => { if (!uniqueTimesMap.has(s.time)) uniqueTimesMap.set(s.time, s); });
+                renderSlotsGridUI(Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time)));
+            }).catch(err => { container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`; });
+        }
+
+        function renderSlotsGridUI(slots) {
+            const container = document.getElementById('time-slots-container'); if (!container) return; container.innerHTML = '';
+            if (slots.length === 0) {
+                container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold; background:#fdf2f2; border:1px solid #fca5a5; border-radius:10px;">⚠️ 抱歉！當天此項目已被約滿，請另選日期。</div>`; return;
+            }
+            slots.forEach(slot => {
+                const btn = document.createElement('button'); btn.type = "button"; btn.className = "slot-btn";
+                if (slot.isReview) btn.classList.add('review-mode'); btn.innerText = slot.time;
+                btn.onclick = () => {
+                    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected');
+                    bookingState.selectedSlot = { staff: slot.staff, time: slot.time, isReview: slot.isReview, isCustom: false };
+                    document.getElementById('custom-time-select').value = ""; unlockSubmitButton();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function handleCustomTimeSelectChange() {
+            const customTime = document.getElementById('custom-time-select').value;
+            const staffChoice = document.getElementById('booking-staff').value; if (!customTime) return;
+            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+            bookingState.selectedSlot = { staff: (staffChoice === 'auto') ? "由店鋪分派" : staffChoice, time: customTime, isReview: false, isCustom: true };
+            unlockSubmitButton();
+        }
+
+        function unlockSubmitButton() {
+            const submitBtn = document.getElementById('btn-submit-booking');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.style.backgroundColor = "#25D366"; }
+        }
+
+        function toggleQuickTag(tag) {
+            const chk = document.getElementById(`chk-tag-${tag}`); const btn = document.getElementById(`tag-${tag}`); if (!chk) return;
+            chk.checked = !chk.checked;
+            if (chk.checked) { if (btn) btn.classList.add('active'); } else { if (btn) btn.classList.remove('active'); }
+        }
+
+        function timeToMins(tStr) { if (!tStr) return 0; let p = tStr.split(':'); return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0); }
+
+        function executeWhatsAppBooking() {
+            if (!bookingState.selectedSlot) return;
+            const dateVal = document.getElementById('booking-date').value;
+            const staffName = bookingState.selectedSlot.staff; const timeVal = bookingState.selectedSlot.time;
+            const isRev = bookingState.selectedSlot.isReview; const isCust = bookingState.selectedSlot.isCustom;
+
+            let zhItems = []; let enItems = [];
+            const allMeta = [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons, ...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons, ...servicesMetadata.lash, ...servicesMetadata.brows];
+            allMeta.forEach(item => { if (bookingState.selectedItems.has(item.id)) { zhItems.push(item.zh.replace('💅','').replace('🦶','').replace('👁️','').replace('✒️','').replace('✨','').trim()); enItems.push(item.en.trim()); } });
+
+            let rushChecked = document.getElementById('chk-tag-rush').checked ? "⚡[趕時間]" : "";
+            let noRemoveChecked = document.getElementById('chk-tag-noremove').checked ? "🚫[免拆甲]" : "";
+            let sameDayChecked = document.getElementById('chk-tag-sameday').checked ? "🤝[手腳同做]" : "";
+            let customRem = document.getElementById('custom-remarks').value.trim();
+            let allRemarks = [rushChecked, noRemoveChecked, sameDayChecked, customRem].filter(Boolean).join(' ');
+
+            let startMins = timeToMins(timeVal); let endMins = startMins + bookingState.totalDuration;
+            let endTimeStr = `${String(Math.floor(endMins/60)).padStart(2,'0')}:${String(endMins%60).padStart(2,'0')}`;
+
+            let cloudBookingData = { customer: "WhatsApp 客人", item: zhItems.join(' + '), start: timeVal, end: endTimeStr, status: isCust ? "⏳ 特殊" : (isRev ? "⏳ 待審" : "🟢 吉時"), remarks: allRemarks };
+            const parts = dateVal.split('-'); const yearMonthKey = `${parts[0]}-${parts[1]}`; const dayKey = `day_${parseInt(parts[2])}`;
+
+            if (!isCloudMode || !database) {
+                alert("⚠️ 演示安全模式：大腦防線全線開通！將立即為您跳轉 WhatsApp 對數。");
+                proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks); return;
+            }
+
+            database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
+                alert("✅ 預約已成功同步至水晶閣雲端大腦！\n(點擊確定開啟 WhatsApp 發送對數訊息)");
+                proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks);
+            }).catch(err => alert("❌ 雲端同步暫緩，直接跳轉發送：" + err));
+        }
+
+        function proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks) {
+            let timeStatusText = isCust ? '⏳ 自選特殊時段 (⚠️非保證)' : (isRev ? '⏳ 接近下班安全線 (⚠️需審批)' : '🟢 系統自動即時預留');
+            let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定員工 / Stylist: ${staffName}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
+            if (allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
+            msg += `------------------------------------\n（此訊息由系統排班大腦生成，請按傳送，我們將為您核對確認。）`;
+            window.location.href = `https://api.whatsapp.com/send?phone=85293436973&text=${encodeURIComponent(msg)}`;
+        }
+    </script>
 </body>
 </html>
