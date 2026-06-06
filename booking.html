@@ -49,14 +49,14 @@
         </div>
 
         <div class="step-section">
-            <div class="step-title">1. 選擇日期與美甲師 <span class="en-sub">Select Date & Stylist</span></div>
+            <div class="step-title">1. 選擇日期與服務人員 <span class="en-sub">Select Date & Stylist</span></div>
             <div class="grid-2">
                 <div>
                     <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">預約日期 / Date:</label>
                     <input type="date" id="booking-date" style="width:90%; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="handleBookingDateOrStaffChange()">
                 </div>
                 <div>
-                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">指定美甲師 / Stylist:</label>
+                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">指定服務人員 / Stylist:</label>
                     <select id="booking-staff" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="handleBookingDateOrStaffChange()">
                         <option value="auto">🌟 由系統分配 (Auto Allocate)</option>
                     </select>
@@ -100,11 +100,11 @@
         <div class="step-section">
             <div class="step-title">3. 選擇預約時間空檔 <span class="en-sub">Select Appointment Time Slot</span></div>
             <div style="font-size:11px; color:#6b7280; margin-bottom:10px; text-align:center;">
-                🟢 綠色：系統即時確認 / Instant | ⏳ 沙漏：需經理審批 / Pending Approval
+                🟢 綠色：系統即時確認 / Instant | ⏳ 黃色：下班前半小時內 (需經理待確定) / Pending
             </div>
             <div class="grid-3" id="time-slots-container" style="margin-bottom: 14px;">
                 <div style="grid-column: span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">
-                    請先選好項目、日期與美甲師<br>Please select services, date & stylist first
+                    請先選好項目、日期與服務人員<br>Please select services, date & stylist first
                 </div>
             </div>
 
@@ -112,21 +112,14 @@
                 <label style="font-size:12px; font-weight:bold; color:#be185d; display:block; margin-bottom:6px;">⏰ 預約上述以外時間 / Request Custom Time Slot:</label>
                 <select id="custom-time-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px; color:#be185d;" onchange="handleCustomTimeSelectChange()">
                     <option value="">-- 請選取 09:00 - 23:00 特殊時間段 (Custom Time) --</option>
-                    <option value="09:00">09:00 AM</option><option value="09:30">09:30 AM</option>
-                    <option value="10:00">10:00 AM</option><option value="10:30">10:30 AM</option>
-                    <option value="11:00">11:00 AM</option><option value="11:30">11:30 AM</option>
-                    <option value="12:00">12:00 PM</option><option value="12:30">12:30 PM</option>
-                    <option value="13:00">13:00 PM</option><option value="13:30">13:30 PM</option>
-                    <option value="14:00">14:00 PM</option><option value="14:30">14:30 PM</option>
-                    <option value="15:00">15:00 PM</option><option value="15:30">15:30 PM</option>
-                    <option value="16:00">16:00 PM</option><option value="16:30">16:30 PM</option>
-                    <option value="17:00">17:00 PM</option><option value="17:30">17:30 PM</option>
-                    <option value="18:00">18:00 PM</option><option value="18:30">18:30 PM</option>
-                    <option value="19:00">19:00 PM</option><option value="19:30">19:30 PM</option>
-                    <option value="20:00">20:00 PM</option><option value="20:30">20:30 PM</option>
-                    <option value="21:00">21:00 PM</option><option value="21:30">21:30 PM</option>
-                    <option value="22:00">22:00 PM</option><option value="22:30">22:30 PM</option>
-                    <option value="23:00">23:00 PM</option>
+                    <script>
+                        for(let h=9; h<=23; h++){
+                            ['00','15','30','45'].forEach(m => {
+                                let tStr = `${String(h).padStart(2,'0')}:${m}`;
+                                document.write(`<option value="${tStr}">${tStr}</option>`);
+                            });
+                        }
+                    </script>
                 </select>
                 <div style="font-size:11px; color:#ea580c; font-weight:bold; margin-top:6px; background:#fff7ed; padding:6px; border-radius:6px; border:1px solid #ffedd5;">
                     ⚠️ 請注意：此自選時間段並不保證一定能提供服務，最終實際預約成功與否，一律以店舖人員 WhatsApp 確認為準。<br>
@@ -177,6 +170,13 @@
             }
         } catch (e) { console.error("Firebase安全繞過:", e); }
 
+        const staffIds = {
+            "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
+            "二妹": "107", "TT": "108", "Cici": "109", "珍": "110", "Jackie": "111",
+            "澄澄": "113", "ALICE": "115", "阿璇": "116", "Mandy婷": "117", "妙妙": "118",
+            "葉子": "119", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
+        };
+
         const servicesMetadata = {
             nail_hand_base: [
                 { id: "h_base_1", zh: "💅 手部單色 Soak Off Gel", en: "Hand Single Color Soak Off Gel", duration: 60 },
@@ -225,9 +225,15 @@
                     const selectEl = document.getElementById('booking-staff'); if (!selectEl) return;
                     const emps = snap.exists() ? snap.val() : [];
                     const cleanEmps = Array.isArray(emps) ? emps.filter(Boolean) : Object.values(emps).filter(Boolean);
+                    
+                    selectEl.innerHTML = '<option value="auto">🌟 由系統分配 (Auto Allocate)</option>';
                     cleanEmps.forEach(e => {
-                        if (e && e.name && e.role !== '學徒') {
-                            const opt = document.createElement('option'); opt.value = e.name; opt.innerText = `👤 ${e.name} [${e.role}]`; selectEl.appendChild(opt);
+                        if (e && e.name) {
+                            let code = staffIds[e.name] || "100";
+                            const opt = document.createElement('option');
+                            opt.value = e.name;
+                            opt.innerText = `👤 #${code} ${e.name}`;
+                            selectEl.appendChild(opt);
                         }
                     });
                 });
@@ -346,17 +352,23 @@
             Promise.all([
                 database.ref('v8_employees').once('value'),
                 database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
-                database.ref(`v8_bookings/${yearMonthKey}`).once('value')
-            ]).then(([empSnap, holSnap, bookSnap]) => {
+                database.ref(`v8_bookings/${yearMonthKey}`).once('value'),
+                database.ref(`v8_overrides/${yearMonthKey}`).once('value')
+            ]).then(([empSnap, holSnap, bookSnap, ovrSnap]) => {
                 const employees = empSnap.exists() ? empSnap.val() : [];
                 const holidays = holSnap.exists() ? holSnap.val() : {};
                 const bookings = bookSnap.exists() ? bookSnap.val() : {};
                 const cleanEmployees = Array.isArray(employees) ? employees.filter(Boolean) : Object.values(employees).filter(Boolean);
-                let workingStaffs = cleanEmployees.filter(e => e && e.name && e.role !== '學徒' && !(holidays[e.name] || []).includes(dayNum));
+                
+                // 學徒不作過濾，全體一起歸位上班
+                let workingStaffs = cleanEmployees.filter(e => e && e.name && !(holidays[e.name] || []).includes(dayNum));
                 if (staffChoice !== 'auto') { workingStaffs = workingStaffs.filter(e => e.name === staffChoice); }
 
+                // 🌟 核心進化：每 15 分鐘為一個精細選擇區間 (09:00 - 22:45)
                 let timeSlots = [];
-                for (let h = 9; h <= 21; h++) { ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); }); }
+                for (let h = 9; h <= 22; h++) { 
+                    ['00', '15', '30', '45'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); }); 
+                }
                 let validSlotsPool = [];
 
                 workingStaffs.forEach(staff => {
@@ -364,28 +376,75 @@
                     let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
                     staffBookedList = staffBookedList.filter(Boolean);
 
+                    // 🎯 獲取當前員工精準下班時間
+                    let startTimeStr = "";
+                    if (ovrSnap.exists() && ovrSnap.val()[dayKey]) {
+                        let daySched = ovrSnap.val()[dayKey];
+                        Object.values(daySched).forEach(shopSlots => {
+                            if (Array.isArray(shopSlots)) {
+                                shopSlots.forEach(slot => {
+                                    if (slot && slot.name && slot.name.replace(/\s+/g,'') === staff.name.replace(/\s+/g,'')) {
+                                        startTimeStr = slot.time;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if (!startTimeStr && staff.times) {
+                        startTimeStr = staff.times.split(',')[0].trim();
+                    }
+                    if (!startTimeStr) startTimeStr = "12:00";
+                    if (startTimeStr.includes('(')) {
+                        let m = startTimeStr.match(/\(([^)]+)\)/); if (m && m[1]) startTimeStr = m[1];
+                    }
+                    startTimeStr = startTimeStr.trim();
+
+                    let startWorkMins = timeToMins(startTimeStr);
+                    let offWorkMins = startWorkMins + 540; // 9小時標準工時 = 540分鐘
+                    let safetyLineMins = offWorkMins - 30;  // 收工前 30 分鐘防線
+
                     timeSlots.forEach(slotTime => {
-                        let startMins = timeToMins(slotTime); let endMins = startMins + bookingState.totalDuration;
-                        if (endMins > 1410) return;
+                        let startMins = timeToMins(slotTime); 
+                        let endMins = startMins + bookingState.totalDuration;
+
+                        if (endMins > 1425) return; // 最晚不可超越 23:45 跨夜
+
+                        // 判斷防撞 (預約佔用時段是否重疊)
                         let isOverlap = staffBookedList.some(b => {
                             return Math.max(startMins, timeToMins(b.start)) < Math.min(endMins, timeToMins(b.end));
                         });
-                        if (!isOverlap) { validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: (endMins > 1200), isCustom: false }); }
+
+                        if (!isOverlap) {
+                            // 🌟 簡化判定：只認客人的預約開始時間是否 > (下班時間 - 30分鐘)
+                            let isReview = (startMins > safetyLineMins);
+                            validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: isReview, isCustom: false });
+                        }
                     });
                 });
 
+                // 智能合併分流
                 let uniqueTimesMap = new Map(); 
-                validSlotsPool.forEach(s => { if (!uniqueTimesMap.has(s.time)) uniqueTimesMap.set(s.time, s); });
-                renderSlotsGridUI(Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time)));
+                validSlotsPool.forEach(s => { 
+                    if (!uniqueTimesMap.has(s.time)) {
+                        uniqueTimesMap.set(s.time, s); 
+                    } else {
+                        if (uniqueTimesMap.get(s.time).isReview && !s.isReview) {
+                            uniqueTimesMap.set(s.time, s);
+                        }
+                    }
+                });
+                
+                let sortedSlots = Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time));
+                renderSlotsGridUI(sortedSlots);
             }).catch(err => { container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`; });
         }
 
-        function renderSlotsGridUI(slots) {
+        function renderSlotsGridUI(slotsList) {
             const container = document.getElementById('time-slots-container'); if (!container) return; container.innerHTML = '';
-            if (slots.length === 0) {
+            if (slotsList.length === 0) {
                 container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold; background:#fdf2f2; border:1px solid #fca5a5; border-radius:10px;">⚠️ 抱歉！當天此項目已被約滿，請另選日期。</div>`; return;
             }
-            slots.forEach(slot => {
+            slotsList.forEach(slot => {
                 const btn = document.createElement('button'); btn.type = "button"; btn.className = "slot-btn";
                 if (slot.isReview) btn.classList.add('review-mode'); btn.innerText = slot.time;
                 btn.onclick = () => {
@@ -441,19 +500,20 @@
             const parts = dateVal.split('-'); const yearMonthKey = `${parts[0]}-${parts[1]}`; const dayKey = `day_${parseInt(parts[2])}`;
 
             if (!isCloudMode || !database) {
-                alert("⚠️ 演示安全模式：大腦防線全線開通！將立即為您跳轉 WhatsApp 對數。");
                 proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks); return;
             }
 
             database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
                 alert("✅ 預約已成功同步至水晶閣雲端大腦！\n(點擊確定開啟 WhatsApp 發送對數訊息)");
                 proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks);
-            }).catch(err => alert("❌ 雲端同步暫緩，直接跳轉發送：" + err));
+            }).catch(err => alert("❌ 雲端同步失敗，請重試：" + err));
         }
 
         function proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks) {
-            let timeStatusText = isCust ? '⏳ 自選特殊時段 (⚠️非保證)' : (isRev ? '⏳ 接近下班安全線 (⚠️需審批)' : '🟢 系統自動即時預留');
-            let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定員工 / Stylist: ${staffName}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
+            let code = staffIds[staffName] || "100";
+            let staffDisplay = `#${code} ${staffName}`;
+            let timeStatusText = isCust ? '⏳ 自選特殊時段 (⚠️非保證)' : (isRev ? '⏳ 下班前半小時內 (⚠️待確定)' : '🟢 系統自動即時預留');
+            let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定人員 / Stylist: ${staffDisplay}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
             if (allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
             msg += `------------------------------------\n（此訊息由系統排班大腦生成，請按傳送，我們將為您核對確認。）`;
             window.location.href = `https://api.whatsapp.com/send?phone=85293436973&text=${encodeURIComponent(msg)}`;
