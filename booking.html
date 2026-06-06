@@ -2,165 +2,160 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>水晶閣 | 預約看板管理系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>水晶閣智能預約中心 | Crystal Pavilion Appointment Center</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        :root { --primary: #be185d; --bg-canvas: #f8fafc; --border-color: #e2e8f0; }
-        body { font-family: -apple-system, sans-serif; background-color: var(--bg-canvas); margin: 0; padding: 12px; color: #1e293b; }
-        .dashboard-header { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-        .title-zone h2 { margin: 0; font-size: 16px; color: #9d174d; }
-        .date-picker-zone { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 13px; }
-        .matrix-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; border: 1px solid var(--border-color); }
-        .matrix-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 900px; }
-        .matrix-table th, .matrix-table td { border: 1px solid var(--border-color); text-align: center; font-size: 11px; padding: 6px 4px; }
-        .matrix-table th { background: #f1f5f9; font-weight: bold; color: #475569; height: 38px; }
-        .time-col { width: 65px; background: #e2e8f0 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; }
-        .cell-free { background: white; }
-        .cell-booked { background: #fdf2f8; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 6px !important; }
-        .status-badge { display: inline-block; padding: 1px 4px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-right: 2px; margin-top: 2px; }
-        .badge-rush { background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; }
-        .badge-noremove { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-        .badge-sameday { background: #e2fbf0; color: #10b981; border: 1px solid #a7f3d0; }
-        .badge-review { background: #fef3c7; color: #d97706; border: 1px solid #fef08a; }
+        :root { --primary: #db2777; --bg-main: #fdf2f8; --card-border: #fbcfe8; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background-color: var(--bg-main); margin: 0; padding: 12px; color: #1f2937; }
+        .booking-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 20px; border: 1px solid var(--card-border); padding-bottom: 90px; }
+        .shop-banner { text-align: center; margin-bottom: 16px; border-bottom: 2px dashed var(--card-border); padding-bottom: 12px; }
+        .shop-title { font-size: 19px; font-weight: 800; color: #9d174d; margin: 0; }
+        .shop-subtitle { font-size: 11px; color: #c084fc; font-weight: bold; margin-top: 2px; text-transform: uppercase; }
+        .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 14px; border-radius: 14px; margin-bottom: 14px; }
+        .step-title { font-size: 14px; font-weight: bold; color: #4c0519; margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
+        .en-sub { font-size: 10px; color: #6b7280; font-weight: normal; display: block; margin-top: 1px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .check-card { border: 2px solid #e5e7eb; border-radius: 10px; padding: 12px 6px; text-align: center; cursor: pointer; background: white; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .check-card input { position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; accent-color: var(--primary); }
+        .check-card.selected { border-color: var(--primary); background: #fdf2f8; }
+        .card-name { font-size: 12px; font-weight: bold; color: #111827; line-height: 1.3; }
+        .addon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 2px; text-align: center; cursor: pointer; background: white; font-size: 11px; font-weight: bold; color: #374151; position: relative; }
+        .addon-card input { position: absolute; opacity: 0; }
+        .addon-card.selected { border-color: var(--primary); background: #fff1f2; color: #be185d; }
+        .sub-panel { background: white; border: 1px solid #fbcfe8; border-radius: 12px; padding: 10px; margin-top: 10px; }
+        .sub-panel-title { font-size: 11px; font-weight: bold; color: #be185d; margin-bottom: 6px; background: #fce7f3; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        .slot-btn { background: white; border: 1px solid #cbd5e1; padding: 8px 2px; text-align: center; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .slot-btn.selected { background: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+        .slot-btn.review-mode { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
+        .slot-btn:disabled { background: #f1f5f9; color: #cbd5e1; border-color: #e2e8f0; cursor: not-allowed; }
+        .tag-btn { border: 1px solid #cbd5e1; background: white; padding: 6px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; position: relative; }
+        .tag-btn input { position: absolute; opacity: 0; }
+        .tag-btn.active { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
+        .bottom-sticky-zone { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--card-border); padding: 10px 0; box-shadow: 0 -8px 20px rgba(0,0,0,0.05); z-index: 999; }
+        .bottom-inner { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+        .summary-bar { text-align: center; font-weight: bold; font-size: 13px; color: #9d174d; margin-bottom: 6px; }
+        .submit-btn { width: 100%; background: #0d9488; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .submit-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
     </style>
 </head>
 <body>
-
-    <div class="dashboard-header">
-        <div class="title-zone">
-            <h2>🔮 水晶閣 | 📅 直立式雙向預約看板</h2>
-            <div style="font-size: 11px; color:#64748b; margin-top:2px;">排班與雲端預約即時互鎖畫布</div>
+    <div class="booking-container">
+        <div class="shop-banner">
+            <h1 class="shop-title">水晶閣私人定制美容美甲紋綉中心</h1>
+            <div class="shop-subtitle">Crystal Pavilion Beauty & Nail Center</div>
         </div>
-        <div class="date-picker-zone">
-            <label>查詢日期 / Date:</label>
-            <input type="date" id="query-date" style="padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="loadScheduleMatrix()">
+
+        <div class="step-section">
+            <div class="step-title">1. 選擇日期與美甲師 <span class="en-sub">Select Date & Stylist</span></div>
+            <div class="grid-2">
+                <div>
+                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">預約日期 / Date:</label>
+                    <input type="date" id="booking-date" style="width:90%; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="handleBookingDateOrStaffChange()">
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">指定美甲師 / Stylist:</label>
+                    <select id="booking-staff" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px;" onchange="handleBookingDateOrStaffChange()">
+                        <option value="auto">🌟 由系統分配 (Auto Allocate)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title">2. 選擇服務項目 <span class="en-sub">Select Services (Multiple Selection Allowed)</span></div>
+            <div class="grid-3" style="margin-bottom: 10px;">
+                <div class="check-card" id="cate-card-nail" onclick="toggleMainCategory('nail')">
+                    <input type="checkbox" id="main-chk-nail" pointer-events="none">
+                    <span class="card-name">💅 藝術美甲<br><span style="font-size:10px; font-weight:normal; color:#6b7280;">Nail Art</span></span>
+                </div>
+                <div class="check-card" id="cate-card-lash" onclick="toggleMainCategory('lash')">
+                    <input type="checkbox" id="main-chk-lash" pointer-events="none">
+                    <span class="card-name">👁️ 嫁接美睫<br><span style="font-size:10px; font-weight:normal; color:#6b7280;">Eyelash</span></span>
+                </div>
+                <div class="check-card" id="cate-card-brows" onclick="toggleMainCategory('brows')">
+                    <input type="checkbox" id="main-chk-brows" pointer-events="none">
+                    <span class="card-name">✒️ 定制紋綉<br><span style="font-size:10px; font-weight:normal; color:#6b7280;">Brows Tattoo</span></span>
+                </div>
+            </div>
+
+            <div id="nail-part-selector-zone" class="sub-panel" style="display: none; border-color: #f472b6; background: #fff5f7; padding:8px;">
+                <div class="sub-panel-title">📍 請選擇服務部位 / Select Area</div>
+                <div class="grid-2">
+                    <div class="check-card" id="part-card-hand" onclick="toggleNailPart('hand')" style="padding:10px 4px;">
+                        <input type="checkbox" id="part-chk-hand">
+                        <span class="card-name">🖐️ 手部服務 (Hands)</span>
+                    </div>
+                    <div class="check-card" id="part-card-foot" onclick="toggleNailPart('foot')" style="padding:10px 4px;">
+                        <input type="checkbox" id="part-chk-foot">
+                        <span class="card-name">🦶 腳部服務 (Feet)</span>
+                    </div>
+                </div>
+            </div>
+            <div id="sub-details-render-zone"></div>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title">3. 選擇預約時間空檔 <span class="en-sub">Select Appointment Time Slot</span></div>
+            <div style="font-size:11px; color:#6b7280; margin-bottom:10px; text-align:center;">
+                🟢 綠色：系統即時確認 / Instant | ⏳ 沙漏：需經理審批 / Pending Approval
+            </div>
+            <div class="grid-3" id="time-slots-container" style="margin-bottom: 14px;">
+                <div style="grid-column: span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">
+                    請先選好項目、日期與美甲師<br>Please select services, date & stylist first
+                </div>
+            </div>
+
+            <div style="border-top: 1px dashed #fbcfe8; padding-top: 12px; margin-top: 10px;">
+                <label style="font-size:12px; font-weight:bold; color:#be185d; display:block; margin-bottom:6px;">⏰ 預約上述以外時間 / Request Custom Time Slot:</label>
+                <select id="custom-time-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold; font-size:13px; color:#be185d;" onchange="handleCustomTimeSelectChange()">
+                    <option value="">-- 請選取 09:00 - 23:00 特殊時間段 (Custom Time) --</option>
+                    <option value="09:00">09:00 AM</option><option value="09:30">09:30 AM</option>
+                    <option value="10:00">10:00 AM</option><option value="10:30">10:30 AM</option>
+                    <option value="11:00">11:00 AM</option><option value="11:30">11:30 AM</option>
+                    <option value="12:00">12:00 PM</option><option value="12:30">12:30 PM</option>
+                    <option value="13:00">13:00 PM</option><option value="13:30">13:30 PM</option>
+                    <option value="14:00">14:00 PM</option><option value="14:30">14:30 PM</option>
+                    <option value="15:00">15:00 PM</option><option value="15:30">15:30 PM</option>
+                    <option value="16:00">16:00 PM</option><option value="16:30">16:30 PM</option>
+                    <option value="17:00">17:00 PM</option><option value="17:30">17:30 PM</option>
+                    <option value="18:00">18:00 PM</option><option value="18:30">18:30 PM</option>
+                    <option value="19:00">19:00 PM</option><option value="19:30">19:30 PM</option>
+                    <option value="20:00">20:00 PM</option><option value="20:30">20:30 PM</option>
+                    <option value="21:00">21:00 PM</option><option value="21:30">21:30 PM</option>
+                    <option value="22:00">22:00 PM</option><option value="22:30">22:30 PM</option>
+                    <option value="23:00">23:00 PM</option>
+                </select>
+                <div style="font-size:11px; color:#ea580c; font-weight:bold; margin-top:6px; background:#fff7ed; padding:6px; border-radius:6px; border:1px solid #ffedd5;">
+                    ⚠️ 請注意：此自選時間段並不保證一定能提供服務，最終實際預約成功與否，一律以店舖人員 WhatsApp 確認為準。<br>
+                    ⚠️ Please note: Services requested during this custom time slot are not guaranteed and are subject to final confirmation via WhatsApp.
+                </div>
+            </div>
+        </div>
+
+        <div class="step-section" style="margin-bottom: 20px;">
+            <div class="step-title">4. 貼心特別備註 <span class="en-sub">Special Remarks (Optional)</span></div>
+            <div class="grid-3" style="margin-bottom:10px;">
+                <div class="tag-btn" id="tag-rush" onclick="toggleQuickTag('rush')"><input type="checkbox" id="chk-tag-rush">⚡ 特別趕時間</div>
+                <div class="tag-btn" id="tag-noremove" onclick="toggleQuickTag('noremove')"><input type="checkbox" id="chk-tag-noremove">🚫 不需要拆甲</div>
+                <div class="tag-btn" id="tag-sameday" onclick="toggleQuickTag('sameday')"><input type="checkbox" id="chk-tag-sameday">🤝 手腳同做</div>
+            </div>
+            <textarea id="custom-remarks" rows="2" style="width:96%; padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; resize:none;" placeholder="如有其他自訂要求，請在此填寫... / Any other requests, enter here..."></textarea>
+        </div>
+
+        <div style="font-size:10px; color:#854d0e; background:#fefce8; border:1px solid #fef08a; padding:10px; border-radius:10px; line-height:1.4;">
+            💡 <b>溫馨提示 / Notice:</b> 以上時間均為系統根據項目預測之估算時長，現場實際操作時間可能會因每位客人的個體狀況而有所落差。
         </div>
     </div>
 
-    <div class="matrix-container">
-        <table class="matrix-table" id="matrix-table-canvas"></table>
+    <div class="bottom-sticky-zone">
+        <div class="bottom-inner">
+            <div class="summary-bar" id="live-timer-bar">⏱️ 預計總時長 / Estimated Duration: 0 分鐘 (mins)</div>
+            <button class="submit-btn" id="btn-submit-booking" onclick="executeWhatsAppBooking()" disabled>🚀 立即發送 WhatsApp 預約申請 / Send Request via WhatsApp</button>
+        </div>
     </div>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
-            authDomain: "cp-schedule.firebaseapp.com",
-            databaseURL: "https://cp-schedule-default-rtdb.firebaseio.com/",
-            projectId: "cp-schedule",
-            storageBucket: "cp-schedule.firebasestorage.app",
-            messagingSenderId: "136891249500",
-            appId: "1:136891249500:web:f3278b3ce642dc8d454799"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        const staffIds = {
-            "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
-            "二妹": "107", "TT": "108", "Cici": "109", "珍": "110", "Jackie": "111",
-            "澄澄": "113", "ALICE": "115", "阿璇": "116", "Mandy婷": "117", "妙妙": "118",
-            "葉子": "119", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
-        };
-
-        // ✅ 修正 iPad 預設日期填補邏輯，確保加載時即時抓取渲染
-        const t = new Date();
-        const formattedDate = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-        document.getElementById('query-date').value = formattedDate;
-        
-        // 強制執行網格初次建立
-        setTimeout(loadScheduleMatrix, 600);
-
-        function loadScheduleMatrix() {
-            const dateVal = document.getElementById('query-date').value;
-            if(!dateVal) return;
-
-            const parts = dateVal.split('-');
-            const yearMonthKey = `${parts[0]}-${parts[1]}`;
-            const dayNum = parseInt(parts[2]);
-            const dayKey = `day_${dayNum}`;
-
-            Promise.all([
-                database.ref('v8_employees').once('value'),
-                database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
-                database.ref(`v8_bookings/${yearMonthKey}`).once('value')
-            ]).then(([empSnap, holSnap, bookSnap]) => {
-                const employees = empSnap.exists() ? empSnap.val() : [];
-                const holidays = holSnap.exists() ? holSnap.val() : {};
-                const allBookings = bookSnap.exists() ? bookSnap.val() : {};
-                const workingStaffs = employees.filter(e => !(holidays[e.name] || []).includes(dayNum));
-                
-                // 補齊縱軸：上午 09:00 至 晚上 23:00 (每半小時一格)
-                let timeSlots = [];
-                for (let h = 9; h <= 23; h++) {
-                    ['00', '30'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); });
-                }
-                renderMatrixCanvas(workingStaffs, timeSlots, allBookings, dayKey);
-            });
-        }
-
-        function renderMatrixCanvas(staffs, timeSlots, bookings, dayKey) {
-            const table = document.getElementById('matrix-table-canvas');
-            table.innerHTML = '';
-
-            let headerHtml = `<tr><th class="time-col">時間軸</th>`;
-            staffs.forEach(s => {
-                let code = staffIds[s.name] || "000";
-                headerHtml += `<th>#${code}<br>${s.name}</th>`;
-            });
-            headerHtml += `</tr>`;
-            table.innerHTML += headerHtml;
-
-            timeSlots.forEach(slotTime => {
-                let rowHtml = `<tr><td class="time-col">${slotTime}</td>`;
-                let currentSlotMins = timeToMins(slotTime);
-
-                staffs.forEach(staff => {
-                    let rawBook = bookings[staff.name]?.[dayKey] || {};
-                    // ✅ 修正：完美將 Firebase Object 轉化為 Array 進行防撞過濾
-                    let staffDayBookings = Array.isArray(rawBook) ? rawBook : Object.values(rawBook);
-                    
-                    let matchedBooking = staffDayBookings.find(b => {
-                        let startMins = timeToMins(b.start);
-                        let endMins = timeToMins(b.end);
-                        let overlap = Math.max(0, Math.min(currentSlotMins + 30, endMins) - Math.max(currentSlotMins, startMins));
-                        return overlap > 10;
-                    });
-
-                    if (matchedBooking) {
-                        if (currentSlotMins === timeToMins(matchedBooking.start) || slotTime.endsWith('00')) {
-                            let badges = '';
-                            if (matchedBooking.status && matchedBooking.status.includes('待審')) badges += `<span class="status-badge badge-review">⏳ 待審</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('特殊')) badges += `<span class="status-badge badge-review">⏰ 自選</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('吉時')) badges += `<span class="status-badge badge-sameday">🟢 吉時</span>`;
-                            
-                            if (matchedBooking.remarks) {
-                                if (matchedBooking.remarks.includes('趕時間')) badges += `<span class="status-badge badge-rush">⚡ 趕</span>`;
-                                if (matchedBooking.remarks.includes('免拆甲')) badges += `<span class="status-badge badge-noremove">🚫 免</span>`;
-                                if (matchedBooking.remarks.includes('手腳同做')) badges += `<span class="status-badge badge-sameday">🤝 同</span>`;
-                            }
-
-                            rowHtml += `<td class="cell-booked">
-                                        <div style="font-weight:bold; font-size:11px; color:#9d174d;">${matchedBooking.item}</div>
-                                        <div style="font-size:9px; color:#64748b; margin-top:1px;">⏰ ${matchedBooking.start}-${matchedBooking.end}</div>
-                                        ${badges}
-                                       </td>`;
-                        } else {
-                            rowHtml += `<td class="cell-booked" style="border-top:none; border-bottom:none; opacity:0.4;"></td>`;
-                        }
-                    } else {
-                        rowHtml += `<td class="cell-free"></td>`;
-                    }
-                });
-                rowHtml += `</tr>`;
-                table.innerHTML += rowHtml;
-            });
-        }
-
-        function timeToMins(tStr) {
-            let p = tStr.split(':');
-            return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
-        }
-    </script>
+    <script src="booking.js"></script>
 </body>
 </html>
