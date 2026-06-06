@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -41,7 +42,7 @@
         .submit-btn { width: 100%; background: #0d9488; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
         .submit-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
         
-        /* Premium Custom Modal (iOS iPad Native App Bypass Layer) */
+        /* Premium Custom Modal (Bypasses iOS iPad Native App Blocker) */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
         .modal-box { background: white; padding: 24px; border-radius: 16px; max-width: 400px; width: 85%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 2px solid #fbcfe8; }
         .modal-title { font-size: 18px; font-weight: bold; color: #9d174d; margin-bottom: 12px; }
@@ -59,7 +60,7 @@
             <div class="shop-subtitle">Crystal Pavilion Beauty & Nail Center</div>
         </div>
 
-        <!-- STEP 1: 客戶資訊驗證 (全新 CRM 資料收集層) -->
+        <!-- STEP 1: 客戶資訊驗證 -->
         <div class="step-section">
             <div class="step-title">1. 輸入預約顧客資訊 <span class="en-sub">Customer Information</span></div>
             <div class="grid-2">
@@ -197,8 +198,22 @@
             }
         } catch (e) { console.error("Firebase Initialization Failed:", e); }
 
-        // 🌟 單一水源工號備份庫
-        var staffIds = { "阿平":"101","RUBY":"102","如意":"103","影":"105","慧嫻":"106","二妹":"107","TT":"108","Cici":"109","珍":"110","Jackie":"111","澄澄":"113","ALICE":"115","阿璇":"116","Mandy婷":"117","妙妙":"118","葉子":"119","Lucia":"120","AMY":"121","小茹":"122","文君":"123" };
+        // 🌟 核心高精度全局時間轉換引擎 (修復 timeToMins 變數未定義報錯)
+        function timeToMins(tStr) {
+            if (!tStr) return 0;
+            let p = tStr.split(':');
+            return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
+        }
+
+        // 🌟 master 預設工號庫（實現名單動態智能繼承）
+        const defaultStaffIds = {
+            "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
+            "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
+            "澄澄": "113", "ALICE": "115", "阿璇": "116", "MANDY婷": "117", "Mandy婷": "117", "妙妙": "118",
+            "葉子": "119", "LUCIA": "120", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
+        };
+        
+        var staffIds = Object.assign({}, defaultStaffIds);
         var rawEmployees = [];
         var waRedirectPayload = null;
 
@@ -246,7 +261,7 @@
             if (dateInput) { dateInput.min = new Date().toISOString().split('T')[0]; }
             
             if (isCloudMode && database) {
-                // 1. 同步雲端員工名單與動態編號 (實現單一資料源，防工號不同步)
+                // 1. 同步雲端員工名單與動態編號 (實現單一資料源，完美繼承編號)
                 database.ref('v8_employees').once('value').then(snap => {
                     const selectEl = document.getElementById('booking-staff'); if (!selectEl) return;
                     rawEmployees = snap.exists() ? snap.val() : [];
@@ -255,7 +270,8 @@
                     selectEl.innerHTML = '<option value="auto">🌟 由系統分配 (Auto Allocate)</option>';
                     cleanEmps.forEach(e => {
                         if (e && e.name) {
-                            let code = e.id || staffIds[e.name] || "100";
+                            let key = e.name.trim().toUpperCase();
+                            let code = e.id || staffIds[e.name] || defaultStaffIds[key] || "100";
                             staffIds[e.name] = code; 
                             const opt = document.createElement('option');
                             opt.value = e.name;
@@ -361,7 +377,7 @@
 
         function handleBookingDateOrStaffChange() { fetchAvailableSlotsFromCloud(); }
 
-        // 📅 完美對齊排班大腦
+        // 📅 輔助排班推算
         function getStaffShiftForDay(staffName, dateVal, employees, holidays, overrides) {
             const parts = dateVal.split('-');
             const year = parseInt(parts[0]); const month = parseInt(parts[1]); const day = parseInt(parts[2]);
@@ -431,12 +447,11 @@
                 assignment[app.name] = bestShop; currentCounts[bestShop]++;
             });
 
-            // 🌟 核心防禦：加入分店分組防漏機制，避免自定義分店造成「連線失敗」
             let shopGroups = { F79: [], GK3: [], G38: [], G2: [] };
             activeStaff.forEach(emp => {
                 let shop = assignment[emp.name] || 'G2';
                 if (!shopGroups[shop]) {
-                    shopGroups[shop] = []; // 遇到新店舖時自動補齊初始化
+                    shopGroups[shop] = []; 
                 }
                 shopGroups[shop].push(emp);
             });
@@ -529,7 +544,7 @@
                     let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
                     staffBookedList = staffBookedList.filter(Boolean);
 
-                    // Ceci 案例 12:00-21:00 完美測試移植
+                    // Ceci 案例 12:00-21:00 完美排班跟隨
                     let startTimeStr = getStaffShiftForDay(staff.name, dateVal, cleanEmployees, holidays, overrides);
                     let startWorkMins = timeToMins(startTimeStr);
                     let offWorkMins = startWorkMins + 540; 
@@ -539,7 +554,7 @@
                         let startMins = timeToMins(slotTime); 
                         let endMins = startMins + bookingState.totalDuration;
 
-                        // Ceci 下班控制實測完美移植：可選時間嚴格跟隨 Ceci 當天排班
+                        // 可選時間完全鎖死在該員工當天上下班時段之內
                         if (startMins < startWorkMins || startMins > offWorkMins) return;
                         if (endMins > 1435) return; 
 
@@ -548,7 +563,7 @@
                         });
 
                         if (!isOverlap) {
-                            // Ceci 20:45、21:00 精準亮黃色，20:30 是安全綠色！
+                            // Ceci 20:45、21:00 亮起待審黃格，20:30 亮起吉時綠格
                             let isReview = (startMins >= safetyLineMins);
                             validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: isReview, isCustom: false });
                         }
