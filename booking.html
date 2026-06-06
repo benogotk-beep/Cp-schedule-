@@ -14,7 +14,6 @@
         .shop-title { font-size: 19px; font-weight: 800; color: #9d174d; margin: 0; }
         .shop-subtitle { font-size: 11px; color: #c084fc; font-weight: bold; margin-top: 2px; text-transform: uppercase; }
         .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 14px; border-radius: 14px; margin-bottom: 14px; }
-        .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 14px; border-radius: 14px; margin-bottom: 14px; }
         .step-title { font-size: 14px; font-weight: bold; color: #4c0519; margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
         .en-sub { font-size: 10px; color: #6b7280; font-weight: normal; display: block; margin-top: 1px; }
         .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -232,13 +231,6 @@
                         }
                     });
                 });
-            } else {
-                const selectEl = document.getElementById('booking-staff');
-                if (selectEl) {
-                    ["阿平", "二妹", "珍", "ALICE", "阿璇"].forEach(n => {
-                        const opt = document.createElement('option'); opt.value = n; opt.innerText = `👤 ${n} [備用上線]`; selectEl.appendChild(opt);
-                    });
-                }
             }
         });
 
@@ -348,12 +340,6 @@
                 container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">💅 請先選好服務項目<br>Please select services first</div>`; return;
             }
 
-            if (!isCloudMode || !database) {
-                let timeSlots = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30", "19:00", "20:30"];
-                let fakeSlots = timeSlots.map(t => ({ staff: (staffChoice==='auto')?"展示專家":staffChoice, time: t, isReview: timeToMins(t)>1200, isCustom: false }));
-                renderSlotsGridUI(fakeSlots); return;
-            }
-
             container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#db2777; font-size:12px; font-weight:bold;">⚡ 水晶閣雲端雷達精算空檔中...</div>`;
             const parts = dateVal.split('-'); const yearMonthKey = `${parts[0]}-${parts[1]}`; const dayNum = parseInt(parts[2]); const dayKey = `day_${dayNum}`;
 
@@ -388,7 +374,8 @@
                     });
                 });
 
-                let uniqueTimesMap = new Map(); slots.forEach(s => { if (!uniqueTimesMap.has(s.time)) uniqueTimesMap.set(s.time, s); });
+                let uniqueTimesMap = new Map(); 
+                validSlotsPool.forEach(s => { if (!uniqueTimesMap.has(s.time)) uniqueTimesMap.set(s.time, s); });
                 renderSlotsGridUI(Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time)));
             }).catch(err => { container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`; });
         }
