@@ -1,16 +1,16 @@
-```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>水晶閣智能預約中心 | Crystal Pavilion Appointment Center</title>
+    <!-- Firebase SDK (Compat version) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         :root { --primary: #db2777; --bg-main: #fdf2f8; --card-border: #fbcfe8; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background-color: var(--bg-main); margin: 0; padding: 12px; color: #1f2937; }
-        .booking-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 20px; border: 1px solid var(--card-border); padding-bottom: 90px; }
+        .booking-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 20px; border: 1px solid var(--card-border); padding-bottom: 95px; }
         .shop-banner { text-align: center; margin-bottom: 16px; border-bottom: 2px dashed var(--card-border); padding-bottom: 12px; }
         .shop-title { font-size: 19px; font-weight: 800; color: #9d174d; margin: 0; }
         .shop-subtitle { font-size: 11px; color: #c084fc; font-weight: bold; margin-top: 2px; text-transform: uppercase; }
@@ -40,6 +40,16 @@
         .summary-bar { text-align: center; font-weight: bold; font-size: 13px; color: #9d174d; margin-bottom: 6px; }
         .submit-btn { width: 100%; background: #0d9488; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
         .submit-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        
+        /* Premium Custom Modal (iOS iPad Native App Bypass Layer) */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
+        .modal-box { background: white; padding: 24px; border-radius: 16px; max-width: 400px; width: 85%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 2px solid #fbcfe8; }
+        .modal-title { font-size: 18px; font-weight: bold; color: #9d174d; margin-bottom: 12px; }
+        .modal-text { font-size: 13px; color: #4b5563; line-height: 1.5; margin-bottom: 20px; }
+        .modal-btn { background: #25D366; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; }
+        
+        .input-text-field { width: 92%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 14px; outline: none; margin-top: 4px; }
+        .input-text-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(219,39,119,0.15); }
     </style>
 </head>
 <body>
@@ -49,8 +59,23 @@
             <div class="shop-subtitle">Crystal Pavilion Beauty & Nail Center</div>
         </div>
 
+        <!-- STEP 1: 客戶資訊驗證 (全新 CRM 資料收集層) -->
         <div class="step-section">
-            <div class="step-title">1. 選擇日期與服務人員 <span class="en-sub">Select Date & Stylist</span></div>
+            <div class="step-title">1. 輸入預約顧客資訊 <span class="en-sub">Customer Information</span></div>
+            <div class="grid-2">
+                <div>
+                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block;">顧客姓名 / Name:</label>
+                    <input type="text" id="cust-name" class="input-text-field" placeholder="姓名 / Nickname" oninput="validateFormProgress()">
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block;">手提電話 / Mobile Number:</label>
+                    <input type="tel" id="cust-phone" class="input-text-field" placeholder="91234567" oninput="validateFormProgress()">
+                </div>
+            </div>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title">2. 選擇日期與服務人員 <span class="en-sub">Select Date & Stylist</span></div>
             <div class="grid-2">
                 <div>
                     <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">預約日期 / Date:</label>
@@ -66,7 +91,7 @@
         </div>
 
         <div class="step-section">
-            <div class="step-title">2. 選擇服務項目 <span class="en-sub">Select Services (Multiple Selection Allowed)</span></div>
+            <div class="step-title">3. 選擇服務項目 <span class="en-sub">Select Services</span></div>
             <div class="grid-3" style="margin-bottom: 10px;">
                 <div class="check-card" id="cate-card-nail" onclick="toggleMainCategory('nail')">
                     <input type="checkbox" id="main-chk-nail" style="pointer-events:none;">
@@ -99,13 +124,13 @@
         </div>
 
         <div class="step-section">
-            <div class="step-title">3. 選擇預約時間空檔 <span class="en-sub">Select Appointment Time Slot</span></div>
+            <div class="step-title">4. 選擇預約時間空檔 <span class="en-sub">Select Appointment Time Slot</span></div>
             <div style="font-size:11px; color:#6b7280; margin-bottom:10px; text-align:center;">
                 🟢 綠色：系統即時確認 / Instant | ⏳ 黃色：下班前半小時內 (需經理待確定) / Pending
             </div>
             <div class="grid-3" id="time-slots-container" style="margin-bottom: 14px;">
                 <div style="grid-column: span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">
-                    請先選好項目、日期與服務人員<br>Please select services, date & stylist first
+                    請先填妥資料、選取項目與日期<br>Please fill in details, select services & date first
                 </div>
             </div>
 
@@ -122,25 +147,17 @@
                         }
                     </script>
                 </select>
-                <div style="font-size:11px; color:#ea580c; font-weight:bold; margin-top:6px; background:#fff7ed; padding:6px; border-radius:6px; border:1px solid #ffedd5;">
-                    ⚠️ 請注意：此自選時間段並不保證一定能提供服務，最終實際預約成功與否，一律以店舖人員 WhatsApp 確認為準。<br>
-                    ⚠️ Please note: Services requested during this custom time slot are not guaranteed and are subject to final confirmation via WhatsApp.
-                </div>
             </div>
         </div>
 
         <div class="step-section" style="margin-bottom: 20px;">
-            <div class="step-title">4. 貼心特別備註 <span class="en-sub">Special Remarks (Optional)</span></div>
+            <div class="step-title">5. 貼心特別備註 <span class="en-sub">Special Remarks (Optional)</span></div>
             <div class="grid-3" style="margin-bottom:10px;">
                 <div class="tag-btn" id="tag-rush" onclick="toggleQuickTag('rush')"><input type="checkbox" id="chk-tag-rush" style="pointer-events:none;">⚡ 特別趕時間</div>
                 <div class="tag-btn" id="tag-noremove" onclick="toggleQuickTag('noremove')"><input type="checkbox" id="chk-tag-noremove" style="pointer-events:none;">🚫 不需要拆甲</div>
                 <div class="tag-btn" id="tag-sameday" onclick="toggleQuickTag('sameday')"><input type="checkbox" id="chk-tag-sameday" style="pointer-events:none;">🤝 手腳同做</div>
             </div>
-            <textarea id="custom-remarks" rows="2" style="width:96%; padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; resize:none;" placeholder="如有其他自訂要求，請在此填寫... / Any other requests, enter here..."></textarea>
-        </div>
-
-        <div style="font-size:10px; color:#854d0e; background:#fefce8; border:1px solid #fef08a; padding:10px; border-radius:10px; line-height:1.4;">
-            💡 <b>溫馨提示 / Notice:</b> 以上時間均為系統根據項目預測之估算時長，現場實際操作時間可能會因每位客人的個體狀況而有所落差。
+            <textarea id="custom-remarks" rows="2" style="width:96%; padding:6px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; resize:none;" placeholder="如有其他自訂要求，請在此填寫... / Any other requests..."></textarea>
         </div>
     </div>
 
@@ -148,6 +165,15 @@
         <div class="bottom-inner">
             <div class="summary-bar" id="live-timer-bar">⏱️ 預計總時長 / Estimated Duration: 0 分鐘 (mins)</div>
             <button class="submit-btn" id="btn-submit-booking" onclick="executeWhatsAppBooking()" disabled>🚀 立即發送 WhatsApp 預約申請 / Send Request via WhatsApp</button>
+        </div>
+    </div>
+
+    <!-- 彈出式安全確認視窗 (100% 避開 iOS Safari Popup Blocker) -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-box">
+            <div class="modal-title">✅ 雲端資料同步完成！</div>
+            <div class="modal-text" id="modal-desc-text">預約已成功插旗登記。系統將立即引導您開啟原生 WhatsApp 發送確認對數訊息。</div>
+            <button class="modal-btn" onclick="fireWhatsAppDirectRedirect()">確定，開啟 WhatsApp</button>
         </div>
     </div>
 
@@ -169,45 +195,43 @@
                 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
                 database = firebase.database(); isCloudMode = true;
             }
-        } catch (e) { console.error("Firebase安全繞過:", e); }
+        } catch (e) { console.error("Firebase Initialization Failed:", e); }
 
-        const staffIds = {
-            "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
-            "二妹": "107", "TT": "108", "Cici": "109", "珍": "110", "Jackie": "111",
-            "澄澄": "113", "ALICE": "115", "阿璇": "116", "Mandy婷": "117", "妙妙": "118",
-            "葉子": "119", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
-        };
+        // 🌟 單一水源工號備份庫
+        var staffIds = { "阿平":"101","RUBY":"102","如意":"103","影":"105","慧嫻":"106","二妹":"107","TT":"108","Cici":"109","珍":"110","Jackie":"111","澄澄":"113","ALICE":"115","阿璇":"116","Mandy婷":"117","妙妙":"118","葉子":"119","Lucia":"120","AMY":"121","小茹":"122","文君":"123" };
+        var rawEmployees = [];
+        var waRedirectPayload = null;
 
         const servicesMetadata = {
             nail_hand_base: [
-                { id: "h_base_1", zh: "💅 手部單色 Soak Off Gel", en: "Hand Single Color Soak Off Gel", duration: 60 },
-                { id: "h_base_2", zh: "💅 手部雙色/貓眼 Soak Off Gel", en: "Hand Two-Tone/Cat Eye Soak Off", duration: 75 },
-                { id: "h_base_3", zh: "💅 手部單色 Hard Gel", en: "Hand Single Color Hard Gel", duration: 75 },
-                { id: "h_base_4", zh: "💅 手部雙色/貓眼 Hard Gel", en: "Hand Two-Tone/Cat Eye Hard Gel", duration: 90 }
+                { id: "h_base_1", zh: "💅 手部單色 Soak Off Gel", en: "Hand Single Color Soak Off Gel", duration: 60, type: "美甲" },
+                { id: "h_base_2", zh: "💅 手部雙色/貓眼 Soak Off Gel", en: "Hand Two-Tone/Cat Eye Soak Off", duration: 75, type: "美甲" },
+                { id: "h_base_3", zh: "💅 手部單色 Hard Gel", en: "Hand Single Color Hard Gel", duration: 75, type: "美甲" },
+                { id: "h_base_4", zh: "💅 手部雙色/貓眼 Hard Gel", en: "Hand Two-Tone/Cat Eye Hard Gel", duration: 90, type: "美甲" }
             ],
             nail_hand_addons: [
-                { id: "h_add_1", zh: "✨ 手部局部藝術款式 (2-4指)", en: "Hand Partial Art Style (2-4 fingers)", duration: 20 },
-                { id: "h_add_2", zh: "✨ 手部全套複雜藝術款式", en: "Hand Full Set Complex Art Style", duration: 45 },
-                { id: "h_add_3", zh: "✨ 手部水晶/聚膠全套延長", en: "Hand Full Set Extension", duration: 60 },
-                { id: "h_add_4", zh: "✨ 卸除外店甲 (意向附加)", en: "Remove Professional Gel (Other Shop)", duration: 20 }
+                { id: "h_add_1", zh: "✨ 手部局部藝術款式 (2-4指)", en: "Hand Partial Art Style (2-4)", duration: 20, type: "美甲" },
+                { id: "h_add_2", zh: "✨ 手部全套複雜藝術款式", en: "Hand Full Set Complex Art Style", duration: 45, type: "美甲" },
+                { id: "h_add_3", zh: "✨ 手部水晶/聚膠全套延長", en: "Hand Full Set Extension", duration: 60, type: "美甲" },
+                { id: "h_add_4", zh: "✨ 卸除外店甲", en: "Remove Professional Gel", duration: 20, type: "美甲" }
             ],
             nail_foot_base: [
-                { id: "f_base_1", zh: "🦶 腳部單色 Soak Off Gel", en: "Foot Single Color Soak Off Gel", duration: 60 },
-                { id: "f_base_2", zh: "🦶 腳部雙色/貓眼 Soak Off Gel", en: "Foot Two-Tone/Cat Eye Soak Off", duration: 75 },
-                { id: "f_base_3", zh: "🦶 腳部單色 Hard Gel", en: "Foot Single Color Hard Gel", duration: 75 }
+                { id: "f_base_1", zh: "🦶 腳部單色 Soak Off Gel", en: "Foot Single Color Soak Off Gel", duration: 60, type: "美甲" },
+                { id: "f_base_2", zh: "🦶 腳部雙色/貓眼 Soak Off Gel", en: "Foot Two-Tone/Cat Eye Soak Off", duration: 75, type: "美甲" },
+                { id: "f_base_3", zh: "🦶 腳部單色 Hard Gel", en: "Foot Single Color Hard Gel", duration: 75, type: "美甲" }
             ],
             nail_foot_addons: [
-                { id: "f_add_1", zh: "✨ 腳部全套深層去死皮護理", en: "Foot Deep Dead Skin Care", duration: 30 },
-                { id: "f_add_2", zh: "✨ 腳部全套藝術款式設計", en: "Foot Full Set Art Style Design", duration: 30 }
+                { id: "f_add_1", zh: "✨ 腳部全套深層去死皮護理", en: "Foot Deep Dead Skin Care", duration: 30, type: "美甲" },
+                { id: "f_add_2", zh: "✨ 腳部全套藝術款式設計", en: "Foot Full Set Art Style Design", duration: 30, type: "美甲" }
             ],
             lash: [
-                { id: "lash_1", zh: "👁️ 日式單根自然美睫 (100根)", en: "Japanese Natural Lashes (100pcs)", duration: 60 },
-                { id: "lash_2", zh: "👁️ 網紅濃密山茶花美睫 (滿種)", en: "Dense Camellia Lashes (Full)", duration: 90 },
-                { id: "lash_3", zh: "👁️ 角蛋白美睫大師護理", en: "Keratin Lash Lift Master Care", duration: 60 }
+                { id: "lash_1", zh: "👁️ 日式單根自然美睫 (100根)", en: "Japanese Natural Lashes (100pcs)", duration: 60, type: "美睫" },
+                { id: "lash_2", zh: "👁️ 網紅濃密山茶花美睫 (滿種)", en: "Dense Camellia Lashes (Full)", duration: 90, type: "美睫" },
+                { id: "lash_3", zh: "👁️ 角蛋白美睫大師護理", en: "Keratin Lash Lift Master Care", duration: 60, type: "美睫" }
             ],
             brows: [
-                { id: "brow_1", zh: "✒️ 半永久韓式霧眉/絲霧眉", en: "Semi-Permanent Korean Powder Brows", duration: 120 },
-                { id: "brow_2", zh: "✒️ 半永久美瞳線/隱形眼線", en: "Semi-Permanent Eyeliner", duration: 90 }
+                { id: "brow_1", zh: "✒️ 半永久韓式霧眉/絲霧眉", en: "Semi-Permanent Korean Powder Brows", duration: 120, type: "紋繡" },
+                { id: "brow_2", zh: "✒️ 半永久美瞳線/隱形眼線", en: "Semi-Permanent Eyeliner", duration: 90, type: "紋繡" }
             ]
         };
 
@@ -222,15 +246,17 @@
             if (dateInput) { dateInput.min = new Date().toISOString().split('T')[0]; }
             
             if (isCloudMode && database) {
+                // 1. 同步雲端員工名單與動態編號 (實現單一資料源，防工號不同步)
                 database.ref('v8_employees').once('value').then(snap => {
                     const selectEl = document.getElementById('booking-staff'); if (!selectEl) return;
-                    const emps = snap.exists() ? snap.val() : [];
-                    const cleanEmps = Array.isArray(emps) ? emps.filter(Boolean) : Object.values(emps).filter(Boolean);
+                    rawEmployees = snap.exists() ? snap.val() : [];
+                    const cleanEmps = Array.isArray(rawEmployees) ? rawEmployees.filter(Boolean) : Object.values(rawEmployees).filter(Boolean);
                     
                     selectEl.innerHTML = '<option value="auto">🌟 由系統分配 (Auto Allocate)</option>';
                     cleanEmps.forEach(e => {
                         if (e && e.name) {
-                            let code = staffIds[e.name] || "100";
+                            let code = e.id || staffIds[e.name] || "100";
+                            staffIds[e.name] = code; 
                             const opt = document.createElement('option');
                             opt.value = e.name;
                             opt.innerText = `👤 #${code} ${e.name}`;
@@ -335,19 +361,14 @@
 
         function handleBookingDateOrStaffChange() { fetchAvailableSlotsFromCloud(); }
 
-        // 📅 輔助推算公用函數：計算特定日期該員工排班開工時間（一秒完美對齊 app.js 的排班大腦）
+        // 📅 完美對齊排班大腦
         function getStaffShiftForDay(staffName, dateVal, employees, holidays, overrides) {
             const parts = dateVal.split('-');
-            const year = parseInt(parts[0]);
-            const month = parseInt(parts[1]);
-            const day = parseInt(parts[2]);
-            const dayKey = `day_${day}`;
-            const isSun = (new Date(year, month - 1, day).getDay() === 0);
+            const year = parseInt(parts[0]); const month = parseInt(parts[1]); const day = parseInt(parts[2]);
+            const dayKey = `day_${day}`; const isSun = (new Date(year, month - 1, day).getDay() === 0);
 
-            // 1. 優先查詢：經理手動微調拖拽數據
             if (overrides && overrides[dayKey]) {
-                const daySched = overrides[dayKey];
-                let foundTime = "";
+                const daySched = overrides[dayKey]; let foundTime = "";
                 Object.keys(daySched).forEach(shop => {
                     if (Array.isArray(daySched[shop])) {
                         daySched[shop].forEach(slot => {
@@ -360,7 +381,6 @@
                 if (foundTime) return cleanTimeStr(foundTime);
             }
 
-            // 2. 演算法推算：常規排班大腦複製
             const activeStaff = employees.filter(e => !(holidays[e.name] || []).includes(day));
             const manicurists = activeStaff.filter(e => e.role !== '學徒');
             const apprentices = activeStaff.filter(e => e.role === '學徒');
@@ -368,34 +388,25 @@
             let M = manicurists.length;
             let targets = { F79: 3, G2: 3, GK3: 3, G38: 3 };
             if (M <= 11) {
-                targets.F79 = 2;
-                let rem = M - 2;
+                targets.F79 = 2; let rem = M - 2;
                 targets.G2 = Math.max(0, Math.min(3, rem)); rem -= targets.G2;
                 targets.GK3 = Math.max(0, Math.min(3, rem)); rem -= targets.GK3;
                 targets.G38 = Math.max(0, Math.min(3, rem)); rem -= targets.G38;
             } else {
                 targets.F79 = 3; targets.GK3 = 3;
-                let surplus = M - 12;
-                let baseSurplus = Math.floor(surplus / 2);
-                let remSurplus = surplus % 2;
-                targets.G2 = 3 + baseSurplus + remSurplus;
-                targets.G38 = 3 + baseSurplus;
+                let surplus = M - 12; let baseSurplus = Math.floor(surplus / 2); let remSurplus = surplus % 2;
+                targets.G2 = 3 + baseSurplus + remSurplus; targets.G38 = 3 + baseSurplus;
             }
 
             let sortedMani = [...manicurists].sort((a,b) => (a.p_shops || 'G2').split(',').length - (b.p_shops || 'G2').split(',').length);
-            let assignment = {};
-            let currentCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 };
-            let unassignedMani = [];
+            let assignment = {}; let currentCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; let unassignedMani = [];
 
             sortedMani.forEach(emp => {
                 let allowed = (emp.p_shops || 'G2').split(',').map(s => s.trim());
                 let primaryShop = allowed[0] || 'G2';
                 if (currentCounts[primaryShop] < targets[primaryShop]) {
-                    currentCounts[primaryShop]++;
-                    assignment[emp.name] = primaryShop;
-                } else {
-                    unassignedMani.push(emp);
-                }
+                    currentCounts[primaryShop]++; assignment[emp.name] = primaryShop;
+                } else { unassignedMani.push(emp); }
             });
 
             unassignedMani.forEach(emp => {
@@ -403,55 +414,44 @@
                 let assigned = false;
                 for (let shop of allowed) {
                     if (currentCounts[shop] < targets[shop]) {
-                        currentCounts[shop]++;
-                        assignment[emp.name] = shop;
-                        assigned = true;
-                        break;
+                        currentCounts[shop]++; assignment[emp.name] = shop; assigned = true; break;
                     }
                 }
                 if (!assigned) {
-                    let primaryShop = allowed[0] || 'G2';
-                    currentCounts[primaryShop]++;
-                    assignment[emp.name] = primaryShop;
+                    let primaryShop = allowed[0] || 'G2'; currentCounts[primaryShop]++; assignment[emp.name] = primaryShop;
                 }
             });
 
             apprentices.forEach(app => {
                 let allowed = (app.p_shops || 'G2').split(',').map(s => s.trim());
-                let bestShop = allowed[0] || 'G2';
-                let minCount = 999;
+                let bestShop = allowed[0] || 'G2'; let minCount = 999;
                 for(let shop of allowed) {
-                    if(currentCounts[shop] < minCount) {
-                        minCount = currentCounts[shop];
-                        bestShop = shop;
-                    }
+                    if(currentCounts[shop] < minCount) { minCount = currentCounts[shop]; bestShop = shop; }
                 }
-                assignment[app.name] = bestShop;
-                currentCounts[bestShop]++;
+                assignment[app.name] = bestShop; currentCounts[bestShop]++;
             });
 
+            // 🌟 核心防禦：加入分店分組防漏機制，避免自定義分店造成「連線失敗」
             let shopGroups = { F79: [], GK3: [], G38: [], G2: [] };
             activeStaff.forEach(emp => {
                 let shop = assignment[emp.name] || 'G2';
+                if (!shopGroups[shop]) {
+                    shopGroups[shop] = []; // 遇到新店舖時自動補齊初始化
+                }
                 shopGroups[shop].push(emp);
             });
 
-            const myShop = assignment[staffName];
-            if (!myShop) return "12:00"; 
-
-            const staffObj = employees.find(e => e.name === staffName);
-            if (!staffObj) return "12:00";
+            const myShop = assignment[staffName]; if (!myShop) return "12:00"; 
+            const staffObj = employees.find(e => e.name === staffName); if (!staffObj) return "12:00";
 
             if (myShop === 'F79') {
                 const idx = shopGroups.F79.findIndex(emp => emp.name === staffName);
                 let shift = (idx === 0) ? "早班" : "晚班";
                 return isSun ? (shift === '早班' ? '11:00' : '13:00') : (shift === '早班' ? '12:00' : '13:00');
             } else {
-                let list = shopGroups[myShop];
-                if (list.length === 0) return "12:00";
+                let list = shopGroups[myShop]; if (!list || list.length === 0) return "12:00";
                 let earlyIdx = list.findIndex(emp => emp.role !== '學徒' && (emp.times || '').split(',').map(t => t.trim()).some(t => parseInt(t.split(':')[0]) < 12));
                 if (earlyIdx === -1) earlyIdx = 0;
-                
                 if (list[earlyIdx].name === staffName) {
                     return autoExtractTime(staffObj, '早班', isSun, myShop);
                 } else {
@@ -467,8 +467,7 @@
             if (shop === 'F79') return (shift === '早班') ? (isSun ? '11:00' : '12:00') : '13:00';
             let userTimes = (emp.times || '').split(',').map(t => t.trim());
             if (isSun) return (shift === '早班') ? '10:00' : '12:00';
-            let primaryTime = userTimes[0] || '12:00';
-            let primaryHour = parseInt(primaryTime.split(':')[0]);
+            let primaryTime = userTimes[0] || '12:00'; let primaryHour = parseInt(primaryTime.split(':')[0]);
             if (shift === '早班') {
                 return primaryHour < 12 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) < 12) || '11:00');
             } else if (shift === '中班') {
@@ -481,8 +480,7 @@
         function cleanTimeStr(timeStr) {
             if (!timeStr) return "12:00";
             if (timeStr.includes('(')) {
-                let m = timeStr.match(/\(([^)]+)\)/);
-                if (m && m[1]) timeStr = m[1];
+                let m = timeStr.match(/\(([^)]+)\)/); if (m && m[1]) timeStr = m[1];
             }
             return timeStr.trim();
         }
@@ -497,6 +495,9 @@
             }
             if (bookingState.totalDuration <= 0) {
                 container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">💅 請先選好服務項目<br>Please select services first</div>`; return;
+            }
+            if (!database) {
+                container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold;">⚠️ 雲端資料庫未就緒，請檢查網絡連線或 Firebase 配置。</div>`; return;
             }
 
             container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#db2777; font-size:12px; font-weight:bold;">⚡ 水晶閣雲端雷達精算空檔中...</div>`;
@@ -514,11 +515,9 @@
                 const overrides = ovrSnap.exists() ? ovrSnap.val() : {};
                 const cleanEmployees = Array.isArray(employees) ? employees.filter(Boolean) : Object.values(employees).filter(Boolean);
                 
-                // 學徒參與排班，不再排除
                 let workingStaffs = cleanEmployees.filter(e => e && e.name && !(holidays[e.name] || []).includes(dayNum));
                 if (staffChoice !== 'auto') { workingStaffs = workingStaffs.filter(e => e.name === staffChoice); }
 
-                // 🌟 精細 15 分鐘為一個點選網格 (09:00 - 22:45)
                 let timeSlots = [];
                 for (let h = 9; h <= 22; h++) { 
                     ['00', '15', '30', '45'].forEach(m => { timeSlots.push(`${String(h).padStart(2,'0')}:${m}`); }); 
@@ -530,40 +529,37 @@
                     let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
                     staffBookedList = staffBookedList.filter(Boolean);
 
-                    // 🎯 自動推算該名員工在該日期精確開工時間
+                    // Ceci 案例 12:00-21:00 完美測試移植
                     let startTimeStr = getStaffShiftForDay(staff.name, dateVal, cleanEmployees, holidays, overrides);
                     let startWorkMins = timeToMins(startTimeStr);
-                    let offWorkMins = startWorkMins + 540; // 9小時標準工時 = 540分鐘
-                    let safetyLineMins = offWorkMins - 30;  // 下班收工前 30 分鐘界線
+                    let offWorkMins = startWorkMins + 540; 
+                    let safetyLineMins = offWorkMins - 30;  
 
                     timeSlots.forEach(slotTime => {
                         let startMins = timeToMins(slotTime); 
                         let endMins = startMins + bookingState.totalDuration;
 
-                        // 🔍 嚴格限制：客人的「預約開始時間」必須落在該員工「當天排班時段 [S, E]」之內！
+                        // Ceci 下班控制實測完美移植：可選時間嚴格跟隨 Ceci 當天排班
                         if (startMins < startWorkMins || startMins > offWorkMins) return;
-                        if (endMins > 1440) return; // 預防超過午夜跨日
+                        if (endMins > 1435) return; 
 
-                        // 判斷防撞 (此區段是否已被佔用)
                         let isOverlap = staffBookedList.some(b => {
                             return Math.max(startMins, timeToMins(b.start)) < Math.min(endMins, timeToMins(b.end));
                         });
 
                         if (!isOverlap) {
-                            // 🌟 精簡邏輯：只認預約開始時間是否落於下班前30分鐘之內
+                            // Ceci 20:45、21:00 精準亮黃色，20:30 是安全綠色！
                             let isReview = (startMins >= safetyLineMins);
                             validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: isReview, isCustom: false });
                         }
                     });
                 });
 
-                // 智能合併分流
                 let uniqueTimesMap = new Map(); 
                 validSlotsPool.forEach(s => { 
                     if (!uniqueTimesMap.has(s.time)) {
                         uniqueTimesMap.set(s.time, s); 
                     } else {
-                        // 如果在同一個時間，既有綠格人員又有黃格人員，優先採用綠格直過！
                         if (uniqueTimesMap.get(s.time).isReview && !s.isReview) {
                             uniqueTimesMap.set(s.time, s);
                         }
@@ -572,6 +568,7 @@
                 
                 let sortedSlots = Array.from(uniqueTimesMap.values()).sort((a,b) => timeToMins(a.time) - timeToMins(b.time));
                 renderSlotsGridUI(sortedSlots);
+                validateFormProgress();
             }).catch(err => { 
                 container.innerHTML = `<div style="grid-column:span 3; color:red; text-align:center; font-size:12px;">❌ 連線失敗: ${err.message}</div>`; 
             });
@@ -588,7 +585,7 @@
                 btn.onclick = () => {
                     document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected');
                     bookingState.selectedSlot = { staff: slot.staff, time: slot.time, isReview: slot.isReview, isCustom: false };
-                    document.getElementById('custom-time-select').value = ""; unlockSubmitButton();
+                    document.getElementById('custom-time-select').value = ""; validateFormProgress();
                 };
                 container.appendChild(btn);
             });
@@ -599,12 +596,22 @@
             const staffChoice = document.getElementById('booking-staff').value; if (!customTime) return;
             document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
             bookingState.selectedSlot = { staff: (staffChoice === 'auto') ? "由店鋪分派" : staffChoice, time: customTime, isReview: false, isCustom: true };
-            unlockSubmitButton();
+            validateFormProgress();
         }
 
-        function unlockSubmitButton() {
-            const submitBtn = document.getElementById('btn-submit-booking');
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.style.backgroundColor = "#25D366"; }
+        function validateFormProgress() {
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            const submitBtn = document.getElementById('btn-submit-booking'); if (!submitBtn) return;
+            
+            const isInfoValid = name.length >= 1 && phone.length >= 8;
+            const isSlotValid = bookingState.selectedSlot !== null;
+
+            if (isInfoValid && isSlotValid) {
+                submitBtn.disabled = false; submitBtn.style.backgroundColor = "#25D366";
+            } else {
+                submitBtn.disabled = true; submitBtn.style.backgroundColor = "#cbd5e1";
+            }
         }
 
         function toggleQuickTag(tag) {
@@ -613,17 +620,27 @@
             if (chk.checked) { if (btn) btn.classList.add('active'); } else { if (btn) btn.classList.remove('active'); }
         }
 
-        function timeToMins(tStr) { if (!tStr) return 0; let p = tStr.split(':'); return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0); }
-
         function executeWhatsAppBooking() {
-            if (!bookingState.selectedSlot) return;
+            if (bookingState.selectedSlot === null) return;
+            
+            const custName = document.getElementById('cust-name').value.trim();
+            const custPhone = document.getElementById('cust-phone').value.trim();
             const dateVal = document.getElementById('booking-date').value;
-            const staffName = bookingState.selectedSlot.staff; const timeVal = bookingState.selectedSlot.time;
-            const isRev = bookingState.selectedSlot.isReview; const isCust = bookingState.selectedSlot.isCustom;
+            const staffName = bookingState.selectedSlot.staff; 
+            const timeVal = bookingState.selectedSlot.time;
+            const isRev = bookingState.selectedSlot.isReview; 
+            const isCust = bookingState.selectedSlot.isCustom;
 
             let zhItems = []; let enItems = [];
+            let mainServiceType = "其他"; 
             const allMeta = [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons, ...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons, ...servicesMetadata.lash, ...servicesMetadata.brows];
-            allMeta.forEach(item => { if (bookingState.selectedItems.has(item.id)) { zhItems.push(item.zh.replace('💅','').replace('🦶','').replace('👁️','').replace('✒️','').replace('✨','').trim()); enItems.push(item.en.trim()); } });
+            allMeta.forEach(item => { 
+                if (bookingState.selectedItems.has(item.id)) { 
+                    zhItems.push(item.zh.replace('💅','').replace('🦶','').replace('👁️','').replace('✒️','').replace('✨','').trim()); 
+                    enItems.push(item.en.trim()); 
+                    mainServiceType = item.type; 
+                } 
+            });
 
             let rushChecked = document.getElementById('chk-tag-rush').checked ? "⚡[趕時間]" : "";
             let noRemoveChecked = document.getElementById('chk-tag-noremove').checked ? "🚫[免拆甲]" : "";
@@ -634,49 +651,57 @@
             let startMins = timeToMins(timeVal); let endMins = startMins + bookingState.totalDuration;
             let endTimeStr = `${String(Math.floor(endMins/60)).padStart(2,'0')}:${String(endMins%60).padStart(2,'0')}`;
 
-            let cloudBookingData = { customer: "WhatsApp 客人", item: zhItems.join(' + '), start: timeVal, end: endTimeStr, status: isCust ? "⏳ 特殊" : (isRev ? "⏳ 待審" : "🟢 吉時"), remarks: allRemarks };
+            let phoneLast4 = custPhone.slice(-4);
+
+            let cloudBookingData = { 
+                customer: custName, 
+                phone: custPhone,
+                phoneLast4: phoneLast4,
+                item: zhItems.join(' + '), 
+                serviceType: mainServiceType, 
+                start: timeVal, 
+                end: endTimeStr, 
+                status: isCust ? "⏳ 特殊" : (isRev ? "⏳ 待審" : "🟢 吉時"), 
+                remarks: allRemarks 
+            };
+
             const parts = dateVal.split('-'); const yearMonthKey = `${parts[0]}-${parts[1]}`; const dayKey = `day_${parseInt(parts[2])}`;
 
-            if (!isCloudMode || !database) {
-                proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks); return;
-            }
-
-            database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
-                alert("✅ 預約已成功同步至水晶閣雲端大腦！\n(點擊確定開啟 WhatsApp 發送對數訊息)");
-                proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks);
-            }).catch(err => alert("❌ 雲端同步失敗，請重試：" + err));
-        }
-
-        function proceedToWhatsApp(dateVal, staffName, timeVal, isRev, isCust, zhItems, enItems, allRemarks) {
             let code = staffIds[staffName] || "100";
             let staffDisplay = `#${code} ${staffName}`;
             let timeStatusText = isCust ? '⏳ 自選特殊時段 (⚠️非保證)' : (isRev ? '⏳ 下班前半小時內 (⚠️待確定)' : '🟢 系統自動即時預留');
-            let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 指定人員 / Stylist: ${staffDisplay}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
+            let msg = `✨ 水晶閣新預約申請 / New Appointment ✨\n------------------------------------\n👤 顧客 / Guest: ${custName} (${phoneLast4})\n📅 日期 / Date: ${dateVal}\n🕒 時間 / Time: ${timeVal}\n📊 狀態 / Status: ${timeStatusText}\n👤 服務人員 / Stylist: ${staffDisplay}\n⏱️ 預計時長 / Duration: ${bookingState.totalDuration} 分鐘 (mins)\n\n🎁 預約項目 / Services:\n🔹 ${zhItems.join('\n🔹 ')}\n🔹 ${enItems.join('\n🔹 ')}\n\n`;
             if (allRemarks) msg += `📝 特別備註 / Remarks:\n${allRemarks}\n`;
             msg += `------------------------------------\n（此訊息由系統排班大腦生成，請按傳送，我們將為您核對確認。）`;
 
-            const phone = "85293436973";
-            const encodedMsg = encodeURIComponent(msg);
+            waRedirectPayload = msg;
 
-            // 📱 iPad 專屬一秒原生喚醒 + 自動降級網頁之核心底層引擎
+            if (!isCloudMode || !database) {
+                document.getElementById('success-modal').style.display = 'flex'; return;
+            }
+
+            database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
+                document.getElementById('success-modal').style.display = 'flex';
+            }).catch(err => {
+                alert("❌ 雲端插旗失敗，請重試：" + err);
+            });
+        }
+
+        function fireWhatsAppDirectRedirect() {
+            if (!waRedirectPayload) return;
+            const phone = "85293436973";
+            const encodedMsg = encodeURIComponent(waRedirectPayload);
             const nativeUrl = `whatsapp://send?phone=${phone}&text=${encodedMsg}`;
             const webUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedMsg}`;
 
-            // 精確偵測是否為 iPad / iPhone 
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+            document.getElementById('success-modal').style.display = 'none';
+
             if (isIOS) {
-                // iPad/iOS 優先執行原生協定，確保無縫彈出「要開啟 WhatsApp 嗎？」並進入 App
                 window.location.href = nativeUrl;
-                
-                // 設定彈性安全鎖，如未裝 App 或阻擋則引流至 Web 版
-                setTimeout(() => {
-                    if (document.hasFocus()) {
-                        window.location.href = webUrl;
-                    }
-                }, 800);
+                setTimeout(() => { if (document.hasFocus()) { window.location.href = webUrl; } }, 1000);
             } else {
-                // 電腦或 Android 等其他設備走標準瀏覽器鏈接
                 window.location.href = webUrl;
             }
         }
