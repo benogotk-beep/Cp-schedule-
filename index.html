@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -326,7 +325,7 @@
         .bg-warn { background: var(--danger-light); color: var(--danger); border-color: #fca5a5; }
         .bg-low { background: var(--warning-light); color: var(--warning); border-color: #fde68a; }
 
-        /* 📋 蘋果風格大型統計表格 */
+        /* 📋 📋 蘋果風格大型統計表格 */
         .scroll-box {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -475,9 +474,10 @@
         </div>
     </div>
 
-    <!-- 📱 iOS 橫向手勢滑動標籤列 -->
+    <!-- 📱 iOS 橫向手勢滑動標籤列 (🟢 新增預約對接中心) -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
+        <button class="tab-btn" id="nav-bookings" onclick="switchTab('tab-bookings')">🔮 預約對接中心 <span id="booking-badge-dot" style="background:var(--danger); color:white; border-radius:50%; width:8px; height:8px; display:none; margin-left:4px;"></span></button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
         <button class="tab-btn" id="nav-analysis" onclick="switchTab('tab-analysis')">📊 全月人手分析</button>
         <button class="tab-btn" id="nav-employees" onclick="switchTab('tab-employees')">👥 員工管理</button>
@@ -515,6 +515,17 @@
         <div id="shops-report-container"></div>
     </div>
 
+    <!-- 🟢 頁面1.5：預約對接中心 (專門用於處理 WhatsApp AI 直傳的預約需求) -->
+    <div id="tab-bookings" class="tab-content" style="display: none;">
+        <div class="card">
+            <div class="title" style="margin-bottom:4px;">🔮 WhatsApp AI 實時預約審核看板</div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">顧客透過 WhatsApp AI (Crystal) 發起的預約意向，會在此即時呈現，經理點擊批准後即可一鍵鎖定！</p>
+            <div id="live-bookings-container" class="scroll-box" style="background:#f8fafc; padding:15px; border-radius:14px; border:1px solid #cbd5e1; min-height:100px;">
+                <div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">⏳ 正在加載實時預約管道...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- 頁面2：個人當月排班（已修復表格結構 & 整合一鍵反選功能） -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
@@ -529,7 +540,6 @@
                 <button id="my-month-invert-btn" class="btn" style="background:#4b5563; color:white; padding:8px 14px; font-size:13px; border-radius:8px;" onclick="invertIndividualEmployeeHolidays()">🔄 一鍵反選放假</button>
             </div>
 
-            <!-- 🟢 【關鍵修復】與 app.js 完美咬合的 Table 結構 -->
             <div class="scroll-box" style="margin: 16px 0; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #fff;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
@@ -543,7 +553,6 @@
                             <th style="padding:12px; text-align:left; font-size:13px; color:#374151;">特殊原因備註（請假原因）</th>
                         </tr>
                     </thead>
-                    <!-- 🎯 數據渲染的目的地 -->
                     <tbody id="my-month-calendar-body"></tbody>
                 </table>
             </div>
@@ -672,7 +681,145 @@
     </div>
 
     <script src="app.js?v=10.0.5"></script>
+
+    <!-- 🟢 預約對接中心自訂 JavaScript：動態銜接 app.js 並即時渲染 Firebase 預約 -->
+    <script>
+        let liveBookings = {};
+
+        // 監聽 Firebase 資料庫中的實時預約
+        function startLiveBookingListener() {
+            if (typeof firebase === 'undefined' || !firebase.apps.length) return;
+            const db = firebase.database();
+            const year = state.currentYear || 2026;
+            const month = state.currentMonth || 5;
+            const monthKey = `${year}-${month < 10 ? '0'+month : month}`;
+
+            // 監聽當月預約
+            db.ref(`v8_bookings/${monthKey}`).on('value', (snapshot) => {
+                liveBookings = snapshot.val() || {};
+                renderLiveBookings(liveBookings, monthKey);
+            });
+        }
+
+        // 渲染實時預約列表
+        function renderLiveBookings(bookings, monthKey) {
+            const container = document.getElementById('live-bookings-container');
+            const badgeDot = document.getElementById('booking-badge-dot');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const keys = Object.keys(bookings);
+            const pendingKeys = keys.filter(k => bookings[k].status === 'pending');
+
+            // 紅點標示是否有新預約
+            if (badgeDot) {
+                badgeDot.style.display = pendingKeys.length > 0 ? 'inline-block' : 'none';
+            }
+
+            if (keys.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">🙌 目前尚無實時對話預約。</div>`;
+                return;
+            }
+
+            // 按時間排序（最新預約排在最前面）
+            const sortedKeys = keys.sort((a, b) => (bookings[b].timestamp || 0) - (bookings[a].timestamp || 0));
+
+            let html = `<table style="width:100%;">
+                <thead>
+                    <tr style="background:#f1f5f9;">
+                        <th>時間戳</th>
+                        <th>顧客姓名</th>
+                        <th>電話號碼</th>
+                        <th>美甲師</th>
+                        <th>預約日期</th>
+                        <th>時段</th>
+                        <th>預約分店</th>
+                        <th>狀態</th>
+                        <th style="text-align:center;">操作與審核</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            sortedKeys.forEach(k => {
+                const b = bookings[k];
+                const dateStr = new Date(b.timestamp).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
+                
+                let statusBadge = '';
+                let actionButtons = '';
+
+                if (b.status === 'pending') {
+                    statusBadge = `<span style="background:var(--warning-light); color:var(--warning); padding:4px 8px; border-radius:6px; font-weight:bold; font-size:12px;">⏳ 待審核</span>`;
+                    actionButtons = `
+                        <button class="btn" style="background:var(--success); color:white; padding:6px 12px; font-size:12px; margin-right:6px;" onclick="approveBooking('${monthKey}', '${k}')">批准</button>
+                        <button class="btn" style="background:var(--danger); color:white; padding:6px 12px; font-size:12px;" onclick="rejectBooking('${monthKey}', '${k}')">拒絕</button>
+                    `;
+                } else if (b.status === 'approved') {
+                    statusBadge = `<span style="background:var(--success-light); color:var(--success); padding:4px 8px; border-radius:6px; font-weight:bold; font-size:12px;">🟢 已批准</span>`;
+                    actionButtons = `<button class="btn" style="background:#e2e8f0; color:#64748b; padding:6px 12px; font-size:12px;" disabled>已完成審核</button>`;
+                } else {
+                    statusBadge = `<span style="background:rgba(239, 68, 68, 0.1); color:var(--danger); padding:4px 8px; border-radius:6px; font-weight:bold; font-size:12px;">🔴 已拒絕</span>`;
+                    actionButtons = `<button class="btn" style="background:#e2e8f0; color:#64748b; padding:6px 12px; font-size:12px;" disabled>已拒絕</button>`;
+                }
+
+                html += `<tr>
+                    <td style="color:var(--text-muted); font-size:12px;">${dateStr}</td>
+                    <td><b>${b.customerName}</b></td>
+                    <td><a href="https://wa.me/${b.customerPhone}" target="_blank" style="color:var(--primary); font-weight:bold;">💬 ${b.customerPhone}</a></td>
+                    <td><span style="background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:6px; font-weight:bold;">${b.staffName}</span></td>
+                    <td style="font-weight:bold;">${b.date} 號</td>
+                    <td style="font-weight:bold; color:#1e3a8a;">${b.time}</td>
+                    <td><b style="color:#0d9488;">${b.shop} 店</b></td>
+                    <td>${statusBadge}</td>
+                    <td style="text-align:center;">${actionButtons}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // 批准預約：自動更新排班備註，並更改預約狀態
+        function approveBooking(monthKey, key) {
+            const b = liveBookings[key];
+            if (!b) return;
+
+            const db = firebase.database();
+
+            // 1. 更新特殊備註（讓老師當天排班表格直接出現「📝 顧客: OOO (預約 11:00)」）
+            const noteKey = `day_${b.date}`;
+            db.ref(`v8_special_notes/${monthKey}/${b.staffName}/${noteKey}`).set(`預約:${b.customerName}(${b.time})`);
+
+            // 2. 更改預約狀態為 approved
+            db.ref(`v8_bookings/${monthKey}/${key}/status`).set('approved').then(() => {
+                showToast(`🎉 預約已成功核准！已自動將預約資訊同步登錄到 ${b.staffName} 老師的日曆備註中！`);
+            });
+        }
+
+        // 拒絕預約
+        function rejectBooking(monthKey, key) {
+            if (confirm("確定要拒絕這筆預約申請嗎？")) {
+                firebase.database().ref(`v8_bookings/${monthKey}/${key}/status`).set('rejected');
+            }
+        }
+
+        // 自訂 Toast 通知
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.style.cssText = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#0f172a; color:white; border:1px solid var(--success); padding:16px 24px; border-radius:16px; font-weight:bold; font-size:14px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3); z-index:9999999; text-align:center; max-width:90%;";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        }
+
+        // 動態注入到原有的初始化流程
+        const checkDbInterval = setInterval(() => {
+            if (isCloudMode && database) {
+                startLiveBookingListener();
+                clearInterval(checkDbInterval);
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
 
-```
+
