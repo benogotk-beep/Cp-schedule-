@@ -1,36 +1,481 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="web-title-tag">分店智能排班系統 V10.0-Ultimate</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- 🟢 iPad / iPhone 專屬 F12 控制台偵錯晶片 (排查完畢後可點選右下角齒輪刪除) -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- 🎨 整合原本 style.css 樣式，100% 防止行動端讀不到 CSS 的問題 -->
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #f5f3ff;
+            --primary-hover: #6d28d9;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --danger: #ef4444;
+            --danger-light: #fdf2f2;
+            --bg-main: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 60px;
+        }
+
+        /* 🔒 蘋果風格毛玻璃安全登入遮罩 */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px 30px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transform: translateY(0);
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            font-size: 50px;
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        /* 防止 iOS 點選輸入框自動畫面放大的 16px 安全設定 */
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            margin-bottom: 20px;
+            font-size: 16px; 
+            outline: none;
+            text-align: center;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .login-input:focus {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), #9333ea);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+            transition: all 0.2s;
+        }
+
+        .login-btn:active {
+            transform: scale(0.97);
+            filter: brightness(0.9);
+        }
+
+        /* 🔑 目前權限橫幅 */
+        .auth-banner {
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        /* 📱 iOS 優化：支援手勢橫向滾動的標籤列 */
+        .tab-bar {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            background: #ffffff;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            gap: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-bar::-webkit-scrollbar {
+            display: none; /* 隱藏滾動條，畫面更乾淨 */
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: #f1f5f9;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+        }
+
+        /* 📦 頂級排班卡片容器 */
+        .tab-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 📅 日期面板 */
+        .date-panel {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            font-size: 16px; /* 防止 iOS Safari 自動縮放 */
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: white;
+            outline: none;
+            color: var(--text-main);
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary);
+        }
+
+        /* 按鈕通用樣式 */
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-save { background: var(--success); color: white; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-del { background: var(--danger); color: white; }
+        .btn-reset { background: #e2e8f0; color: #475569; padding: 10px; border-radius: 10px; border: none; font-size:13px; font-weight:bold; cursor:pointer;}
+
+        /* 雲端連線狀態 */
+        .cloud-status {
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .status-online { background: var(--success-light); color: var(--success); border: 1px solid #a7f3d0; }
+        .status-offline { background: var(--warning-light); color: var(--warning); border: 1px solid #fde68a; }
+
+        /* 📋 每日排班：分店看板區 */
+        .shop-box {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .shop-header {
+            padding: 12px 18px;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 🤖 智能排班網格：iPad 上自動適配 row 數 */
+        .grid-6 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            padding: 15px;
+            background: #f8fafc;
+        }
+
+        .slot-box {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.2s;
+        }
+
+        .slot-box.dragging { opacity: 0.5; border: 2px dashed var(--primary); }
+        .slot-box.drag-over { background: var(--primary-light); border-color: var(--primary); }
+
+        .manual-name-select { width: 100%; font-weight: bold; font-size: 14px; border: 1px solid #cbd5e1; }
+        .manual-time-select { width: 100%; font-size: 12px; color: #475569; border: 1px solid #cbd5e1; }
+        .slot-note-text { font-size: 11px; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* 📊 圓形彩色儀表板指標 */
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            font-size: 12px;
+            border: 1px solid transparent;
+        }
+        .bg-ok { background: var(--success-light); color: var(--success); border-color: #a7f3d0; }
+        .bg-warn { background: var(--danger-light); color: var(--danger); border-color: #fca5a5; }
+        .bg-low { background: var(--warning-light); color: var(--warning); border-color: #fde68a; }
+
+        /* 📋 蘋果風格大型統計表格 */
+        .scroll-box {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: left;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: bold;
+            color: var(--text-muted);
+        }
+
+        /* 凍結首列 (Sticky Column) - 防止 iPad 橫滑表格時名字不見 */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background: #f8fafc;
+            z-index: 5;
+            font-weight: bold;
+            box-shadow: 3px 0 5px -2px rgba(0,0,0,0.1);
+        }
+        tr:nth-child(even) td.sticky-col { background: #f8fafc; }
+        tr:nth-child(odd) td.sticky-col { background: #ffffff; }
+
+        /* 人手警戒色 */
+        .bg-alert-red { background: #fef2f2 !important; color: #ef4444; font-weight: bold; }
+        .bg-alert-darkgreen { background: #ecfdf5 !important; color: #047857; font-weight: bold; }
+        .bg-alert-lightgreen { background: #f0fdf4 !important; color: #10b981; }
+
+        /* 放假顯示點點 */
+        .holiday-display-dot {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+        .holiday-display-dot.active {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
+        /* 放假申請按鈕 */
+        .holiday-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .holiday-btn.active { background: var(--danger); color: white; border-color: var(--danger); }
+        .holiday-btn.locked { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+        /* 出勤統計天數標籤 */
+        .count-badge {
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-right: 6px;
+        }
+
+        /* 智庫審批中心卡片 */
+        .decision-card {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .decision-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        .decision-info-block {
+            background: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 控制台欄位排版 */
+        .settings-section {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .settings-label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--primary); }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+
+        /* 備份按鈕區域 */
+        .time-hint-banner { font-size:12px; font-weight:bold; text-align:center; margin-bottom:8px;}
+    </style>
 </head>
 <body>
 
-    <div id="login-overlay" style="position: fixed; z-index: 999999;">
+    <!-- 🔒 安全登入驗證（iOS 蘋果風格優化版） -->
+    <div id="login-overlay">
         <div class="login-box">
             <div class="login-logo">🔮</div>
             <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店智能排班系統 V10.0</h2>
             
-            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" inputmode="text" onkeydown="if(event.key==='Enter') { event.preventDefault(); triggerGateLogin(); }">
+            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入安全口令" maxlength="12" inputmode="text" onkeydown="if(event.key==='Enter') { event.preventDefault(); triggerGateLogin(); }">
             
-            <button class="login-btn" onclick="triggerGateLogin()" style="position: relative; z-index: 999999 !important; touch-action: manipulation; cursor: pointer; -webkit-tap-highlight-color: transparent;">安全登入驗證</button>
+            <button class="login-btn" onclick="triggerGateLogin()">安全登入驗證</button>
             
-            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 口令錯誤，請重新輸入！</div>
+            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:12px; display:none;">❌ 口令錯誤，請重新輸入！</div>
         </div>
     </div>
 
+    <!-- 目前權限顯示 -->
     <div class="auth-banner">
         <div id="role-display-text">🔑 目前權限：未登入</div>
         <div id="quick-notify-dot" style="background:var(--warning); color:white; padding:2px 8px; border-radius:10px; font-size:11px; display:none; animation: pulse 2s infinite;">● 有待審批申請</div>
         <div>
-            <button class="btn" style="padding:4px 8px; background:#4b5563; color:white;" onclick="triggerGlobalLogout()">安全登出</button>
+            <button class="btn" style="padding:4px 10px; background:#4b5563; color:white; font-size:12px;" onclick="triggerGlobalLogout()">安全登出</button>
         </div>
     </div>
 
+    <!-- 📱 iOS 橫向手勢滑動標籤列 -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
@@ -41,12 +486,13 @@
         <button class="tab-btn" id="nav-settings" onclick="switchTab('tab-settings')">⚙️ 微調設定頁</button>
     </div>
 
+    <!-- 頁面1：每日排班 -->
     <div id="tab-schedule" class="tab-content" style="display: none;">
         <div id="cloud-indicator" class="cloud-status status-offline">⏳ 正在初始化排班引擎晶片...</div>
         
         <div id="manager-backup-zone" class="card" style="display:none; background:#f8fafc; border:1px dashed #cbd5e1;">
             <div style="font-size:12px; font-weight:bold; color:#475569; margin-bottom:6px; text-align:center;">🛡️ 數據時空膠囊安全網（管理層專屬）</div>
-            <div style="display:flex; gap:10px; justify-content:center;">
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                 <button class="btn" style="background:#0284c7; color:white;" onclick="downloadTimeCapsuleBackup()">📥 下載全月數據備份檔</button>
                 <button class="btn" style="background:#4f46e5; color:white;" onclick="triggerBackupUploadClick()">🔄 導入備份一鍵還原雲端</button>
                 <input type="file" id="time-capsule-file-injector" style="display:none;" onchange="restoreFromTimeCapsule(event)">
@@ -62,26 +508,51 @@
                 <button id="btn-restore-auto-id" class="btn-reset" onclick="resetCurrentDayToAuto()">🔄 還原自動排班</button>
             </div>
             <div id="time-switch-hint" class="time-hint-banner"></div>
-            <div id="total-working-text" style="text-align:center; font-size:13px; color:#111827; font-weight:bold; background:#f8fafc; padding:6px; border-radius:8px; border:1px solid #e5e7eb; margin:4px 0;">核心美甲師：0 人 ｜ 學徒：0 人 ｜ 總上班：0 人</div>
-            <div id="today-leave-names-box" style="text-align:center; font-size:12px; color:#dc2626; margin-top:4px; background:#fdf2f2; padding:4px; border-radius:6px; border:1px dashed #fca5a5; font-weight:bold;">今日放假：無</div>
+            <div id="total-working-text" style="text-align:center; font-size:13px; color:#111827; font-weight:bold; background:#f8fafc; padding:10px; border-radius:12px; border:1px solid #e5e7eb; margin:4px 0;">核心美甲師：0 人 ｜ 學徒：0 人 ｜ 總上班：0 人</div>
+            <div id="today-leave-names-box" style="text-align:center; font-size:12px; color:#dc2626; margin-top:4px; background:#fdf2f2; padding:6px; border-radius:10px; border:1px dashed #fca5a5; font-weight:bold;">今日放假：無</div>
         </div>
         <div class="grid-4" id="monitor-panel"></div>
         <div id="shops-report-container"></div>
     </div>
 
+    <!-- 頁面2：個人當月排班（已修復表格結構 & 整合一鍵反選功能） -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:8px;">👤 員工個人當月排班及放假申請表</div>
-            <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+            
+            <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; background:#f8fafc; padding:12px; border-radius:14px; border:1px solid #e2e8f0;">
                 <div>
                     <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取姓名：</label>
-                    <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()"></select>
+                    <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:1px solid var(--primary); background:white;" onchange="renderIndividualMonthCalendar()"></select>
                 </div>
+                <!-- 🟢 一鍵反選放假功能 -->
+                <button id="my-month-invert-btn" class="btn" style="background:#4b5563; color:white; padding:8px 14px; font-size:13px; border-radius:8px;" onclick="invertIndividualEmployeeHolidays()">🔄 一鍵反選放假</button>
             </div>
-            <button class="btn btn-save" style="background-color: var(--success);" onclick="saveSpecialNotesAndHolidaysData()">💾 儲存並提交當月變更要求</button>
+
+            <!-- 🟢 【關鍵修復】與 app.js 完美咬合的 Table 結構 -->
+            <div class="scroll-box" style="margin: 16px 0; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #fff;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background:#f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding:12px; text-align:center; font-size:13px; color:#374151;">日期</th>
+                            <th style="padding:12px; text-align:center; font-size:13px; color:#374151;">星期</th>
+                            <th style="padding:12px; text-align:center; font-size:13px; color:#374151;">人手狀態</th>
+                            <th style="padding:12px; text-align:center; font-size:13px; color:#374151;">排班店鋪</th>
+                            <th style="padding:12px; text-align:center; font-size:13px; color:#374151;">時段</th>
+                            <th style="padding:12px; text-align:center; font-size:13px; color:#374151;">放假申請</th>
+                            <th style="padding:12px; text-align:left; font-size:13px; color:#374151;">特殊原因備註（請假原因）</th>
+                        </tr>
+                    </thead>
+                    <!-- 🎯 數據渲染的目的地 -->
+                    <tbody id="my-month-calendar-body"></tbody>
+                </table>
+            </div>
+
+            <button class="btn btn-save" style="background-color: var(--success); width: 100%; padding: 14px; font-size: 15px; font-weight: bold;" onclick="saveSpecialNotesAndHolidaysData()">💾 儲存並提交當月變更要求</button>
         </div>
     </div>
 
+    <!-- 頁面3：全月人手分析 -->
     <div id="tab-analysis" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" id="analysis-title-text" style="margin-bottom: 8px;">全月店鋪上班人手監控大表</div>
@@ -108,36 +579,37 @@
                     <tbody id="analysis-table-body"></tbody>
                 </table>
             </div>
-            <div class="sub-table-title">📈 員工當月出勤與放假月結統計大對帳表</div>
+            <div class="sub-table-title" style="font-weight:bold; margin: 15px 0 8px 0; color: var(--primary);">📈 員工當月出勤與放假月結統計對帳表</div>
             <div class="scroll-box" style="max-height: 25vh; border: 1px solid #cbd5e1;">
                 <table>
                     <thead>
                         <tr style="background:#f1f5f9;">
-                            <th style="text-align:left; padding:6px 10px;">員工姓名</th>
-                            <th style="text-align:center; padding:6px 10px;">職位類型</th>
-                            <th style="text-align:center; padding:6px 10px; color:var(--success);">💼 總出勤天數</th>
-                            <th style="text-align:center; padding:6px 10px; color:var(--danger);">🏖️ 總放假天數</th>
+                            <th style="text-align:left; padding:8px 12px;">員工姓名</th>
+                            <th style="text-align:center; padding:8px 12px;">職位類型</th>
+                            <th style="text-align:center; padding:8px 12px; color:var(--success);">💼 總出勤天數</th>
+                            <th style="text-align:center; padding:8px 12px; color:var(--danger);">🏖️ 總放假天數</th>
                         </tr>
                     </thead>
                     <tbody id="staff-month-summary-body"></tbody>
                 </table>
             </div>
-            <div class="sub-table-title">🚨 美甲師告急日子總覽</div>
+            <div class="sub-table-title" style="font-weight:bold; margin: 15px 0 8px 0; color: var(--danger);">🚨 美甲師告急日子總覽</div>
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #fca5a5;">
                 <table style="background:#fffaf8;"><tbody id="low-staff-table-body"></tbody></table>
             </div>
-            <div class="sub-table-title">📊 美甲師充沛優勢日子總覽</div>
+            <div class="sub-table-title" style="font-weight:bold; margin: 15px 0 8px 0; color: var(--success);">📊 美甲師充沛優勢日子總覽</div>
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #6ee7b7;">
                 <table style="background:#f6fffb;"><tbody id="high-staff-table-body"></tbody></table>
             </div>
         </div>
     </div>
 
+    <!-- 頁面4：員工管理 -->
     <div id="tab-employees" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 10px;">員工職位時段資料庫</div>
             <button id="manager-add-emp-btn" class="btn btn-add" onclick="addEmployeeRow()">＋ 新增員工</button>
-            <div class="scroll-box">
+            <div class="scroll-box" style="margin-top: 15px;">
                 <table>
                     <thead>
                         <tr><th>員工姓名</th><th>職位類型</th><th>可支援店舖</th><th>班次時段對應</th><th>操作</th></tr>
@@ -145,10 +617,11 @@
                     <tbody id="employee-table-body"></tbody>
                 </table>
             </div>
-            <button id="employee-save-btn" class="btn btn-save" onclick="saveEmployeeData()">💾 儲存員工名單職位</button>
+            <button id="employee-save-btn" class="btn btn-save" style="width:100%;" onclick="saveEmployeeData()">💾 儲存員工名單職位</button>
         </div>
     </div>
 
+    <!-- 頁面5：放假表 -->
     <div id="tab-holidays" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" id="holiday-title-text" style="margin-bottom: 10px;">放假表 (管理層審閱大表)</div>
@@ -158,17 +631,19 @@
                     <tbody id="holiday-table-body"></tbody>
                 </table>
             </div>
-            <button class="btn btn-save" style="background-color: var(--warning);" onclick="saveHolidayData()">💾 經理強制儲存並發佈放假表</button>
+            <button class="btn btn-save" style="background-color: var(--warning); width:100%;" onclick="saveHolidayData()">💾 經理強制儲存並發佈放假表</button>
         </div>
     </div>
 
+    <!-- 頁面6：智庫審批中心 -->
     <div id="tab-approval-center" class="tab-content" style="display: none;">
         <div class="card">
-            <div class="title" style="margin-bottom: 4px;">📥 智庫型放假申請審批中心</div>
+            <div class="title" style="margin-bottom: 10px;">📥 智庫型放假申請審批中心</div>
             <div id="smart-approval-list-container"></div>
         </div>
     </div>
 
+    <!-- 頁面7：微調設定頁 -->
     <div id="tab-settings" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 12px;">⚙️ 系統核心微調參數控制台</div>
@@ -192,10 +667,12 @@
                 <div class="settings-row"><span>美甲師 ⚠️ 告急人手：少於或等於</span><input type="number" id="cfg-limit-low" style="width:60px;"> 人</div>
                 <div class="settings-row"><span>美甲師 🟢 充沛人手：大於或等於</span><input type="number" id="cfg-limit-high" style="width:60px;"> 人</div>
             </div>
-            <button class="btn btn-save" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發佈雲端</button>
+            <button class="btn btn-save" style="width:100%;" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發佈雲端</button>
         </div>
     </div>
 
     <script src="app.js?v=10.0.5"></script>
 </body>
 </html>
+
+```
