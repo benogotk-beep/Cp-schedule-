@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -16,6 +15,7 @@
         .shop-title { font-size: 19px; font-weight: 800; color: #9d174d; margin: 0; }
         .shop-subtitle { font-size: 11px; color: #c084fc; font-weight: bold; margin-top: 2px; text-transform: uppercase; }
         .step-section { background: #fffafc; border: 1px solid #fce7f3; padding: 14px; border-radius: 14px; margin-bottom: 14px; }
+        .step-section.disabled-step { opacity: 0.5; pointer-events: none; }
         .step-title { font-size: 14px; font-weight: bold; color: #4c0519; margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
         .en-sub { font-size: 10px; color: #6b7280; font-weight: normal; display: block; margin-top: 1px; }
         .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -42,7 +42,6 @@
         .submit-btn { width: 100%; background: #0d9488; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
         .submit-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
         
-        /* Premium Custom Modal (Bypasses iOS iPad Native App Blocker) */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
         .modal-box { background: white; padding: 24px; border-radius: 16px; max-width: 400px; width: 85%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 2px solid #fbcfe8; }
         .modal-title { font-size: 18px; font-weight: bold; color: #9d174d; margin-bottom: 12px; }
@@ -75,6 +74,7 @@
             </div>
         </div>
 
+        <!-- STEP 2: 選擇日期與人員 -->
         <div class="step-section">
             <div class="step-title">2. 選擇日期與服務人員 <span class="en-sub">Select Date & Stylist</span></div>
             <div class="grid-2">
@@ -91,6 +91,7 @@
             </div>
         </div>
 
+        <!-- STEP 3: 選擇服務項目 -->
         <div class="step-section">
             <div class="step-title">3. 選擇服務項目 <span class="en-sub">Select Services</span></div>
             <div class="grid-3" style="margin-bottom: 10px;">
@@ -108,6 +109,7 @@
                 </div>
             </div>
 
+            <!-- 美甲部位 -->
             <div id="nail-part-selector-zone" class="sub-panel" style="display: none; border-color: #f472b6; background: #fff5f7; padding:8px;">
                 <div class="sub-panel-title">📍 請選擇服務部位 / Select Area</div>
                 <div class="grid-2">
@@ -124,6 +126,7 @@
             <div id="sub-details-render-zone"></div>
         </div>
 
+        <!-- STEP 4: 時間空檔 -->
         <div class="step-section">
             <div class="step-title">4. 選擇預約時間空檔 <span class="en-sub">Select Appointment Time Slot</span></div>
             <div style="font-size:11px; color:#6b7280; margin-bottom:10px; text-align:center;">
@@ -151,6 +154,7 @@
             </div>
         </div>
 
+        <!-- STEP 5: 備註 -->
         <div class="step-section" style="margin-bottom: 20px;">
             <div class="step-title">5. 貼心特別備註 <span class="en-sub">Special Remarks (Optional)</span></div>
             <div class="grid-3" style="margin-bottom:10px;">
@@ -162,6 +166,7 @@
         </div>
     </div>
 
+    <!-- 底部黏性按鈕 -->
     <div class="bottom-sticky-zone">
         <div class="bottom-inner">
             <div class="summary-bar" id="live-timer-bar">⏱️ 預計總時長 / Estimated Duration: 0 分鐘 (mins)</div>
@@ -169,7 +174,7 @@
         </div>
     </div>
 
-    <!-- 彈出式安全確認視窗 (100% 避開 iOS Safari Popup Blocker) -->
+    <!-- 彈出式確認視窗 (防封鎖彈窗) -->
     <div class="modal-overlay" id="success-modal">
         <div class="modal-box">
             <div class="modal-title">✅ 雲端資料同步完成！</div>
@@ -198,14 +203,12 @@
             }
         } catch (e) { console.error("Firebase Initialization Failed:", e); }
 
-        // 🌟 核心高精度全局時間轉換引擎 (修復 timeToMins 變數未定義報錯)
         function timeToMins(tStr) {
             if (!tStr) return 0;
             let p = tStr.split(':');
             return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
         }
 
-        // 🌟 master 預設工號庫（實現名單動態智能繼承）
         const defaultStaffIds = {
             "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
             "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
@@ -261,7 +264,7 @@
             if (dateInput) { dateInput.min = new Date().toISOString().split('T')[0]; }
             
             if (isCloudMode && database) {
-                // 1. 同步雲端員工名單與動態編號 (實現單一資料源，完美繼承編號)
+                // 1. 同步雲端員工名單與動態編號，並【完美過濾屏蔽學徒】
                 database.ref('v8_employees').once('value').then(snap => {
                     const selectEl = document.getElementById('booking-staff'); if (!selectEl) return;
                     rawEmployees = snap.exists() ? snap.val() : [];
@@ -269,7 +272,8 @@
                     
                     selectEl.innerHTML = '<option value="auto">🌟 由系統分配 (Auto Allocate)</option>';
                     cleanEmps.forEach(e => {
-                        if (e && e.name) {
+                        // 🟢 【學徒防禦規則】：僅保留 role !== "學徒" 的核心美甲師/美睫師
+                        if (e && e.name && e.role !== '學徒') {
                             let key = e.name.trim().toUpperCase();
                             let code = e.id || staffIds[e.name] || defaultStaffIds[key] || "100";
                             staffIds[e.name] = code; 
@@ -365,19 +369,24 @@
             recalcDurationAndSlots();
         }
 
-        function recalcDurationAndSlots() {
+        function recalculateTotalDuration() {
             let durationSum = 0;
             const allMeta = [...servicesMetadata.nail_hand_base, ...servicesMetadata.nail_hand_addons, ...servicesMetadata.nail_foot_base, ...servicesMetadata.nail_foot_addons, ...servicesMetadata.lash, ...servicesMetadata.brows];
             allMeta.forEach(item => { if (bookingState.selectedItems.has(item.id)) durationSum += item.duration; });
             bookingState.totalDuration = durationSum;
             const bar = document.getElementById('live-timer-bar');
             if (bar) bar.innerText = `⏱️ 預計總時長 / Estimated Duration: ${durationSum} 分鐘 (mins)`;
+            return durationSum;
+        }
+
+        function recalcDurationAndSlots() {
+            recalculateTotalDuration();
             fetchAvailableSlotsFromCloud();
         }
 
         function handleBookingDateOrStaffChange() { fetchAvailableSlotsFromCloud(); }
 
-        // 📅 輔助排班推算
+        // 📅 每日排班推算分配演算法
         function getStaffShiftForDay(staffName, dateVal, employees, holidays, overrides) {
             const parts = dateVal.split('-');
             const year = parseInt(parts[0]); const month = parseInt(parts[1]); const day = parseInt(parts[2]);
@@ -450,9 +459,7 @@
             let shopGroups = { F79: [], GK3: [], G38: [], G2: [] };
             activeStaff.forEach(emp => {
                 let shop = assignment[emp.name] || 'G2';
-                if (!shopGroups[shop]) {
-                    shopGroups[shop] = []; 
-                }
+                if (!shopGroups[shop]) { shopGroups[shop] = []; }
                 shopGroups[shop].push(emp);
             });
 
@@ -485,7 +492,7 @@
             let primaryTime = userTimes[0] || '12:00'; let primaryHour = parseInt(primaryTime.split(':')[0]);
             if (shift === '早班') {
                 return primaryHour < 12 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) < 12) || '11:00');
-            } else if (shift === '中班') {
+            } else if (shift === '暗班' || shift === '中班') {
                 return primaryHour === 12 ? primaryTime : (userTimes.find(t => t === '12:00') || '12:00');
             } else {
                 return primaryHour >= 13 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) >= 13) || '13:00');
@@ -512,7 +519,7 @@
                 container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#9ca3af; font-size:12px; font-weight:bold;">💅 請先選好服務項目<br>Please select services first</div>`; return;
             }
             if (!database) {
-                container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold;">⚠️ 雲端資料庫未就緒，請檢查網絡連線或 Firebase 配置。</div>`; return;
+                container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#ef4444; font-size:12px; font-weight:bold;">⚠️ 雲端資料庫未就緒，請檢查網絡。</div>`; return;
             }
 
             container.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:15px; color:#db2777; font-size:12px; font-weight:bold;">⚡ 水晶閣雲端雷達精算空檔中...</div>`;
@@ -530,7 +537,8 @@
                 const overrides = ovrSnap.exists() ? ovrSnap.val() : {};
                 const cleanEmployees = Array.isArray(employees) ? employees.filter(Boolean) : Object.values(employees).filter(Boolean);
                 
-                let workingStaffs = cleanEmployees.filter(e => e && e.name && !(holidays[e.name] || []).includes(dayNum));
+                // 🟢 【學徒篩選與排除】：在可用排班與時段分析中直接排除學徒
+                let workingStaffs = cleanEmployees.filter(e => e && e.name && e.role !== '學徒' && !(holidays[e.name] || []).includes(dayNum));
                 if (staffChoice !== 'auto') { workingStaffs = workingStaffs.filter(e => e.name === staffChoice); }
 
                 let timeSlots = [];
@@ -540,11 +548,11 @@
                 let validSlotsPool = [];
 
                 workingStaffs.forEach(staff => {
+                    // 讀取該老師當天所有的佔用預約 (包含 Web 與 WhatsApp AI 預約)
                     let staffRawBookings = bookings[staff.name]?.[dayKey] || {};
                     let staffBookedList = Array.isArray(staffRawBookings) ? staffRawBookings : Object.values(staffRawBookings);
                     staffBookedList = staffBookedList.filter(Boolean);
 
-                    // Ceci 案例 12:00-21:00 完美排班跟隨
                     let startTimeStr = getStaffShiftForDay(staff.name, dateVal, cleanEmployees, holidays, overrides);
                     let startWorkMins = timeToMins(startTimeStr);
                     let offWorkMins = startWorkMins + 540; 
@@ -554,16 +562,15 @@
                         let startMins = timeToMins(slotTime); 
                         let endMins = startMins + bookingState.totalDuration;
 
-                        // 可選時間完全鎖死在該員工當天上下班時段之內
                         if (startMins < startWorkMins || startMins > offWorkMins) return;
                         if (endMins > 1435) return; 
 
+                        // 判斷是否與已有預約衝突
                         let isOverlap = staffBookedList.some(b => {
                             return Math.max(startMins, timeToMins(b.start)) < Math.min(endMins, timeToMins(b.end));
                         });
 
                         if (!isOverlap) {
-                            // Ceci 20:45、21:00 亮起待審黃格，20:30 亮起吉時綠格
                             let isReview = (startMins >= safetyLineMins);
                             validSlotsPool.push({ staff: staff.name, time: slotTime, isReview: isReview, isCustom: false });
                         }
@@ -635,6 +642,7 @@
             if (chk.checked) { if (btn) btn.classList.add('active'); } else { if (btn) btn.classList.remove('active'); }
         }
 
+        // 🚀 送出預約申請 (寫入與 WhatsApp 完全相同的 nested 目錄中，實現數據完美查重)
         function executeWhatsAppBooking() {
             if (bookingState.selectedSlot === null) return;
             
@@ -668,6 +676,7 @@
 
             let phoneLast4 = custPhone.slice(-4);
 
+            // 🟢 【數據對齊】：與後台 Admin + Webhook 對齊
             let cloudBookingData = { 
                 customer: custName, 
                 phone: custPhone,
@@ -677,7 +686,9 @@
                 start: timeVal, 
                 end: endTimeStr, 
                 status: isCust ? "⏳ 特殊" : (isRev ? "⏳ 待審" : "🟢 吉時"), 
-                remarks: allRemarks 
+                remarks: allRemarks,
+                timestamp: new Date().getTime(),
+                duration: bookingState.totalDuration
             };
 
             const parts = dateVal.split('-'); const yearMonthKey = `${parts[0]}-${parts[1]}`; const dayKey = `day_${parseInt(parts[2])}`;
@@ -695,6 +706,7 @@
                 document.getElementById('success-modal').style.display = 'flex'; return;
             }
 
+            // 寫入高精度嵌套路徑，避免重複預約
             database.ref(`v8_bookings/${yearMonthKey}/${staffName}/${dayKey}`).push(cloudBookingData).then(() => {
                 document.getElementById('success-modal').style.display = 'flex';
             }).catch(err => {
@@ -724,4 +736,3 @@
 </body>
 </html>
 
-```
