@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="web-title-tag">分店智能排班系統 V10.0-Ultimate</title>
+    <link rel="stylesheet" href="style.css">
     
     <!-- 🟢 iPad / iPhone 專屬 F12 控制台偵錯晶片 (排查完畢後可點選右下角齒輪刪除) -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
@@ -278,7 +279,7 @@
             justify-content: space-between;
         }
 
-        /* 🤖 智能排班網格：iPad 上自動適配 row 數 */
+        /* 🤖 智能排班網格 */
         .grid-6 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -306,7 +307,7 @@
         .manual-time-select { width: 100%; font-size: 12px; color: #475569; border: 1px solid #cbd5e1; }
         .slot-note-text { font-size: 11px; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* 📊 圓形彩色儀表板指標 */
+        /* 📊 儀表板指標 */
         .grid-4 {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -325,7 +326,7 @@
         .bg-warn { background: var(--danger-light); color: var(--danger); border-color: #fca5a5; }
         .bg-low { background: var(--warning-light); color: var(--warning); border-color: #fde68a; }
 
-        /* 📋 📋 蘋果風格大型統計表格 */
+        /* 📋 表格 */
         .scroll-box {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -354,7 +355,6 @@
             color: var(--text-muted);
         }
 
-        /* 凍結首列 (Sticky Column) - 防止 iPad 橫滑表格時名字不見 */
         .sticky-col {
             position: sticky;
             left: 0;
@@ -371,7 +371,6 @@
         .bg-alert-darkgreen { background: #ecfdf5 !important; color: #047857; font-weight: bold; }
         .bg-alert-lightgreen { background: #f0fdf4 !important; color: #10b981; }
 
-        /* 放假顯示點點 */
         .holiday-display-dot {
             display: inline-block;
             padding: 2px 6px;
@@ -386,7 +385,6 @@
             color: var(--danger);
         }
 
-        /* 放假申請按鈕 */
         .holiday-btn {
             padding: 6px 12px;
             border-radius: 8px;
@@ -400,7 +398,6 @@
         .holiday-btn.active { background: var(--danger); color: white; border-color: var(--danger); }
         .holiday-btn.locked { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
 
-        /* 出勤統計天數標籤 */
         .count-badge {
             background: #eff6ff;
             color: #2563eb;
@@ -410,7 +407,7 @@
             margin-right: 6px;
         }
 
-        /* 智庫審批中心卡片 */
+        /* 審批中心與預約 */
         .decision-card {
             background: #f8fafc;
             border: 1px solid var(--border-color);
@@ -436,7 +433,6 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* 控制台欄位排版 */
         .settings-section {
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 15px;
@@ -444,8 +440,6 @@
         }
         .settings-label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--primary); }
         .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
-
-        /* 備份按鈕區域 */
         .time-hint-banner { font-size:12px; font-weight:bold; text-align:center; margin-bottom:8px;}
     </style>
 </head>
@@ -456,11 +450,8 @@
         <div class="login-box">
             <div class="login-logo">🔮</div>
             <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店智能排班系統 V10.0</h2>
-            
             <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入安全口令" maxlength="12" inputmode="text" onkeydown="if(event.key==='Enter') { event.preventDefault(); triggerGateLogin(); }">
-            
             <button class="login-btn" onclick="triggerGateLogin()">安全登入驗證</button>
-            
             <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:12px; display:none;">❌ 口令錯誤，請重新輸入！</div>
         </div>
     </div>
@@ -474,7 +465,7 @@
         </div>
     </div>
 
-    <!-- 📱 iOS 橫向手勢滑動標籤列 (🟢 新增預約對接中心) -->
+    <!-- 📱 iOS 橫向標籤列 (預約對接中心整合) -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-bookings" onclick="switchTab('tab-bookings')">🔮 預約對接中心 <span id="booking-badge-dot" style="background:var(--danger); color:white; border-radius:50%; width:8px; height:8px; display:none; margin-left:4px;"></span></button>
@@ -515,18 +506,18 @@
         <div id="shops-report-container"></div>
     </div>
 
-    <!-- 🟢 頁面1.5：預約對接中心 (專門用於處理 WhatsApp AI 直傳的預約需求) -->
+    <!-- 🔮 頁面1.5：預約對接中心 (新增項目耗時、CRM 資料欄位) -->
     <div id="tab-bookings" class="tab-content" style="display: none;">
         <div class="card">
-            <div class="title" style="margin-bottom:4px;">🔮 WhatsApp AI 實時預約審核看板</div>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">顧客透過 WhatsApp AI (Crystal) 發起的預約意向，會在此即時呈現，經理點擊批准後即可一鍵鎖定！</p>
+            <div class="title" style="margin-bottom:4px;">🔮 WhatsApp / 網頁 實時預約智慧審核中樞</div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">系統已將 WhatsApp AI 與線上填單數據無縫彙整。點擊「批准」即可自動排入日曆備註，並同步更新該熟客的 CRM 偏好紀錄！</p>
             <div id="live-bookings-container" class="scroll-box" style="background:#f8fafc; padding:15px; border-radius:14px; border:1px solid #cbd5e1; min-height:100px;">
-                <div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">⏳ 正在加載實時預約管道...</div>
+                <div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">⏳ 正在加載實時預約大腦管道...</div>
             </div>
         </div>
     </div>
 
-    <!-- 頁面2：個人當月排班（已修復表格結構 & 整合一鍵反選功能） -->
+    <!-- 頁面2：個人當月排班 -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:8px;">👤 員工個人當月排班及放假申請表</div>
@@ -536,7 +527,6 @@
                     <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取姓名：</label>
                     <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:1px solid var(--primary); background:white;" onchange="renderIndividualMonthCalendar()"></select>
                 </div>
-                <!-- 🟢 一鍵反選放假功能 -->
                 <button id="my-month-invert-btn" class="btn" style="background:#4b5563; color:white; padding:8px 14px; font-size:13px; border-radius:8px;" onclick="invertIndividualEmployeeHolidays()">🔄 一鍵反選放假</button>
             </div>
 
@@ -682,11 +672,12 @@
 
     <script src="app.js?v=10.0.5"></script>
 
-    <!-- 🟢 預約對接中心自訂 JavaScript：動態銜接 app.js 並即時渲染 Firebase 預約 -->
+    <!-- 🟢 預約對接中樞自訂內置 JS：與 Firebase RTDB 深度直連 -->
     <script>
         let liveBookings = {};
+        let liveProfiles = {};
 
-        // 監聽 Firebase 資料庫中的實時預約
+        // 監聽並加載預約與 CRM Profiles
         function startLiveBookingListener() {
             if (typeof firebase === 'undefined' || !firebase.apps.length) return;
             const db = firebase.database();
@@ -694,14 +685,19 @@
             const month = state.currentMonth || 5;
             const monthKey = `${year}-${month < 10 ? '0'+month : month}`;
 
-            // 監聽當月預約
+            // 1. 監聽當月預約
             db.ref(`v8_bookings/${monthKey}`).on('value', (snapshot) => {
                 liveBookings = snapshot.val() || {};
-                renderLiveBookings(liveBookings, monthKey);
+                
+                // 2. 獲取所有 CRM 檔案以對齊備忘錄
+                db.ref(`v8_profiles`).once('value', (profileSnap) => {
+                    liveProfiles = profileSnap.val() || {};
+                    renderLiveBookings(liveBookings, monthKey);
+                });
             });
         }
 
-        // 渲染實時預約列表
+        // 渲染實時預約審核大表
         function renderLiveBookings(bookings, monthKey) {
             const container = document.getElementById('live-bookings-container');
             const badgeDot = document.getElementById('booking-badge-dot');
@@ -711,7 +707,6 @@
             const keys = Object.keys(bookings);
             const pendingKeys = keys.filter(k => bookings[k].status === 'pending');
 
-            // 紅點標示是否有新預約
             if (badgeDot) {
                 badgeDot.style.display = pendingKeys.length > 0 ? 'inline-block' : 'none';
             }
@@ -721,21 +716,21 @@
                 return;
             }
 
-            // 按時間排序（最新預約排在最前面）
             const sortedKeys = keys.sort((a, b) => (bookings[b].timestamp || 0) - (bookings[a].timestamp || 0));
 
             let html = `<table style="width:100%;">
                 <thead>
                     <tr style="background:#f1f5f9;">
-                        <th>時間戳</th>
+                        <th>預約時間</th>
                         <th>顧客姓名</th>
-                        <th>電話號碼</th>
+                        <th>電話 (WhatsApp)</th>
                         <th>美甲師</th>
-                        <th>預約日期</th>
-                        <th>時段</th>
-                        <th>預約分店</th>
+                        <th>日期與時段</th>
+                        <th>服務項目</th>
+                        <th>分店</th>
+                        <th>CRM 備忘錄與喜好</th>
                         <th>狀態</th>
-                        <th style="text-align:center;">操作與審核</th>
+                        <th style="text-align:center;">審核操作</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -744,6 +739,17 @@
                 const b = bookings[k];
                 const dateStr = new Date(b.timestamp).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
                 
+                // 讀取該電話的 CRM 檔案
+                const prof = liveProfiles[b.customerPhone] || {};
+                let crmMemo = `<span style="color:#94a3b8; font-size:12px;">新客 (無紀錄)</span>`;
+                if (prof.customerName) {
+                    crmMemo = `<div style="font-size:11px; line-height:1.4;">
+                        💎 累積: <b>${prof.visitCount || 1}次</b><br>
+                        🎨 偏好: <span style="color:var(--primary); font-weight:bold;">${prof.preferredStyle || '常規'}</span><br>
+                        ⚠️ 避諱: <span style="color:var(--danger); font-weight:bold;">${prof.dislikes || '無'}</span>
+                    </div>`;
+                }
+
                 let statusBadge = '';
                 let actionButtons = '';
 
@@ -755,7 +761,7 @@
                     `;
                 } else if (b.status === 'approved') {
                     statusBadge = `<span style="background:var(--success-light); color:var(--success); padding:4px 8px; border-radius:6px; font-weight:bold; font-size:12px;">🟢 已批准</span>`;
-                    actionButtons = `<button class="btn" style="background:#e2e8f0; color:#64748b; padding:6px 12px; font-size:12px;" disabled>已完成審核</button>`;
+                    actionButtons = `<button class="btn" style="background:#e2e8f0; color:#64748b; padding:6px 12px; font-size:12px;" disabled>已核准排入</button>`;
                 } else {
                     statusBadge = `<span style="background:rgba(239, 68, 68, 0.1); color:var(--danger); padding:4px 8px; border-radius:6px; font-weight:bold; font-size:12px;">🔴 已拒絕</span>`;
                     actionButtons = `<button class="btn" style="background:#e2e8f0; color:#64748b; padding:6px 12px; font-size:12px;" disabled>已拒絕</button>`;
@@ -766,9 +772,10 @@
                     <td><b>${b.customerName}</b></td>
                     <td><a href="https://wa.me/${b.customerPhone}" target="_blank" style="color:var(--primary); font-weight:bold;">💬 ${b.customerPhone}</a></td>
                     <td><span style="background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:6px; font-weight:bold;">${b.staffName}</span></td>
-                    <td style="font-weight:bold;">${b.date} 號</td>
-                    <td style="font-weight:bold; color:#1e3a8a;">${b.time}</td>
+                    <td><b style="color:var(--primary);">${b.date} 號</b> <span style="font-weight:bold; color:#1e3a8a; margin-left:6px;">${b.time}</span></td>
+                    <td><span style="background:#eff6ff; color:#2563eb; padding:2px 6px; border-radius:6px; font-size:12px; font-weight:bold;">${b.serviceType || '法式/漸變'} (${b.duration || 90}m)</span></td>
                     <td><b style="color:#0d9488;">${b.shop} 店</b></td>
+                    <td>${crmMemo}</td>
                     <td>${statusBadge}</td>
                     <td style="text-align:center;">${actionButtons}</td>
                 </tr>`;
@@ -778,20 +785,40 @@
             container.innerHTML = html;
         }
 
-        // 批准預約：自動更新排班備註，並更改預約狀態
+        // 批准預約：寫入排班備忘錄，並自動更新/建立 CRM 熟客檔案
         function approveBooking(monthKey, key) {
             const b = liveBookings[key];
             if (!b) return;
 
             const db = firebase.database();
 
-            // 1. 更新特殊備註（讓老師當天排班表格直接出現「📝 顧客: OOO (預約 11:00)」）
+            // 1. 寫入 Admin 每日排班備忘錄
             const noteKey = `day_${b.date}`;
-            db.ref(`v8_special_notes/${monthKey}/${b.staffName}/${noteKey}`).set(`預約:${b.customerName}(${b.time})`);
+            db.ref(`v8_special_notes/${monthKey}/${b.staffName}/${noteKey}`).set(`預約:${b.customerName}(${b.serviceType}, ${b.time})`);
 
-            // 2. 更改預約狀態為 approved
+            // 2. 智慧讀寫 CRM 資料庫 (v8_profiles)
+            const profRef = db.ref(`v8_profiles/${b.customerPhone}`);
+            profRef.once('value', (snap) => {
+                let currentProfile = snap.val() || {
+                    customerName: b.customerName,
+                    customerPhone: b.customerPhone,
+                    preferredStyle: b.serviceType,
+                    dislikes: "無特別忌諱",
+                    visitCount: 0
+                };
+                
+                // 升級檔案內容
+                currentProfile.lastTeacher = b.staffName;
+                currentProfile.lastService = b.serviceType;
+                currentProfile.visitCount = (currentProfile.visitCount || 0) + 1;
+                
+                // 儲存回雲端 CRM
+                profRef.set(currentProfile);
+            });
+
+            // 3. 更新預約狀態
             db.ref(`v8_bookings/${monthKey}/${key}/status`).set('approved').then(() => {
-                showToast(`🎉 預約已成功核准！已自動將預約資訊同步登錄到 ${b.staffName} 老師的日曆備註中！`);
+                showToast(`🎉 預約核准成功！已排入 ${b.staffName} 老師的班表，並同步更新該顧客的 CRM 喜好檔案！`);
             });
         }
 
@@ -802,7 +829,6 @@
             }
         }
 
-        // 自訂 Toast 通知
         function showToast(msg) {
             const toast = document.createElement('div');
             toast.style.cssText = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#0f172a; color:white; border:1px solid var(--success); padding:16px 24px; border-radius:16px; font-weight:bold; font-size:14px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3); z-index:9999999; text-align:center; max-width:90%;";
@@ -811,7 +837,7 @@
             setTimeout(() => { toast.remove(); }, 4000);
         }
 
-        // 動態注入到原有的初始化流程
+        // 輪詢確認 Firebase 已啟動並執行監聽
         const checkDbInterval = setInterval(() => {
             if (isCloudMode && database) {
                 startLiveBookingListener();
@@ -821,5 +847,4 @@
     </script>
 </body>
 </html>
-
 
