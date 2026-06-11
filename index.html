@@ -5,21 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="web-title-tag">分店智能排班系統 V10.0-Ultimate</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
     <!-- 🟢 iPad / iPhone 專屬 F12 控制台偵錯晶片 -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
-    <!-- 🔮 水晶閣獨家 - iPad iOS Safari 萬能防崩潰安全阻斷器 (必須放在最頂部) -->
+    <!-- 🔮 水晶閣安全守護晶片 - iPad Safari 萬能防崩潰阻斷器 (阻斷任何潛在 DOM 缺失報錯) -->
     <script>
         (function() {
             const originalGetElementById = document.getElementById;
             document.getElementById = function(id) {
                 const el = originalGetElementById.call(document, id);
                 if (!el) {
-                    // 🟢 如果外部 app.js 尋找不存在的元素 (如 nav-analysis, tab-analysis 等)
-                    // 為了防止拋出 null is not an object 錯誤導致整個排班表渲染中斷，
-                    // 我們動態返回一個真實的虛擬節點，防範任何 style 或 classList 讀寫崩潰！
                     const dummy = document.createElement('div');
                     dummy.setAttribute('id', id);
                     dummy.style.display = 'none';
@@ -29,280 +29,227 @@
             };
         })();
     </script>
-
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-    <style>
-        :root {
-            --primary: #7c3aed;
-            --primary-light: #f5f3ff;
-            --primary-hover: #6d28d9;
-            --success: #10b981;
-            --success-light: #ecfdf5;
-            --warning: #f59e0b;
-            --warning-light: #fffbeb;
-            --danger: #ef4444;
-            --danger-light: #fdf2f2;
-            --bg-main: #f1f5f9;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            padding-bottom: 60px;
-        }
-
-        /* 🔒 iPad 蘋果風格專屬全屏防飄移安全登入遮罩 */
-        #login-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%; height: 100%;
-            background: #0f172a; 
-            background: rgba(15, 23, 42, 0.85);
-            display: -webkit-box;
-            display: -webkit-flex;
-            display: flex;
-            -webkit-box-align: center;
-            -webkit-align-items: center;
-            align-items: center;
-            -webkit-box-pack: center;
-            -webkit-justify-content: center;
-            justify-content: center;
-            z-index: 999999;
-            padding: 20px;
-        }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.98);
-            padding: 40px 30px;
-            border-radius: 28px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            -webkit-transform: translateY(0);
-            transform: translateY(0);
-            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .login-logo { font-size: 50px; margin-bottom: 15px; display: inline-block; }
-
-        .login-input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 2px solid var(--border-color);
-            margin-bottom: 20px;
-            font-size: 16px; 
-            outline: none;
-            text-align: center;
-            background: #f8fafc;
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            background: linear-gradient(135deg, var(--primary), #9333ea);
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
-        }
-
-        .auth-banner {
-            background: #1e293b;
-            color: white;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .tab-bar {
-            display: flex;
-            overflow-x: auto;
-            white-space: nowrap;
-            background: #ffffff;
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--border-color);
-            gap: 8px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .tab-btn {
-            padding: 10px 18px;
-            border-radius: 10px;
-            border: none;
-            background: #f1f5f9;
-            color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .tab-btn.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
-        }
-
-        .tab-content { padding: 20px; max-width: 1200px; margin: 0 auto; }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-            border: 1px solid rgba(226, 232, 240, 0.8);
-        }
-
-        .title {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .date-panel { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-
-        select, input[type="text"], input[type="number"] {
-            font-size: 16px;
-            padding: 10px 14px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            background-color: white;
-            outline: none;
-            color: var(--text-main);
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border-radius: 10px;
-            border: none;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-save { background: var(--success); color: white; }
-        .btn-add { background: var(--primary); color: white; }
-        .btn-del { background: var(--danger); color: white; }
-        .btn-reset { background: #e2e8f0; color: #475569; }
-
-        .cloud-status { padding: 10px 15px; border-radius: 12px; font-size: 13px; font-weight: bold; margin-bottom: 15px; text-align: center; }
-        .status-online { background: var(--success-light); color: var(--success); border: 1px solid #a7f3d0; }
-        .status-offline { background: var(--warning-light); color: var(--warning); border: 1px solid #fde68a; }
-
-        .scroll-box {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 15px;
-        }
-
-        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; background: white; }
-        th, td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-        th { background: #f8fafc; font-weight: bold; color: var(--text-muted); }
-    </style>
 </head>
 <body>
 
-    <!-- 🔒 安全門禁 (全面相容 iPad Safari 100% 居中防飄移) -->
     <div id="login-overlay">
         <div class="login-box">
             <div class="login-logo">🔮</div>
-            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;">分店智能排班系統 V10.0</h2>
-            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入安全口令" maxlength="12" onkeydown="if(event.key==='Enter') triggerGateLogin()">
+            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店排班主機系統</h2>
+            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" onkeydown="if(event.key==='Enter') triggerGateLogin()">
             <button class="login-btn" onclick="triggerGateLogin()">安全登入驗證</button>
-            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:12px; display:none;">❌ 口令錯誤，請重新輸入！</div>
+            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 口令錯誤，請重新輸入！</div>
         </div>
     </div>
 
-    <!-- 頂部資訊列 -->
     <div class="auth-banner">
         <div id="role-display-text">🔑 目前權限：未登入</div>
-        <div id="quick-notify-dot" style="background:var(--warning); color:white; padding:2px 8px; border-radius:10px; font-size:11px; display:none;">● 有待審批申請</div>
-        <button class="btn" style="padding:4px 10px; background:#4b5563; color:white; font-size:12px;" onclick="triggerGlobalLogout()">安全登出</button>
+        <div id="quick-notify-dot" style="background:var(--warning); color:white; padding:2px 8px; border-radius:10px; font-size:11px; display:none; animation: pulse 2s infinite;">● 有待審批申請</div>
+        <div>
+            <button class="btn" style="padding:4px 8px; background:#4b5563; color:white;" onclick="triggerGlobalLogout()">安全登出</button>
+        </div>
     </div>
 
-    <!-- 標籤導航 (完整復原所有 Tab 滿足 app.js 依賴) -->
+    <!-- 🏷️ 標籤導航列：在保持原版 100% 完整的基礎上，完美嵌入「🔮 預約對接中心」 -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-bookings" onclick="switchTab('tab-bookings')">🔮 預約對接中心 <span id="booking-badge-dot" style="background:var(--danger); color:white; border-radius:50%; width:8px; height:8px; display:none; margin-left:4px;"></span></button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
-        <button class="tab-btn" id="nav-analysis" onclick="switchTab('tab-analysis')">📈 數據分析</button>
+        <button class="tab-btn" id="nav-analysis" onclick="switchTab('tab-analysis')">📊 全月人手分析</button>
+        <button class="tab-btn" id="nav-employees" onclick="switchTab('tab-employees')">👥 員工管理</button>
+        <button class="tab-btn" id="nav-holidays" onclick="switchTab('tab-holidays')">🏖️ 全月放假表</button>
+        <button class="tab-btn" id="nav-approval-center" onclick="switchTab('tab-approval-center')">📥 智庫審批中心</button>
+        <button class="tab-btn" id="nav-settings" onclick="switchTab('tab-settings')">⚙️ 微調設定頁</button>
     </div>
 
-    <!-- 頁面1：每日排班 -->
     <div id="tab-schedule" class="tab-content" style="display: none;">
         <div id="cloud-indicator" class="cloud-status status-offline">⏳ 正在初始化排班引擎晶片...</div>
-        <div class="card">
-            <div class="title">分店智能排班沙盒 <span style="color:var(--warning);">[V10.0-Ultimate]</span></div>
-            <div class="date-panel">
-                <select id="schedule-year-select" onchange="handleDateContextChange()"></select>
-                <select id="schedule-month-select" onchange="handleDateContextChange()"></select>
-                <select id="schedule-day-select"></select>
-                <button class="btn btn-reset" onclick="resetCurrentDayToAuto()">🔄 還原自動排班</button>
+        
+        <div id="manager-backup-zone" class="card" style="display:none; background:#f8fafc; border:1px dashed #cbd5e1;">
+            <div style="font-size:12px; font-weight:bold; color:#475569; margin-bottom:6px; text-align:center;">🛡️ 數據時空膠囊安全網（管理層專屬）</div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" style="background:#0284c7; color:white;" onclick="downloadTimeCapsuleBackup()">📥 下載全月數據備份檔</button>
+                <button class="btn" style="background:#4f46e5; color:white;" onclick="triggerBackupUploadClick()">🔄 導入備份一鍵還原雲端</button>
+                <input type="file" id="time-capsule-file-injector" style="display:none;" onchange="restoreFromTimeCapsule(event)">
             </div>
-            <div id="today-leave-names-box" style="text-align:center; font-size:12px; color:#dc2626; background:#fdf2f2; padding:8px; border-radius:10px; font-weight:bold;">今日放假：無</div>
         </div>
+
+        <div class="card">
+            <div class="title" id="page-main-title">分店智能排班沙盒 <span style="color:var(--warning);">[V10.0-Ultimate]</span></div>
+            <div class="date-panel">
+                <select id="schedule-year-select" class="select-yr" onchange="handleDateContextChange()"></select>
+                <select id="schedule-month-select" class="select-mo" onchange="handleDateContextChange()"></select>
+                <select id="schedule-day-select" class="date-select"></select>
+                <button id="btn-restore-auto-id" class="btn-reset" onclick="resetCurrentDayToAuto()">🔄 還原自動排班</button>
+            </div>
+            <div id="time-switch-hint" class="time-hint-banner"></div>
+            <div id="total-working-text" style="text-align:center; font-size:13px; color:#111827; font-weight:bold; background:#f8fafc; padding:6px; border-radius:8px; border:1px solid #e5e7eb; margin:4px 0;">核心美甲師：0 人 ｜ 學徒：0 人 ｜ 總上班：0 人</div>
+            <div id="today-leave-names-box" style="text-align:center; font-size:12px; color:#dc2626; margin-top:4px; background:#fdf2f2; padding:4px; border-radius:6px; border:1px dashed #fca5a5; font-weight:bold;">今日放假：無</div>
+        </div>
+        <div class="grid-4" id="monitor-panel"></div>
+        <div id="shops-report-container"></div>
     </div>
 
-    <!-- 🔮 頁面1.5：預約對接中心 (高精度數據拉平解析) -->
+    <!-- 🔮 預約對接中心 Tab 內容 (獨立高質感管理介面) -->
     <div id="tab-bookings" class="tab-content" style="display: none;">
         <div class="card">
-            <div class="title">🔮 實時雲端預約審核中樞</div>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">系統已將多項目（美甲、美睫、紋繡）的預約數據與 Firebase 完美對齊。核准後，將自動登記至大表與個人備忘錄中！</p>
-            <div id="live-bookings-container" class="scroll-box" style="background:#f8fafc; padding:15px; border-radius:14px; border:1px solid #cbd5e1; min-height:100px;">
-                <div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">⏳ 正在加載嵌套預約數據流...</div>
+            <div class="title" style="margin-bottom: 8px;">🔮 實時雲端預約審核中樞</div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">本頁面即時匯總兩個月（60天）內來自 WhatsApp AI 與預約網頁的嵌套預約請求。經理點擊「核准」後，系統會將時間點與顧客資料 100% 自動登記至下方日曆備忘錄中！</p>
+            <div id="live-bookings-container" class="scroll-box" style="background:#f8fafc; padding:15px; border-radius:14px; border:1px solid #cbd5e1; min-height:120px;">
+                <div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">⏳ 正在安全加載嵌套預約數據流...</div>
             </div>
         </div>
     </div>
 
-    <!-- 頁面3：數據分析 (補齊容器防止 app.js 報錯) -->
-    <div id="tab-analysis" class="tab-content" style="display: none;">
+    <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
-            <div class="title">📈 營業大數據分析</div>
-            <p style="font-size:13px; color:var(--text-muted);">歷史營業統計與老師排程飽和度分析，正在與 AI Agent 深度對接中...</p>
+            <div class="title" style="margin-bottom:8px;">👤 員工個人當月排班及放假申請表</div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                <div>
+                    <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取姓名：</label>
+                    <select id="my-month-staff-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary);" onchange="renderIndividualMonthCalendar()">
+                    </select>
+                </div>
+                <button class="btn-invert" id="my-month-invert-btn" onclick="invertIndividualEmployeeHolidays()">🔄 員工一鍵優化反選假期</button>
+            </div>
+            <div class="scroll-box" style="max-height: 65vh;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align:center; width:65px;">日期</th>
+                            <th style="text-align:center; width:55px;">星期</th>
+                            <th style="text-align:center; width:100px;">當天核心美甲師</th>
+                            <th style="text-align:center; width:90px;">分配店舖</th>
+                            <th style="text-align:center; width:90px;">班次時間</th>
+                            <th style="text-align:center; width:100px;">🏖️ 要求放假鈕</th>
+                            <th style="text-align:left;">📝 當天特別事項備註</th>
+                        </tr>
+                    </thead>
+                    <tbody id="my-month-calendar-body">
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-save" style="background-color: var(--success);" onclick="saveSpecialNotesAndHolidaysData()">💾 儲存並提交當月變更要求</button>
         </div>
     </div>
 
-    <script src="app.js?v=10.0.5"></script>
+    <div id="tab-analysis" class="tab-content" style="display: none;">
+        <div class="card">
+            <div class="title" id="analysis-title-text" style="margin-bottom: 8px;">全月店鋪上班人手監控大表</div>
+            <div style="display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap;">
+                <button class="btn-filter active" id="filter-all" onclick="applyColumnFilter('all')">顯示全部欄</button>
+                <button class="btn-filter" id="filter-mani" onclick="applyColumnFilter('mani')">只看核心美甲師</button>
+                <button class="btn-filter" id="filter-app" onclick="applyColumnFilter('app')">只看輔助學徒</button>
+                <button class="btn-filter" id="filter-shops" onclick="applyColumnFilter('shops')">只看分店人手</button>
+            </div>
+            <div class="scroll-box" style="max-height: 35vh;">
+                <table id="main-analysis-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">日期</th>
+                            <th style="text-align:center;">星期</th>
+                            <th class="col-mani" style="text-align:center; background:#f1f5f9; color:#1d4ed8;">核心美甲師</th>
+                            <th class="col-app" style="text-align:center; background:#ecfdf5; color:#0f766e;">輔助學徒</th>
+                            <th class="col-shops" style="text-align:center; color:#4f46e5;">F79</th>
+                            <th class="col-shops" style="text-align:center; color:#9333ea;">GK3</th>
+                            <th class="col-shops" style="text-align:center; color:#d97706;">G38</th>
+                            <th class="col-shops" style="text-align:center; color:#0d9488;">G2</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-table-body"></tbody>
+                </table>
+            </div>
+            <div class="sub-table-title">📈 員工當月出勤與放假月結統計大對帳表</div>
+            <div class="scroll-box" style="max-height: 25vh; border: 1px solid #cbd5e1;">
+                <table>
+                    <thead>
+                        <tr style="background:#f1f5f9;">
+                            <th style="text-align:left; padding:6px 10px;">員工姓名</th>
+                            <th style="text-align:center; padding:6px 10px;">職位類型</th>
+                            <th style="text-align:center; padding:6px 10px; color:var(--success);">💼 總出勤天數</th>
+                            <th style="text-align:center; padding:6px 10px; color:var(--danger);">🏖️ 總放假天數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staff-month-summary-body"></tbody>
+                </table>
+            </div>
+            <div class="sub-table-title">🚨 美甲師告急日子總覽</div>
+            <div class="scroll-box" style="max-height: 15vh; border: 1px solid #fca5a5;">
+                <table id="low-staff-table" style="background:#fffaf8;"><tbody id="low-staff-table-body"></tbody></table>
+            </div>
+            <div class="sub-table-title">👑 美甲師充沛優勢日子總覽</div>
+            <div class="scroll-box" style="max-height: 15vh; border: 1px solid #6ee7b7;">
+                <table id="high-staff-table" style="background:#f6fffb;"><tbody id="high-staff-table-body"></tbody></table>
+            </div>
+        </div>
+    </div>
 
-    <!-- 🔮 預約對接中心自訂內建高精度解析器 (相容 iPad iOS 拋錯隔離保護網) -->
+    <div id="tab-employees" class="tab-content" style="display: none;">
+        <div class="card">
+            <div class="title" style="margin-bottom: 10px;">員工職位時段資料庫</div>
+            <button id="manager-add-emp-btn" class="btn btn-add" onclick="addEmployeeRow()">＋ 新增員工</button>
+            <div class="scroll-box">
+                <table>
+                    <thead>
+                        <tr><th>員工姓名</th><th>職位類型</th><th>可支援店舖</th><th>班次時段對應</th><th>操作</th></tr>
+                    </thead>
+                    <tbody id="employee-table-body"></tbody>
+                </table>
+            </div>
+            <button id="employee-save-btn" class="btn btn-save" onclick="saveEmployeeData()">💾 儲存員工名單職位</button>
+        </div>
+    </div>
+
+    <div id="tab-holidays" class="tab-content" style="display: none;">
+        <div class="card">
+            <div class="title" id="holiday-title-text" style="margin-bottom: 10px;">放假表 (管理層審閱大表)</div>
+            <div id="holiday-scroll-box" class="scroll-box" style="max-height: 65vh;">
+                <table>
+                    <thead><tr id="holiday-table-header-row"></tr></thead>
+                    <tbody id="holiday-table-body"></tbody>
+                </table>
+            </div>
+            <button class="btn btn-save" style="background-color: var(--warning);" onclick="saveHolidayData()">💾 經理強制儲存並發佈放假表</button>
+        </div>
+    </div>
+
+    <div id="tab-approval-center" class="tab-content" style="display: none;">
+        <div class="card">
+            <div class="title" style="margin-bottom: 4px;">📥 智庫型放假申請審批中心</div>
+            <div id="smart-approval-list-container"></div>
+        </div>
+    </div>
+
+    <div id="tab-settings" class="tab-content" style="display: none;">
+        <div class="card">
+            <div class="title" style="margin-bottom: 12px;">⚙️ 系統核心微調參數控制台</div>
+            <div class="settings-section">
+                <span class="settings-label">🔐 全局網頁密碼控制門禁</span>
+                <div class="settings-row"><span>經理管理口令：</span><input type="text" id="cfg-pass-manager"></div>
+                <div class="settings-row"><span>普通員工口令：</span><input type="text" id="cfg-pass-employee"></div>
+            </div>
+            <div class="settings-section">
+                <span class="settings-label">📌 網頁自訂文字與標題</span>
+                <div class="settings-row"><span>系統主頁標題：</span><input type="text" id="cfg-web-title" style="width:200px;"></div>
+            </div>
+            <div class="settings-section">
+                <span class="settings-label">🛡️ 安全防線與請假額度閾值</span>
+                <div class="settings-row"><span>月底請假鎖定日期：每個月</span><input type="number" id="cfg-lock-day" style="width:60px;"> 號後激活</div>
+                <div class="settings-row"><span>全職(Full-time)每月放假上限：</span><input type="number" id="cfg-max-ft-leave" style="width:60px;"> 天</div>
+                <div class="settings-row"><span>兼職(Part-time)每月放假上限：</span><input type="number" id="cfg-max-pt-leave" style="width:60px;"> 天</div>
+            </div>
+            <div class="settings-section">
+                <span class="settings-label">📊 人手分析定義告急線</span>
+                <div class="settings-row"><span>美甲師 ⚠️ 告急人手：少於或等於</span><input type="number" id="cfg-limit-low" style="width:60px;"> 人</div>
+                <div class="settings-row"><span>美甲師 🟢 充沛人手：大於或等於</span><input type="number" id="cfg-limit-high" style="width:60px;"> 人</div>
+            </div>
+            <button class="btn btn-save" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發佈雲端</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+
+    <!-- 🔮 預約對接中心高階拉平解析器 (無感隔離，完美適配 iPad iOS Safari 渲染引擎) -->
     <script>
         let liveBookings = {};
 
@@ -312,22 +259,24 @@
             return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
         }
 
-        // 監聽並加載當月預約
+        // 監聽並加載當月嵌套預約數據
         function startLiveBookingListener() {
             if (typeof firebase === 'undefined' || !firebase.apps.length) return;
             const db = firebase.database();
-            const year = state.currentYear || 2026;
-            const month = state.currentMonth || 5;
+            
+            // 對齊 app.js 的月份與年份選取
+            const hkt = new Date(new Date().getTime() + 8 * 3600000);
+            const year = (typeof state !== 'undefined' && state.currentYear) ? state.currentYear : hkt.getUTCFullYear();
+            const month = (typeof state !== 'undefined' && state.currentMonth) ? state.currentMonth : (hkt.getUTCMonth() + 1);
             const monthKey = `${year}-${month < 10 ? '0'+month : month}`;
 
-            // 監聽嵌套路徑：v8_bookings/YYYY-MM
             db.ref(`v8_bookings/${monthKey}`).on('value', (snapshot) => {
                 liveBookings = snapshot.val() || {};
                 renderLiveBookings(liveBookings, monthKey);
             });
         }
 
-        // 🌟 核心高難度：動態拉平並重組嵌套預約數據
+        // 核心高難度：拉平多維度的 Staff -> day_DD -> BookingId 嵌套層次
         function renderLiveBookings(bookings, monthKey) {
             const container = document.getElementById('live-bookings-container');
             const badgeDot = document.getElementById('booking-badge-dot');
@@ -336,7 +285,6 @@
 
             let flattenedBookings = [];
 
-            // 深度遍歷：StaffName -> day_DD -> BookingId
             Object.keys(bookings).forEach(staffName => {
                 const staffB = bookings[staffName] || {};
                 Object.keys(staffB).forEach(dayKey => {
@@ -367,8 +315,8 @@
                 });
             });
 
-            // 統計待審批數量
-            const pendingBookings = flattenedBookings.filter(b => b.status.includes('待審') || b.status.includes('pending'));
+            // 控制 badge 小紅點提示
+            const pendingBookings = flattenedBookings.filter(b => b.status.includes('待審') || b.status.includes('pending') || b.status.includes('⏳'));
             if (badgeDot) {
                 badgeDot.style.display = pendingBookings.length > 0 ? 'inline-block' : 'none';
             }
@@ -378,7 +326,7 @@
                 return;
             }
 
-            // 按日期(升序) 與 時間(升序) 排序
+            // 按日期 -> 時間進行排序
             flattenedBookings.sort((a, b) => {
                 if (parseInt(a.date) !== parseInt(b.date)) {
                     return parseInt(a.date) - parseInt(b.date);
@@ -386,7 +334,7 @@
                 return timeToMins(a.time) - timeToMins(b.time);
             });
 
-            let html = `<table style="width:100%;">
+            let html = `<table>
                 <thead>
                     <tr style="background:#f1f5f9;">
                         <th>預約日期</th>
@@ -395,7 +343,7 @@
                         <th>指定人員</th>
                         <th>時段</th>
                         <th>預期耗時</th>
-                        <th>預約細分項目</th>
+                        <th>項目詳情</th>
                         <th>大類</th>
                         <th>備註</th>
                         <th>狀態</th>
@@ -408,17 +356,17 @@
                 let statusColor = "orange";
                 let actionButtons = '';
 
-                if (b.status.includes('吉時') || b.status.includes('待審') || b.status.includes('特殊')) {
+                if (b.status.includes('待審') || b.status.includes('pending') || b.status.includes('⏳') || b.status.includes('吉時') || b.status.includes('特殊')) {
                     actionButtons = `
                         <button class="btn" style="background:var(--success); color:white; padding:6px 12px; font-size:12px; margin-right:6px;" onclick="approveBooking('${monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}')">批准</button>
                         <button class="btn" style="background:var(--danger); color:white; padding:6px 12px; font-size:12px;" onclick="rejectBooking('${monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}')">拒絕</button>
                     `;
-                } else if (b.status.includes('批准') || b.status.includes('approved')) {
+                } else if (b.status.includes('批准') || b.status.includes('approved') || b.status.includes('🟢')) {
                     statusColor = "green";
-                    actionButtons = `<span style="color:#64748b; font-size:12px;">已核准並排入</span>`;
+                    actionButtons = `<span style="color:#64748b; font-size:12px;">已核准並排入備忘</span>`;
                 } else {
                     statusColor = "red";
-                    actionButtons = `<span style="color:#94a3b8; font-size:12px;">已駁回拒絕</span>`;
+                    actionButtons = `<span style="color:#94a3b8; font-size:12px;">已駁回</span>`;
                 }
 
                 html += `<tr>
@@ -427,7 +375,7 @@
                     <td><a href="https://wa.me/${b.customerPhone}" target="_blank" style="color:var(--primary); font-weight:bold;">💬 ${b.customerPhone}</a></td>
                     <td><span style="background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:6px; font-weight:bold;">${b.staffName}</span></td>
                     <td style="color:#1e3a8a; font-weight:bold;">${b.time} - ${b.endTime}</td>
-                    <td><b>${b.duration} mins</b></td>
+                    <td><b>${b.duration} 分鐘</b></td>
                     <td style="font-size:12px;">${b.serviceType}</td>
                     <td><span style="background:#fef3c7; color:#d97706; padding:2px 6px; border-radius:6px; font-size:11px; font-weight:bold;">${b.mainCategory}</span></td>
                     <td style="font-size:11px; max-width:150px; overflow:hidden; text-overflow:ellipsis;">${b.remarks}</td>
@@ -440,7 +388,7 @@
             container.innerHTML = html;
         }
 
-        // 批准預約 (同步寫入特殊排班備忘錄)
+        // 批准預約 (自動同步登錄至當天排班備忘錄中，使其在大表完美顯示)
         function approveBooking(monthKey, staffName, dayKey, bookingId) {
             const db = firebase.database();
             const b = liveBookings[staffName]?.[dayKey]?.[bookingId];
@@ -453,6 +401,7 @@
             });
         }
 
+        // 拒絕預約
         function rejectBooking(monthKey, staffName, dayKey, bookingId) {
             if (confirm("確定要拒絕這筆預約申請嗎？")) {
                 firebase.database().ref(`v8_bookings/${monthKey}/${staffName}/${dayKey}/${bookingId}/status`).set('🔴 已拒絕');
@@ -467,12 +416,21 @@
             setTimeout(() => { toast.remove(); }, 4000);
         }
 
-        // 🟢 iPad Safari 拋錯安全隔離保護網，確保即使 app.js 還沒讀完，iPad 也不會崩潰白屏
+        // 當經理切換日曆月份或年份時，動態更新預約對接中心的數據
+        const bindEventsInterval = setInterval(() => {
+            const ySelect = document.getElementById('schedule-year-select');
+            const mSelect = document.getElementById('schedule-month-select');
+            if (ySelect && mSelect) {
+                ySelect.addEventListener('change', () => setTimeout(startLiveBookingListener, 300));
+                mSelect.addEventListener('change', () => setTimeout(startLiveBookingListener, 300));
+                clearInterval(bindEventsInterval);
+            }
+        }, 1000);
+
+        // 每隔一秒安全檢查 Firebase 載入情況，啟動實時預約監控大腦
         const checkDbInterval = setInterval(() => {
             try {
-                const cloudMode = typeof isCloudMode !== 'undefined' ? isCloudMode : false;
-                const db = typeof database !== 'undefined' ? database : null;
-                if (cloudMode && db) {
+                if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
                     startLiveBookingListener();
                     clearInterval(checkDbInterval);
                 }
@@ -483,4 +441,4 @@
     </script>
 </body>
 </html>
-
+```
