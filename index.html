@@ -37,6 +37,9 @@
         </div>
     </div>
 
+    <!-- 隱形雙向相容性認證插槽 (保證 app.js 原生 login 方法永不報錯) -->
+    <input type="hidden" id="global-pass-input">
+
     <div class="auth-banner">
         <div id="role-display-text">🔑 目前權限：未登入</div>
         <div id="quick-notify-dot" style="background:var(--warning); color:white; padding:2px 8px; border-radius:10px; font-size:11px; display:none; animation: pulse 2s infinite;">● 有待審批申請</div>
@@ -84,19 +87,19 @@
         <div id="shops-report-container"></div>
     </div>
 
-    <!-- 👤 個人每月排班 Tab (全新注入年份與月份自由選單) -->
+    <!-- 👤 個人每月排班 Tab (全新注入年份與月份自選選單，所有人皆可選取、跨月反映更表) -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:8px;">👤 員工個人當月排班及放假申請表</div>
             <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
                 <div>
                     <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取年份：</label>
-                    <select id="my-month-year-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary); font-weight:bold;" onchange="syncMyMonthToMainDate()">
+                    <select id="my-month-year-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary); font-weight:bold;" onchange="syncMyMonthDateToMain()">
                     </select>
                 </div>
                 <div>
                     <label style="font-size:13px; font-weight:bold; color:#4b5563;">選取月份：</label>
-                    <select id="my-month-month-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary); font-weight:bold;" onchange="syncMyMonthToMainDate()">
+                    <select id="my-month-month-select" style="font-size:14px; padding:6px 12px; border-radius:8px; border:2px solid var(--primary); font-weight:bold;" onchange="syncMyMonthDateToMain()">
                     </select>
                 </div>
                 <div>
@@ -280,17 +283,15 @@
         </div>
     </div>
 
-    <!-- ⚠️ 人手不足警告 Fixed 彈出遮罩 (原生 CSS 極簡防位移結構) -->
-    <div id="manpower-warning-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 999999; display: none; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; transition: all 0.3s ease;">
+    <!-- ⚠️ 人手不足自訂高質感「正中心 Fixed 彈出式遮罩」(預設不加載、不渲染、絕對不顯露在網頁流的最下方 !) -->
+    <div id="manpower-warning-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 999999; display: none; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; transition: all 0.3s ease;">
         <div style="background: white !important; border-radius: 20px; padding: 28px; max-width: 380px; width: 100%; border: 1px solid rgba(244, 63, 94, 0.2); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box; animation: modalBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <div style="color: #f43f5e; font-size: 48px; margin-bottom: 16px; line-height: 1;">⚠️</div>
             <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; padding: 0; letter-spacing: -0.5px;">當天上班人數不足</h3>
             <p style="font-size: 14px; color: #475569; margin: 0 0 24px 0; padding: 0; line-height: 1.6; text-align: left;">
-                您申請放假的這一天，店內的核心美甲師人力已經達到或低於告急線！
+                您申請放假的這一天，店內的核心美甲師人力已經達到或低於告急線！是否確定要繼續申請？
                 <br><br>
-                是否確定要繼續申請？
-                <br>
-                <span style="color: #e11d48; font-weight: bold; background: #fff1f2; padding: 4px 8px; border-radius: 6px; display: inline-block; margin-top: 8px; border: 1px solid #ffe4e6; width: 100%; box-sizing: border-box; text-align: center;">※ 若要申請，請務必填寫備註理由！</span>
+                <span style="color: #e11d48; font-weight: bold; background: #fff1f2; padding: 4px 8px; border-radius: 6px; display: inline-block; margin-top: 8px; border: 1px solid #ffe4e6; width: 100%; box-sizing: border-box; text-align: center;">※ 若要申請，您必須在備註中填寫理由！</span>
             </p>
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button id="warning-cancel-btn" style="flex: 1; background: #f1f5f9; color: #475569; font-weight: bold; padding: 12px 20px; border-radius: 12px; font-size: 14px; border: 1px solid #e2e8f0; cursor: pointer; outline: none; transition: background 0.2s;">取消申請</button>
@@ -299,7 +300,7 @@
         </div>
     </div>
 
-    <!-- ⚙️ 雲端相容性隱性佔位插槽 -->
+    <!-- ⚙️ 雲端與 UI 橋接相容佔位器（放置於 body 底部，完全自畫布和分頁中移除，保證不干擾 app.js 運作） -->
     <div id="nav-bookings" style="display: none !important;"></div>
     <div id="tab-bookings" style="display: none !important;"><div id="live-bookings-container"></div></div>
 
@@ -312,20 +313,22 @@
         #warning-confirm-btn:hover { background: #b91c1c !important; }
     </style>
 
-    <!-- 1. 原生 App.js 排班系統主程式載入 -->
+    <!-- 1. 原生 App.js 動態排班系統主邏輯載入 -->
     <script src="app.js"></script>
 
     <!-- 2. 🔮 水晶閣高階安全防禦、雙向跨月選單與事件攔截控制中心 (必須在 app.js 之後載入，100% 避免崩潰衝突 !) -->
     <script>
+        // 1. 預設工號大字典
         const defaultStaffIds = {
             "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
-            "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
-            "澄澄": "113", "ALICE": "115", "阿璇": "116", "MANDY婷": "117", "Mandy婷": "117", "妙妙": "118",
-            "葉子": "119", "LUCIA": "120", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
+            "二妹": "107", "TT": "108", "Cici": "109", "CICI": "109", "珍": "110", "Jackie": "111", "JACKIE": "111",
+            "澄澄": "113", "ALICE": "115", "阿璇": "116", "Mandy婷": "117", "MANDY婷": "117", "妙妙": "118",
+            "葉子": "119", "Lucia": "120", "LUCIA": "120", "AMY": "121", "小茹": "122", "文君": "123"
         };
 
         let rawEmployees = [];
         let loggedInEmployeeName = ""; 
+        let pendingConfirmCallback = null;
 
         // 全域防禦數據庫
         window.crystalStore = {
@@ -334,10 +337,19 @@
             approvals: {}
         };
 
-        // ==================== 🔐 登入驗證模組 ====================
+        // 雙向相容性認證同步
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'login-password-input') {
+                const globalPass = document.getElementById('global-pass-input');
+                if (globalPass) globalPass.value = e.target.value;
+            }
+        });
+
+        // ==================== 🔐 二合一安全登入核心認證 (支援管理員與員工自編帳密) ====================
         window.triggerGateLogin = function() {
             const usernameInput = document.getElementById('login-username-input');
             const passwordInput = document.getElementById('login-password-input');
+            const globalPassInput = document.getElementById('global-pass-input');
             const failHint = document.getElementById('login-fail-hint');
 
             if (!usernameInput || !passwordInput) return;
@@ -350,88 +362,126 @@
                 return;
             }
 
-            // A. 驗證管理員
+            // 同步寫入隱藏欄位，防範原生 app.js 無法讀取
+            if (globalPassInput) globalPassInput.value = pVal;
+
+            // A. 驗證管理員門禁 (主機固定工號 9343 / 密碼 6973)
             if (uVal === "9343" && pVal === "6973") {
+                state.currentRole = 'manager';
+                loggedInEmployeeName = "";
+                document.body.classList.add('is-manager');
                 document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('role-display-text').innerText = '🔑 目前權限：管理員 (系統主機)';
-                
                 document.getElementById('main-system-tab-bar').style.display = 'flex';
+                document.getElementById('role-display-text').innerText = "👑 權限狀態：最高管理層模式（全系統已解鎖）";
+                
                 document.querySelectorAll('.tab-btn').forEach(btn => {
-                    if (btn.id !== 'nav-bookings') { 
+                    if (btn.id !== 'nav-bookings') {
                         btn.style.setProperty('display', 'inline-block', 'important');
                     }
                 });
-                
-                loggedInEmployeeName = ""; 
+                document.getElementById('manager-backup-zone').style.display = 'block';
+                document.getElementById('btn-restore-auto-id').style.display = 'inline-block';
+                if (failHint) failHint.style.display = 'none';
+                switchTab('tab-schedule');
                 showToastMessage("🎉 歡迎回來，親愛的管理員！");
                 return;
             }
 
-            // B. 驗證員工
-            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-                firebase.database().ref('v8_employees').once('value').then((snapshot) => {
-                    const list = snapshot.val() || [];
-                    const cleanList = Array.isArray(list) ? list.filter(Boolean) : Object.values(list).filter(Boolean);
+            // B. 驗證普通個別員工 (Firebase 資料庫模式)
+            const matchedEmployee = (state.employees || []).find(e => e && String(e.id || "").trim() === uVal);
+            if (matchedEmployee) {
+                const expectedPass = String(matchedEmployee.password || (matchedEmployee.id + "22")).trim();
+                if (pVal === expectedPass) {
+                    state.currentRole = 'employee';
+                    loggedInEmployeeName = matchedEmployee.name;
+                    document.body.classList.remove('is-manager');
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('main-system-tab-bar').style.display = 'flex';
+                    document.getElementById('role-display-text').innerText = `🔑 目前權限：員工 (${matchedEmployee.name})`;
                     
-                    const matchedEmployee = cleanList.find(e => e && String(e.id || "").trim() === uVal);
-                    
-                    if (matchedEmployee) {
-                        const expectedPass = String(matchedEmployee.password || (matchedEmployee.id + "22")).trim();
-                        
-                        if (pVal === expectedPass) {
-                            document.getElementById('login-overlay').style.display = 'none';
-                            document.getElementById('role-display-text').innerText = `🔑 目前權限：員工 (${matchedEmployee.name})`;
-                            
-                            document.getElementById('main-system-tab-bar').style.display = 'flex';
-                            
-                            document.querySelectorAll('.tab-btn').forEach(btn => {
-                                if (btn.id === 'nav-schedule' || btn.id === 'nav-my-month') {
-                                    btn.style.setProperty('display', 'inline-block', 'important');
-                                } else {
-                                    btn.style.setProperty('display', 'none', 'important');
-                                }
-                            });
-
-                            switchTab('tab-schedule');
-                            loggedInEmployeeName = matchedEmployee.name;
-                            
-                            showToastMessage(`🎉 登入成功！歡迎您，${matchedEmployee.name} 老師`);
-                            if (failHint) failHint.style.display = 'none';
-                            return;
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        if (btn.id === 'nav-schedule' || btn.id === 'nav-my-month') {
+                            btn.style.setProperty('display', 'inline-block', 'important');
+                        } else {
+                            btn.style.setProperty('display', 'none', 'important');
                         }
-                    }
-                    
-                    if (failHint) failHint.style.display = 'block';
-                }).catch(err => {
-                    console.error("Firebase Auth database error:", err);
-                    alert("⚠️ 系統登入查詢中斷，請重試！");
-                });
-            } else {
-                alert("⏳ 排班系統晶片尚未就緒，請稍候 3 秒再重試！");
+                    });
+                    document.getElementById('manager-backup-zone').style.display = 'none';
+                    document.getElementById('btn-restore-auto-id').style.display = 'none';
+                    if (failHint) failHint.style.display = 'none';
+                    switchTab('tab-schedule');
+                    showToastMessage(`🎉 登入成功！歡迎您，${matchedEmployee.name} 老師`);
+                    return;
+                }
             }
+
+            // C. 相容性降級：驗證全局員工密碼
+            if (pVal === (state.settings.passEmployee || "1234")) {
+                state.currentRole = 'employee';
+                loggedInEmployeeName = "";
+                document.body.classList.remove('is-manager');
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-system-tab-bar').style.display = 'flex';
+                document.getElementById('role-display-text').innerText = "🔑 目前權限：普通員工模式（⚠️ 安全防線運作中）";
+                
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.id === 'nav-schedule' || btn.id === 'nav-my-month') {
+                        btn.style.setProperty('display', 'inline-block', 'important');
+                    } else {
+                        btn.style.setProperty('display', 'none', 'important');
+                    }
+                });
+                document.getElementById('manager-backup-zone').style.display = 'none';
+                document.getElementById('btn-restore-auto-id').style.display = 'none';
+                if (failHint) failHint.style.display = 'none';
+                switchTab('tab-schedule');
+                showToastMessage("🎉 登入成功！");
+                return;
+            }
+
+            // D. 相容性降級：驗證全局管理員密碼
+            if (pVal === (state.settings.passManager || "8888")) {
+                state.currentRole = 'manager';
+                loggedInEmployeeName = "";
+                document.body.classList.add('is-manager');
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-system-tab-bar').style.display = 'flex';
+                document.getElementById('role-display-text').innerText = "👑 權限狀態：最高管理層模式（全系統已解鎖）";
+                
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.id !== 'nav-bookings') {
+                        btn.style.setProperty('display', 'inline-block', 'important');
+                    }
+                });
+                document.getElementById('manager-backup-zone').style.display = 'block';
+                document.getElementById('btn-restore-auto-id').style.display = 'inline-block';
+                if (failHint) failHint.style.display = 'none';
+                switchTab('tab-schedule');
+                showToastMessage("🎉 歡迎回來，親愛的管理員！");
+                return;
+            }
+
+            if (failHint) failHint.style.display = 'block';
         };
 
-        // ==================== 📅 雙向跨月份排班連動引擎 ====================
-        
-        // 1. 初始化與同步個人月曆的年份和月份選單選項
+        // ==================== 📅 「個人每月排班頁」選單聯鎖同步 ====================
         function initializeMyMonthSelectors() {
             const mainYr = document.getElementById('schedule-year-select');
             const mainMo = document.getElementById('schedule-month-select');
             const myYr = document.getElementById('my-month-year-select');
             const myMo = document.getElementById('my-month-month-select');
 
-            if (mainYr && myYr && myYr.options.length === 0) {
+            if (mainYr && myYr && myYr.options.length === 0 && mainYr.options.length > 0) {
                 myYr.innerHTML = mainYr.innerHTML;
                 myYr.value = mainYr.value;
             }
-            if (mainMo && myMo && myMo.options.length === 0) {
+            if (mainMo && myMo && myMo.options.length === 0 && mainMo.options.length > 0) {
                 myMo.innerHTML = mainMo.innerHTML;
                 myMo.value = mainMo.value;
             }
         }
 
-        // 2. 個人頁切換日期時，同步推給主機日期選單，並在背景重載 Firebase 更表
-        window.syncMyMonthToMainDate = function() {
+        window.syncMyMonthDateToMain = function() {
             const myYr = document.getElementById('my-month-year-select');
             const myMo = document.getElementById('my-month-month-select');
             const mainYr = document.getElementById('schedule-year-select');
@@ -440,22 +490,17 @@
             if (myYr && myMo && mainYr && mainMo) {
                 mainYr.value = myYr.value;
                 mainMo.value = myMo.value;
-
-                // 呼叫 app.js 原生數據上下文改變函數
                 if (typeof handleDateContextChange === 'function') {
                     handleDateContextChange();
                 }
-
-                // 留出 250 毫秒緩衝供 Firebase 資料讀取，隨後渲染全新月份更表
                 setTimeout(() => {
                     if (typeof renderIndividualMonthCalendar === 'function') {
                         renderIndividualMonthCalendar();
                     }
-                }, 250);
+                }, 200);
             }
         };
 
-        // 3. 在背景定時雙向拉齊主機與個人的月份選單選取值
         function syncMainToMyMonthDate() {
             const myYr = document.getElementById('my-month-year-select');
             const myMo = document.getElementById('my-month-month-select');
@@ -482,246 +527,87 @@
             return `${hkt.getUTCFullYear()}-${(hkt.getUTCMonth() + 1) < 10 ? '0'+(hkt.getUTCMonth() + 1) : (hkt.getUTCMonth() + 1)}`;
         }
 
-        // ==================== 🛠️ 重置並覆蓋 app.js 員工名單與安全密碼管理 ====================
-        window.renderEmployeesList = function(employees) {
-            const tbody = document.getElementById('employee-table-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+        // ==================== 🏖️ 員工請假端：人手不足告急判定 ====================
+        function isManpowerShortageOnDay(dayNum, staffName) {
+            const empInfo = (state.employees || []).find(e => e && e.name === staffName);
+            if (empInfo && empInfo.role === "學徒") return false;
 
-            employees.forEach(e => {
-                if (!e) return;
-                const code = e.id || defaultStaffIds[e.name] || "100";
-                const pass = e.password || (code + String(Math.floor(Math.random() * 90 + 10)));
+            const monthKey = getActiveMonthKey();
+            const holidays = state.holidays || {};
+            const employees = state.employees || [];
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td>
-                            <input type="text" class="staff-id-field" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${code}" oninput="updateRowPassword(this)">
-                        </td>
-                        <td>
-                            <input type="text" class="staff-name-field" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.name || ''}">
-                        </td>
-                        <td>
-                            <select class="staff-role-field" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                <option value="Full-time" ${e.role === 'Full-time' ? 'selected' : ''}>Full-time</option>
-                                <option value="Part-time" ${e.role === 'Part-time' ? 'selected' : ''}>Part-time</option>
-                                <option value="學徒" ${e.role === '學徒' ? 'selected' : ''}>學徒</option>
-                            </select>
-                        </td>
-                        <td>
-                            <input type="text" class="staff-shops-field" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.p_shops || ''}">
-                        </td>
-                        <td>
-                            <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.times || ''}">
-                        </td>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
-                                <input type="text" class="staff-pass-field" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${pass}">
-                                <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>
-                            </div>
-                        </td>
-                        <td>
-                            <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        };
+            let alertThreshold = state.settings.limitLow || 3;
 
-        window.addEmployeeRow = function() {
-            const tbody = document.getElementById('employee-table-body');
-            if (!tbody) return;
-            const randomSuffix = String(Math.floor(Math.random() * 90 + 10));
-            tbody.innerHTML += `
-                <tr>
-                    <td>
-                        <input type="text" class="staff-id-field" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="updateRowPassword(this)">
-                    </td>
-                    <td>
-                        <input type="text" class="staff-name-field" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" placeholder="姓名">
-                    </td>
-                    <td>
-                        <select class="staff-role-field" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                            <option value="Full-time">Full-time</option>
-                            <option value="Part-time">Part-time</option>
-                            <option value="學徒">學徒</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="text" class="staff-shops-field" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="G2, G38, GK3">
-                    </td>
-                    <td>
-                        <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="12:00, 11:00, 13:00">
-                    </td>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
-                            <input type="text" class="staff-pass-field" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124${randomSuffix}">
-                            <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)">🔄</button>
-                        </div>
-                    </td>
-                    <td>
-                        <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
-                    </td>
-                </tr>
-            `;
-        };
+            const manicurists = employees.filter(e => e && e.role !== "學徒");
+            const totalMani = manicurists.length;
 
-        window.saveEmployeeData = function() {
-            const list = [];
-            const rows = document.querySelectorAll('#employee-table-body tr');
-            rows.forEach(tr => {
-                const id = tr.querySelector('.staff-id-field').value.trim();
-                const name = tr.querySelector('.staff-name-field').value.trim();
-                const role = tr.querySelector('.staff-role-field').value;
-                const p_shops = tr.querySelector('.staff-shops-field').value.trim();
-                const times = tr.querySelector('.staff-times-field').value.trim();
-                const password = tr.querySelector('.staff-pass-field').value.trim();
-                if (name) {
-                    list.push({ id, name, role, p_shops, times, password });
+            let offManiCount = 0;
+            Object.keys(holidays).forEach(name => {
+                const emp = employees.find(e => e && e.name === name);
+                if (emp && emp.role === "學徒") return;
+
+                const daysOff = holidays[name] || [];
+                const daysOffNums = daysOff.map(Number);
+                if (daysOffNums.includes(Number(dayNum))) {
+                    offManiCount++;
                 }
             });
 
-            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-                firebase.database().ref('v8_employees').set(list).then(() => {
-                    showToastMessage('🎉 員工設定與專屬登入帳密已同步上雲端！');
-                }).catch(err => {
-                    alert('儲存失敗: ' + err.message);
-                });
-            }
-        };
-
-        window.regenerateEmployeeRowPass = function(btn) {
-            const tr = btn.closest('tr');
-            if (!tr) return;
-            const idInput = tr.querySelector('.staff-id-field');
-            const passInput = tr.querySelector('.staff-pass-field');
-            if (idInput && passInput) {
-                const idVal = idInput.value.trim();
-                if (idVal) {
-                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
-                    showToastMessage("🔄 密碼重算完成！");
-                } else {
-                    alert("⚠️ 請先輸入該員工的工號！");
-                }
-            }
-        };
-
-        window.updateRowPassword = function(idInput) {
-            const tr = idInput.closest('tr');
-            if (!tr) return;
-            const passInput = tr.querySelector('.staff-pass-field');
-            if (passInput) {
-                const idVal = idInput.value.trim();
-                if (idVal) {
-                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
-                }
-            }
-        };
-
-        // ==================== 🧠 雲端數據本地攔截與儲存核心 ====================
-        if (typeof firebase !== 'undefined' && firebase.database) {
-            const originalRef = firebase.database.Database.prototype.ref;
-            firebase.database.Database.prototype.ref = function(path) {
-                const ref = originalRef.apply(this, arguments);
-                const pathStr = String(path);
-
-                const originalOn = ref.on;
-                ref.on = function(eventType, callback, cancelCallback) {
-                    const wrappedCallback = function(snapshot) {
-                        captureFirebaseToLocalStore(pathStr, snapshot.val());
-                        if (callback) callback(snapshot);
-                    };
-                    return originalOn.call(this, eventType, wrappedCallback, cancelCallback);
-                };
-
-                const originalOnce = ref.once;
-                ref.once = function(eventType, successCallback, failureCallback) {
-                    const wrappedCallback = function(snapshot) {
-                        captureFirebaseToLocalStore(pathStr, snapshot.val());
-                        if (successCallback) successCallback(snapshot);
-                    };
-                    return originalOnce.call(this, eventType, wrappedCallback, failureCallback);
-                };
-
-                return ref;
-            };
+            const currentWorkingCount = totalMani - offManiCount;
+            return (currentWorkingCount - 1) <= alertThreshold;
         }
 
-        function captureFirebaseToLocalStore(path, data) {
-            if (!path || !data) return;
-            if (path.includes('v8_employees')) {
-                window.crystalStore.employees = Array.isArray(data) ? data.filter(Boolean) : Object.values(data).filter(Boolean);
-            } else if (path.includes('v8_holidays')) {
-                const parts = path.split('/');
-                const monthKey = parts[parts.length - 1];
-                window.crystalStore.holidays[monthKey] = data;
-            }
-            setTimeout(optimizeApprovalCenterUI, 150);
-        }
+        // ==================== 🏖️ 覆蓋 toggleLocalHolidayDraft 核心警告阻斷 ====================
+        window.toggleLocalHolidayDraft = function(name, day, btn) {
+            if (!state.localHolidaysDraft[name]) state.localHolidaysDraft[name] = [];
+            const idx = state.localHolidaysDraft[name].indexOf(day);
+            const isAddingHoliday = (idx === -1);
 
-        // ==================== 🏖️ 智庫審批中心動態極簡化 ====================
-        function optimizeApprovalCenterUI() {
-            const container = document.getElementById('smart-approval-list-container');
-            if (!container) return;
-
-            const cards = container.querySelectorAll('.card, [class*="card"]');
-            cards.forEach(card => {
-                let applicantName = "";
-                const cardText = card.innerText || "";
-                const matchName = cardText.match(/(?:申請人|員工|姓名)\s*[:：]\s*([^\s\n\r]+)/) || cardText.match(/([^\s\n\r]+)\s*(?:的放假申請|的申請)/);
-                if (matchName) {
-                    applicantName = matchName[1].trim();
-                }
-
-                const rows = card.querySelectorAll('tr, li, .row, div[style*="background"]');
-                rows.forEach(row => {
-                    const text = row.innerText || "";
-                    if (text.includes('號') && (text.includes('星期') || text.includes('上班') || text.includes('已批准'))) {
-                        const checkbox = row.querySelector('input[type="checkbox"]');
-                        if (checkbox) {
-                            if (!checkbox.checked) {
-                                row.style.setProperty('display', 'none', 'important');
-                            } else {
-                                row.style.display = '';
-                                injectManpowerDetailsToRow(row, applicantName);
-                            }
-                        } else {
-                            const isRedBackground = row.style.backgroundColor.includes('rgb(254') || 
-                                                    row.style.backgroundColor.includes('rgb(253') || 
-                                                    row.classList.contains('bg-red-50') || 
-                                                    row.classList.contains('bg-pink-50');
-                            if (!isRedBackground && text.includes('已批准')) {
-                                row.style.setProperty('display', 'none', 'important');
-                            }
-                        }
+            if (isAddingHoliday) {
+                if (isManpowerShortageOnDay(day, name)) {
+                    const modal = document.getElementById('manpower-warning-modal');
+                    if (modal) {
+                        modal.style.setProperty('display', 'flex', 'important');
                     }
-                });
-            });
-        }
-
-        function injectManpowerDetailsToRow(row, applicantName) {
-            const text = row.innerText || "";
-            const match = text.match(/(\d+)號/);
-            if (!match) return;
-            const dayNum = parseInt(match[1]);
-
-            const stats = getManpowerStatsOnDay(dayNum, applicantName);
-
-            let badge = row.querySelector('.manpower-dynamic-badge');
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'manpower-dynamic-badge';
-                badge.style.cssText = "font-size:12px; font-weight:bold; color:#be185d; margin-top:6px; background:#fff1f2; border:1px solid #fbcfe8; padding:6px 10px; border-radius:8px; display:block; text-align:left; line-height:1.4;";
-                row.appendChild(badge);
+                    pendingConfirmCallback = function() {
+                        state.localHolidaysDraft[name].push(day);
+                        btn.classList.add('active');
+                        
+                        const tr = btn.closest('tr');
+                        const remarkInput = tr ? tr.querySelector('.calendar-special-note-input') : null;
+                        if (remarkInput) {
+                            remarkInput.placeholder = "⚠️ 當天人手告急，此處必須填寫請假理由！";
+                            remarkInput.style.setProperty('border', '2px solid #dc2626', 'important');
+                            remarkInput.classList.add('reason-required');
+                            remarkInput.focus();
+                        }
+                        renderIndividualMonthCalendar();
+                    };
+                } else {
+                    state.localHolidaysDraft[name].push(day);
+                    btn.classList.add('active');
+                    renderIndividualMonthCalendar();
+                }
+            } else {
+                state.localHolidaysDraft[name].splice(idx, 1);
+                btn.classList.remove('active');
+                
+                const tr = btn.closest('tr');
+                const remarkInput = tr ? tr.querySelector('.calendar-special-note-input') : null;
+                if (remarkInput) {
+                    remarkInput.placeholder = "原因...";
+                    remarkInput.style.border = '';
+                    remarkInput.classList.remove('reason-required');
+                }
+                renderIndividualMonthCalendar();
             }
-            badge.innerHTML = `🏖️ 當天不包括 ${applicantName} 有 <span style="color:#e11d48; font-weight:bold;">${stats.offExcludingApplicant}</span> 位美甲師放假 ｜ 📢 可供申請人手：${dayNum}號 (${stats.working}人上班)`;
-        }
+        };
 
-        // 審批中心精算
+        // ==================== 📥 智庫審批中心覆蓋與數據精算 ====================
         function getManpowerStatsOnDay(dayNum, excludeName) {
             const monthKey = getActiveMonthKey();
-            const holidays = window.crystalStore.holidays[monthKey] || {};
-            const employees = window.crystalStore.employees || [];
+            const holidays = state.holidays || {};
+            const employees = state.employees || [];
 
             const manicurists = employees.filter(e => e && e.role !== "學徒");
             const totalMani = manicurists.length;
@@ -751,47 +637,150 @@
             };
         }
 
-        // ==================== 🏖️ 員工請假端：告急警示判斷 ====================
-        function isManpowerShortageOnDay(dayNum) {
-            const loggedInEmp = window.crystalStore.employees.find(e => e && e.name === loggedInEmployeeName);
-            if (loggedInEmp && loggedInEmp.role === "學徒") {
-                return false; 
+        window.renderPendingApprovalsBox = function() {
+            const container = document.getElementById('smart-approval-list-container'); 
+            if(!container) return; 
+            const quickDot = document.getElementById('quick-notify-dot'); 
+            container.innerHTML = ''; 
+            const keys = Object.keys(state.pendingApprovals || {});
+            
+            if (keys.length === 0) { 
+                container.innerHTML = `<div style="text-align:center; padding:30px; color:#9ca3af; font-weight:bold;">🙌 目前沒有待審批申請。</div>`; 
+                if(quickDot) quickDot.style.display = 'none'; 
+                return; 
             }
+            if(quickDot) quickDot.style.display = 'inline-block';
+            
+            keys.forEach(k => {
+                const item = state.pendingApprovals[k]; 
+                let staffName = item.name; 
+                let draftHols = item.requestedHolidays || []; 
+                let reasonsObj = item.reasons || {}; 
+                let cardsHtml = '';
+                
+                draftHols.forEach(d => {
+                    const stats = getManpowerStatsOnDay(d, staffName);
+                    let isAlert = stats.working <= (state.settings.limitLow || 3) ? 'background:#fff1f2; border:1px solid #fca5a5; color:#9b1c1c;' : 'background:#f0fdf4; border:1px solid #bbf7d0; color:#03543f;';
+                    cardsHtml += `
+                        <div class="decision-info-block" style="margin-bottom:10px; padding:12px; border-radius:8px; ${isAlert}">
+                            <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">📅 ${d}號 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, d)})</div>
+                            <div style="font-size:12px; font-weight:bold; margin-bottom:4px;">🏖️ 當天不包括 ${staffName} 已有 <span style="color:#dc2626; font-size:13px;">${stats.offExcludingApplicant}</span> 位美甲師放假</div>
+                            <div style="font-size:12px; font-weight:bold; margin-bottom:4px; color:#475569;">📢 可供申請人手：${d}號 (${stats.working}人上班)</div>
+                            <div style="font-size:12px; margin-top:6px; padding-top:4px; border-top:1px dashed rgba(0,0,0,0.08); color:#ea580c; font-weight:bold;">📝 申請理由：${reasonsObj[`day_${d}`] || reasonsObj[d] || state.notes[staffName]?.[`day_${d}`] || '(未填寫原因)'}</div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML += `
+                    <div class="decision-card" style="background:white; border:1px solid #cbd5e1; border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <div class="decision-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                            <div><span style="font-size:15px; font-weight:bold; color:#1e293b;">👤 申請人：${staffName}</span></div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn" style="background:var(--success); color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:12px;" onclick="actionApproveHoliday('${k}', '${staffName}', [${draftHols}])">批准放假</button>
+                                <button class="btn" style="background:var(--danger); color:white; font-weight:bold; padding:6px 12px; border-radius:6px; font-size:12px;" onclick="database.ref('v8_pending_approvals/${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}/${k}').remove()">拒絕申請</button>
+                            </div>
+                        </div>
+                        <div class="decision-grid">${cardsHtml}</div>
+                    </div>
+                `;
+            });
+        };
 
-            const monthKey = getActiveMonthKey();
-            const holidays = window.crystalStore.holidays[monthKey] || {};
-            const employees = window.crystalStore.employees || [];
+        // ==================== 💾 覆蓋儲存按鈕：請假原因強制防漏檢索 ====================
+        window.saveSpecialNotesAndHolidaysData = function() {
+            const inputs = document.querySelectorAll('.calendar-special-note-input'); 
+            if(inputs.length === 0) return; 
+            const staffName = inputs[0].getAttribute('data-staff');
+            const monthKey = getActiveMonthKey(); 
+            const realToday = new Date(); 
+            const realDayNum = realToday.getDate(); 
+            const realMonthNum = realToday.getMonth() + 1; 
+            const realYearNum = realToday.getFullYear();
+            let isManager = (state.currentRole === 'manager'); 
+            let historyTamperTriggered = false;
 
-            let alertThreshold = 3; 
-            const limitInput = document.getElementById('cfg-limit-low');
-            if (limitInput && limitInput.value) {
-                alertThreshold = parseInt(limitInput.value);
-            }
-
-            const manicurists = employees.filter(e => e && e.role !== "學徒");
-            const totalMani = manicurists.length;
-
-            let offManiCount = 0;
-            Object.keys(holidays).forEach(staffName => {
-                const emp = employees.find(e => e && e.name === staffName);
-                if (emp && emp.role === "學徒") return;
-
-                const daysOff = holidays[staffName] || [];
-                const daysOffNums = daysOff.map(Number);
-                if (daysOffNums.includes(Number(dayNum))) {
-                    offManiCount++;
+            // 原因未填寫阻斷審查
+            let checkFailed = false;
+            inputs.forEach(input => {
+                if (input.classList.contains('reason-required') && !input.disabled) {
+                    const val = input.value.trim();
+                    if (!val) {
+                        input.style.setProperty('border', '2px solid #dc2626', 'important');
+                        input.placeholder = "⚠️ 本日人手不足，必須填寫請假理由！";
+                        checkFailed = true;
+                    }
                 }
             });
 
-            const currentWorkingCount = totalMani - offManiCount;
-            return (currentWorkingCount - 1) <= alertThreshold;
-        }
+            if (checkFailed) {
+                alert("❌ 儲存失敗：部分放假申請日期店內人手不足，請在備註欄填寫正當理由後再點擊儲存！");
+                return;
+            }
 
-        // ==================== ⚙️ 全域守護定時器 & 監聽器 ====================
-        
-        // 1. 每秒拉齊雲端數據，兼具「員工下拉選單鎖定」與「年月下拉選單雙向同步」
+            if (!isManager) {
+                const originalHols = state.holidays[staffName] || []; 
+                const draftHols = state.localHolidaysDraft[staffName] || [];
+                for (let d = 1; d <= getDaysInMonth(state.currentYear, state.currentMonth); d++) {
+                    let isPastDay = (state.currentYear < realYearNum || (state.currentYear === realYearNum && state.currentMonth < realMonthNum) || (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum));
+                    if (isPastDay && (originalHols.includes(d) !== draftHols.includes(d))) { historyTamperTriggered = true; }
+                }
+            }
+
+            if (historyTamperTriggered) { 
+                alert("❌ 系統攔截：歷史考勤已被安全鎖定！"); 
+                state.localHolidaysDraft[staffName] = JSON.parse(JSON.stringify(state.holidays)); 
+                renderIndividualMonthCalendar(); 
+                return; 
+            }
+
+            if(!state.notes[staffName]) state.notes[staffName] = {}; 
+            inputs.forEach(input => { if (!input.disabled) { state.notes[staffName][`day_${input.getAttribute('data-day')}`] = input.value.trim(); } });
+            
+            let requiresApproval = false; 
+            let shortageTriggered = false;
+            if (!isManager) {
+                const draftHols = state.localHolidaysDraft[staffName] || [];
+                for(let d of draftHols) {
+                    if (isManpowerShortageOnDay(d, staffName)) { shortageTriggered = true; break; }
+                }
+                let limitYear = realYearNum; 
+                let limitMonth = realMonthNum + 1; 
+                if (limitMonth > 12) { limitMonth = 1; limitYear += 1; }
+                if (realDayNum >= (state.settings.lockDay || 26) && (state.currentYear < limitYear || (state.currentYear === limitYear && state.currentMonth <= limitMonth))) { requiresApproval = true; }
+                if (shortageTriggered) requiresApproval = true;
+            }
+
+            if (requiresApproval) {
+                if (isCloudMode && database) {
+                    let activeReasonNotes = {}; 
+                    (state.localHolidaysDraft[staffName] || []).forEach(d => { let r = state.notes[staffName][`day_${d}`] || ''; if(r) activeReasonNotes[`day_${d}`] = r; });
+                    database.ref(`v8_pending_approvals/${monthKey}`).push({ 
+                        name: staffName, 
+                        requestedHolidays: state.localHolidaysDraft[staffName] || [], 
+                        reasons: activeReasonNotes, 
+                        timestamp: firebase.database.ServerValue.TIMESTAMP 
+                    });
+                    database.ref(`v8_special_notes/${monthKey}/${staffName}`).set(state.notes[staffName]); 
+                    alert(`⏳ 當天人手不足或超出截止日，放假申請已成功送往智庫審批中心等待覆核。`);
+                }
+            } else {
+                state.holidays[staffName] = JSON.parse(JSON.stringify(state.localHolidaysDraft[staffName]));
+                if (isCloudMode && database) { 
+                    database.ref(`v8_holidays/${monthKey}/${staffName}`).set(state.holidays[staffName]); 
+                    database.ref(`v8_special_notes/${monthKey}/${staffName}`).set(state.notes[staffName]); 
+                    alert(`🟢 變更成功！`); 
+                } else { 
+                    localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(state.holidays)); 
+                    localStorage.setItem(`v8_notes_${monthKey}`, JSON.stringify(state.notes)); 
+                    alert(`💾 本地儲存成功！`); 
+                    runScheduler(); 
+                }
+            }
+        };
+
+        // ==================== 🛠️ 背景定時連鎖校正器 ====================
         setInterval(() => {
-            // A. 員工選單強效鎖定
+            // A. 強效防錯：將普通員工的姓名下拉選單強制自鎖
             if (loggedInEmployeeName) {
                 const select = document.getElementById('my-month-staff-select');
                 if (select) {
@@ -805,162 +794,57 @@
                     select.style.opacity = '0.75';
                 }
             }
-
-            // B. 同步年份與月份選項 (防止 app.js 初始化時選單選項落空)
+            // B. 多選單初始化
             initializeMyMonthSelectors();
-
-            // C. 雙向同步月份值
+            // C. 聯鎖同步
             syncMainToMyMonthDate();
         }, 100);
 
-        // 2. Firebase 同步與專屬隨機密碼修正
-        const syncEmployeesInterval = setInterval(() => {
-            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-                firebase.database().ref('v8_employees').on('value', (snapshot) => {
-                    const data = snapshot.val() || [];
-                    rawEmployees = Array.isArray(data) ? data.filter(Boolean) : Object.values(data).filter(Boolean);
-                    
-                    let needAutoCorrect = false;
-                    rawEmployees.forEach(e => {
-                        if (!e) return;
-                        if (!e.id || e.id === "100" || e.id === "") {
-                            e.id = defaultStaffIds[e.name] || "124";
-                            needAutoCorrect = true;
-                        }
-                        if (!e.password || e.password === "" || e.password === "123456" || e.password === "10022") {
-                            e.password = e.id + String(Math.floor(Math.random() * 90 + 10));
-                            needAutoCorrect = true;
-                        }
-                    });
-                    
-                    if (needAutoCorrect) {
-                        firebase.database().ref('v8_employees').set(rawEmployees);
-                    }
-                    
-                    window.renderEmployeesList(rawEmployees);
-                    window.renderSettingsAccountsList(rawEmployees);
-                });
-                clearInterval(syncEmployeesInterval);
-            }
-        }, 1000);
-
-        // 3. 綁定自訂的請假 Click 事件攔截 (Capture 階段最優雅阻斷)
+        // DOM 載入綁定
         document.addEventListener('DOMContentLoaded', () => {
-            const myMonthCalendarBody = document.getElementById('my-month-calendar-body');
-            if (myMonthCalendarBody) {
-                myMonthCalendarBody.addEventListener('click', function(e) {
-                    const target = e.target;
-                    
-                    if (target.classList.contains('btn-leave') || target.tagName === 'BUTTON' || target.type === 'checkbox') {
-                        if (target.dataset.bypassCheck === "true") {
-                            delete target.dataset.bypassCheck;
-                            return;
-                        }
-
-                        const tr = target.closest('tr');
-                        if (!tr) return;
-
-                        const dayText = tr.cells[0]?.innerText || "";
-                        const dayNum = parseInt(dayText);
-                        if (isNaN(dayNum)) return;
-
-                        const isAlreadyHoliday = tr.classList.contains('is-leave') || target.classList.contains('active') || target.checked;
-                        
-                        if (!isAlreadyHoliday) {
-                            if (isManpowerShortageOnDay(dayNum)) {
-                                e.stopPropagation();
-                                e.preventDefault();
-
-                                const modal = document.getElementById('manpower-warning-modal');
-                                if (modal) {
-                                    modal.style.setProperty('display', 'flex', 'important');
-                                }
-
-                                pendingConfirmCallback = function() {
-                                    const remarkInput = tr.querySelector('input[type="text"]');
-                                    if (remarkInput) {
-                                        remarkInput.placeholder = "⚠️ 當天人手告急，此處必須填寫請假理由！";
-                                        remarkInput.style.setProperty('border', '2px solid #dc2626', 'important');
-                                        remarkInput.classList.add('reason-required');
-                                        remarkInput.focus();
-                                    }
-
-                                    target.dataset.bypassCheck = "true";
-                                    target.click();
-                                };
-                            }
-                        } else {
-                            const remarkInput = tr.querySelector('input[type="text"]');
-                            if (remarkInput) {
-                                remarkInput.placeholder = "";
-                                remarkInput.style.border = '';
-                                remarkInput.classList.remove('reason-required');
-                            }
-                        }
+            const warnCancel = document.getElementById('warning-cancel-btn');
+            const warnConfirm = document.getElementById('warning-confirm-btn');
+            if (warnCancel) {
+                warnCancel.addEventListener('click', () => {
+                    const modal = document.getElementById('manpower-warning-modal');
+                    if (modal) modal.style.setProperty('display', 'none', 'important');
+                    pendingConfirmCallback = null;
+                });
+            }
+            if (warnConfirm) {
+                warnConfirm.addEventListener('click', () => {
+                    const modal = document.getElementById('manpower-warning-modal');
+                    if (modal) modal.style.setProperty('display', 'none', 'important');
+                    if (pendingConfirmCallback) {
+                        pendingConfirmCallback();
+                        pendingConfirmCallback = null;
                     }
-                }, true); 
+                });
             }
 
-            // Modal 彈出控制
-            document.getElementById('warning-cancel-btn').addEventListener('click', () => {
-                const modal = document.getElementById('manpower-warning-modal');
-                if (modal) modal.style.setProperty('display', 'none', 'important');
-                pendingConfirmCallback = null;
-            });
-
-            document.getElementById('warning-confirm-btn').addEventListener('click', () => {
-                const modal = document.getElementById('manpower-warning-modal');
-                if (modal) modal.style.setProperty('display', 'none', 'important');
-                if (pendingConfirmCallback) {
-                    pendingConfirmCallback();
-                    pendingConfirmCallback = null;
-                }
-            });
-
-            // 💾 儲存與提交攔截：強制寫備註
+            // 安全接管個人假更表儲存按鈕
             const saveBtn = document.getElementById('my-month-save-btn');
             if (saveBtn) {
-                saveBtn.removeAttribute('onclick'); 
-                saveBtn.addEventListener('click', function(e) {
-                    let checkFailed = false;
-                    const rows = document.querySelectorAll('#my-month-calendar-body tr');
-                    
-                    rows.forEach(tr => {
-                        const dayText = tr.cells[0]?.innerText || "";
-                        const dayNum = parseInt(dayText);
-                        if (isNaN(dayNum)) return;
-
-                        const remarkInput = tr.querySelector('input[type="text"]');
-                        if (remarkInput && remarkInput.classList.contains('reason-required')) {
-                            const val = remarkInput.value.trim();
-                            if (!val) {
-                                remarkInput.style.setProperty('border', '2px solid #dc2626', 'important');
-                                remarkInput.placeholder = "⚠️ 本日人手不足，必須填寫請假理由！";
-                                checkFailed = true;
-                            }
-                        }
-                    });
-
-                    if (checkFailed) {
-                        alert("❌ 儲存失敗：部分放假申請日期店內人手不足，請在備註欄填寫正當理由後再點擊儲存！");
-                    } else {
-                        if (typeof window.saveSpecialNotesAndHolidaysData === 'function') {
-                            window.saveSpecialNotesAndHolidaysData();
-                        } else if (typeof saveSpecialNotesAndHolidaysData === 'function') {
-                            saveSpecialNotesAndHolidaysData();
-                        }
-                    }
-                });
+                saveBtn.onclick = null;
+                saveBtn.addEventListener('click', saveSpecialNotesAndHolidaysData);
             }
 
-            // 智庫審批中心觀察器綁定
+            // 智庫審批中心動態觀察器綁定
             const appCenterContainer = document.getElementById('smart-approval-list-container');
             if (appCenterContainer) {
                 approvalObserver.observe(appCenterContainer, { childList: true, subtree: true });
             }
         });
+
+        function showToastMessage(msg) {
+            const toast = document.createElement('div');
+            toast.style.cssText = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1e293b; color:white; border:1px solid #db2777; padding:12px 24px; border-radius:12px; font-weight:bold; font-size:13px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); z-index:999999; text-align:center;";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
     </script>
 </body>
 </html>
 
-```
+
