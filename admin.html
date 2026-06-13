@@ -1,9 +1,9 @@
-```html
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>水晶閣 | 決策中樞與預約綜合系統</title>
     <!-- Firebase SDK (Compat version) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -16,6 +16,12 @@
         .tab-active { border-bottom: 3px solid #db2777; color: #db2777; font-weight: bold; }
         .time-col { background: #f1f5f9 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; width: 65px; text-align: center; }
         .cell-booked { background: #fff1f2; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 8px !important; }
+        
+        /* 🔮 新增 AI 控制台 & CRM 專屬高端樣式 */
+        .kb-field-row { background: #fffafc; border: 1px solid #fce7f3; border-radius: 12px; padding: 12px; margin-bottom: 10px; position: relative; }
+        .badge-status { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        .status-inquiring { background: #e0f2fe; color: #0369a1; }
+        .status-booker { background: #ecfdf5; color: #059669; }
     </style>
 </head>
 <body class="p-3 md:p-6">
@@ -24,9 +30,9 @@
     <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-pink-100 p-4 md:p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-pink-900 flex items-center gap-2">
-                🔮 水晶閣 <span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">雲端大腦 V12.0</span>
+                🔮 水晶閣 <span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">雲端大腦 V12.0-Ultimate</span>
             </h1>
-            <p class="text-xs text-gray-500 mt-1">排班系統 ＋ 預約看板 ＋ 顧客 CRM ＋ 大數據大一統決策室</p>
+            <p class="text-xs text-gray-500 mt-1">排班系統 ＋ 預約看板 ＋ 未來預約 ＋ 顧客 CRM ＋ 大數據大一統決策室</p>
         </div>
         
         <!-- 📅 日期與總控查詢 -->
@@ -36,12 +42,14 @@
         </div>
     </div>
 
-    <!-- 📑 四大核心 Tab 頁籤導覽 -->
+    <!-- 📑 六大核心 Tab 頁籤導覽 -->
     <div class="max-w-7xl mx-auto flex border-b border-gray-200 mb-6 overflow-x-auto gap-6 text-sm md:text-base">
         <button id="tab-btn-matrix" class="py-3 px-1 tab-active" onclick="switchMainTab('matrix')">📅 預約看板畫布</button>
+        <button id="tab-btn-upcoming" class="py-3 px-1 text-gray-500 hover:text-pink-600 font-bold" onclick="switchMainTab('upcoming')">📋 未來預約總覽</button>
+        <button id="tab-btn-crm" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('crm')">📇 顧客 CRM 檔案庫</button>
+        <button id="tab-btn-ai-control" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('ai-control')">🤖 AI 智控與對話沙盒</button>
         <button id="tab-btn-staff" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('staff')">👥 員工與編號大腦 (水源)</button>
         <button id="tab-btn-analytics" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('analytics')">📊 大數據決策室</button>
-        <button id="tab-btn-crm" class="py-3 px-1 text-gray-500 hover:text-pink-600" onclick="switchMainTab('crm')">📇 顧客 CRM 檔案庫</button>
     </div>
 
     <!-- 📅 TAB 1: 直立式雙向預約看板 -->
@@ -57,7 +65,187 @@
         </div>
     </div>
 
-    <!-- 👥 TAB 2: 員工管理與編號大腦 (單一水源) -->
+    <!-- 📋 TAB 2: 未來預約總覽面板 (新追加) -->
+    <div id="section-upcoming" class="max-w-7xl mx-auto hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold text-gray-900">📋 未完成預約總覽 (未來 60 天未到預約)</h3>
+                <p class="text-xs text-gray-500 mt-1">系統已自動過濾掉過去的歷史，僅顯示從今天香港時間（HKT）起，所有尚未進行的預約項目。</p>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                            <th class="p-3">預約日期</th>
+                            <th class="p-3">時段</th>
+                            <th class="p-3">顧客姓名</th>
+                            <th class="p-3">聯絡電話 (WhatsApp)</th>
+                            <th class="p-3">指定師傅</th>
+                            <th class="p-3">預約細分項目</th>
+                            <th class="p-3">大類</th>
+                            <th class="p-3">備註</th>
+                            <th class="p-3">狀態 Status</th>
+                            <th class="p-3 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upcoming-bookings-tbody">
+                        <tr><td colspan="10" class="p-6 text-center text-gray-400 font-bold">載入未來預約數據中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📇 TAB 3: 顧客 CRM 檔案庫 (深度進化優化版 + AI 批次提取) -->
+    <div id="section-crm" class="max-w-7xl mx-auto hidden">
+        <!-- 💡 批次對話 AI 提取模組 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6">
+            <h3 class="text-md font-bold text-pink-900 flex items-center gap-1.5 mb-2">
+                📥 WhatsApp 歷史對話一鍵 AI 批次提取特徵 (不計通訊費)
+            </h3>
+            <p class="text-xs text-gray-500 mb-4">
+                你可以直接將另一個 WhatsApp 號碼中的「整段客戶對話」複製並貼到下方。AI 會自動剖析該客人的真實姓名、喜好偏好、對話特徵，並直接錄入或覆蓋對應的手機 CRM 中！
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div class="md:col-span-3">
+                    <label class="text-xs font-bold text-gray-600 block mb-1">該客人的手機號碼 (必填 Key):</label>
+                    <input type="text" id="batch-crm-phone" placeholder="例如: 85290000000" class="w-full bg-white p-2.5 rounded-lg border border-gray-200 text-sm font-bold outline-none">
+                </div>
+                <div class="md:col-span-7">
+                    <label class="text-xs font-bold text-gray-600 block mb-1">貼入 WhatsApp 歷史聊天文字段落:</label>
+                    <textarea id="batch-crm-chats" rows="2" placeholder="貼上對話記錄，例如：&#13;顧客: 嗨，我想問 RUBY 下星期天下午有空嗎？我想做單色加貓眼。&#13;水晶閣: RUBY 下星期天下午 2 點可以呀！" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-xs outline-none"></textarea>
+                </div>
+                <div class="md:col-span-2 flex items-end">
+                    <button class="bg-pink-700 hover:bg-pink-800 text-white font-bold text-xs p-3 rounded-lg w-full" onclick="runBatchAIExtractor()">🚀 開始 AI 智能分析</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">📇 顧客消費與對話諮詢深度庫 (CRM)</h3>
+                    <p class="text-xs text-gray-500 mt-1">深度整合預約客與諮詢客。AI 機器人 Crystal 會在 WhatsApp 自動抓取特徵並實時歸入此處。</p>
+                </div>
+                <button class="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 py-2 rounded-lg" onclick="openCRMModal()">+ 手動新增顧客檔案</button>
+            </div>
+
+            <!-- 篩選與搜尋 -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                <input type="text" id="crm-search-input" placeholder="🔍 搜尋姓名或電話後四碼" class="bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-900 outline-none w-full sm:w-64" oninput="filterCRMTable()">
+                <select id="crm-filter-status" class="bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 outline-none" onchange="filterCRMTable()">
+                    <option value="all">所有顧客來源 (All)</option>
+                    <option value="Active Booker">🟢 已有預約 (Active Booker)</option>
+                    <option value="Inquiring">🔵 僅對話諮詢 (Inquiring-only)</option>
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                            <th class="p-3">顧客姓名</th>
+                            <th class="p-3">手提電話 (WhatsApp)</th>
+                            <th class="p-3">狀態 Status</th>
+                            <th class="p-3">熟絡/指名師傅</th>
+                            <th class="p-3">顧客喜好與避諱紀錄</th>
+                            <th class="p-3">AI 深度提取特徵 (對話中)</th>
+                            <th class="p-3">累計互動次數</th>
+                            <th class="p-3">最後通訊時間</th>
+                            <th class="p-3" style="text-align:center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crm-table-body">
+                        <tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">載入顧客大數據檔案中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🤖 TAB 4: AI 智控與對話測試沙盒 -->
+    <div id="section-ai-control" class="max-w-7xl mx-auto hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 左欄：動態智控與知識庫 (7 cols) -->
+            <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-6 max-h-[85vh] overflow-y-auto">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">🤖 AI 助理人設與動態知識庫設定</h3>
+                    <p class="text-xs text-gray-500 mt-1">在這裡設定的語氣與規則將會在「0.1秒內」直接同步給 WhatsApp 機器人 Crystal。</p>
+                </div>
+
+                <div class="border-t border-gray-100 pt-4">
+                    <span class="text-xs font-bold text-pink-700 block mb-3 uppercase tracking-wider">🎭 Crystal 客服人設個性</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">AI 說話風格:</label>
+                            <select id="ai-style-select" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 outline-none">
+                                <option value="極致溫柔暖心 (預設)">極致溫柔暖心 (預設)</option>
+                                <option value="俐落精準專業">俐落精準專業</option>
+                                <option value="熱情活潑元氣">熱情活潑元氣</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">開頭招呼語:</label>
+                            <input type="text" id="ai-greeting-input" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm font-bold outline-none" placeholder="Hello 靚靚～水晶閣管家 Crystal 為您服務！🔮">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-4">
+                    <span class="text-xs font-bold text-pink-700 block mb-3 uppercase tracking-wider">📍 固定知識庫內容</span>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">各分店位置導航指南:</label>
+                            <textarea id="ai-address-input" rows="3" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="輸入各分店交通導航指引..."></textarea>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">定金與遲到店規政策:</label>
+                            <textarea id="ai-rules-input" rows="3" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="輸入定金收取標準、遲到多久取消等政策..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-bold text-pink-700 block uppercase tracking-wider">📋 自訂規則/價目欄位 (可隨時加減)</span>
+                        <button class="bg-pink-100 hover:bg-pink-200 text-pink-700 text-xs font-bold px-3 py-1.5 rounded-lg" onclick="addCustomKBRow('', '')">+ 新增欄位</button>
+                    </div>
+                    <div id="custom-kb-container" class="space-y-3"></div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-4">
+                    <span class="text-xs font-bold text-pink-700 block mb-3 uppercase tracking-wider">📝 其他難以歸類的事項 (備忘大框)</span>
+                    <textarea id="ai-other-textarea" rows="4" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm outline-none" placeholder="例：本月 15 號下午全店有培訓會議、RUBY 暫不接睫毛、霧眉一律收 $500 定金..."></textarea>
+                </div>
+
+                <div class="flex justify-end pt-4 border-t border-gray-100">
+                    <button class="bg-pink-700 hover:bg-pink-800 text-white text-sm font-bold px-6 py-2.5 rounded-xl w-full" onclick="saveAISettingsToCloud()">💾 儲存並發佈 AI 智控配置</button>
+                </div>
+            </div>
+
+            <!-- 右欄：0成本 AI 對話調試沙盒 (5 cols) -->
+            <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col h-[650px] lg:h-auto">
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">🧪 AI 測試沙盒對話窗</h3>
+                    <p class="text-xs text-gray-500 mt-1">調試專用，不產生任何通訊費用！隨時測試 AI 的對答表現、店規和 60 天排程查空檔能力。</p>
+                </div>
+                
+                <div id="sandbox-messages-box" class="flex-grow overflow-y-auto bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100 space-y-3 max-h-[420px] min-h-[320px]">
+                    <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-xs text-gray-700 leading-relaxed max-w-[85%]">
+                        Hello 靚靚！我是 Crystal 🔮 您可以在下方輸入對答，測試我的最新人設、分店導航與 60 天預約功能唷！
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="sandbox-input" placeholder="輸入要測試的顧客訊息..." class="flex-grow bg-white px-3 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-900 outline-none" onkeydown="if(event.key==='Enter') sendSandboxMessage()">
+                    <button class="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold px-4 rounded-lg" onclick="sendSandboxMessage()">傳送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👥 TAB 5: 員工與編號大腦 -->
     <div id="section-staff" class="max-w-7xl mx-auto hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-center mb-6">
@@ -89,7 +277,7 @@
         </div>
     </div>
 
-    <!-- 📊 TAB 3: 大數據決策室 -->
+    <!-- 📊 TAB 6: 大數據決策室 -->
     <div id="section-analytics" class="max-w-7xl mx-auto hidden">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
@@ -108,26 +296,42 @@
         </div>
     </div>
 
-    <!-- 📇 TAB 4: 顧客 CRM 檔案庫 -->
-    <div id="section-crm" class="max-w-7xl mx-auto hidden">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <div class="mb-4">
-                <h3 class="text-lg font-bold text-gray-900">📇 顧客檔案與消費深度庫 (CRM)</h3>
-                <p class="text-xs text-gray-500">全自動從歷史與本月預約中深度聚合不重複顧客。安全全號只限在此可見與一鍵複製。</p>
+    <!-- 👤 顧客 CRM 手動新增/編輯 Modal -->
+    <div id="crm-edit-modal" class="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-pink-100 max-w-lg w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-pink-900 mb-4" id="crm-modal-title">👥 編輯顧客大數據檔案</h3>
+            <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                <div>
+                    <label class="text-xs font-bold text-gray-600">顧客姓名 (Name):</label>
+                    <input type="text" id="crm-form-name" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm mt-1 outline-none font-bold">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">手機號碼 (WhatsApp Phone):</label>
+                    <input type="text" id="crm-form-phone" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm mt-1 outline-none font-bold">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">顧客來源分類:</label>
+                    <select id="crm-form-status" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm mt-1 outline-none font-bold">
+                        <option value="Active Booker">🟢 已有預約 (Active Booker)</option>
+                        <option value="Inquiring">🔵 僅對話諮詢 (Inquiring-only)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">熟絡/指名人員 (Teacher):</label>
+                    <input type="text" id="crm-form-teacher" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm mt-1 outline-none font-bold">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">客製喜好/避諱 (CRM 紀錄):</label>
+                    <textarea id="crm-form-pref" rows="2" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm mt-1 outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">AI 對話中自動抓取特徵 (備註):</label>
+                    <textarea id="crm-form-traits" rows="2" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-sm mt-1 outline-none"></textarea>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
-                            <th class="p-3">顧客姓名</th>
-                            <th class="p-3">完整聯絡電話</th>
-                            <th class="p-3">歷史預約次數</th>
-                            <th class="p-3">偏好服務類別</th>
-                            <th class="p-3">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="crm-table-body"></tbody>
-                </table>
+            <div class="flex gap-2 justify-end mt-6">
+                <button class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold px-4 py-2 rounded-lg" onclick="closeCRMModal()">取消</button>
+                <button class="bg-pink-700 hover:bg-pink-800 text-white text-xs font-bold px-4 py-2 rounded-lg" onclick="saveCRMRecord()">💾 儲存並發佈</button>
             </div>
         </div>
     </div>
@@ -148,7 +352,7 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 🌟 master 預設工號庫（大小寫容錯與多重映射，完美強制覆蓋舊 "100" 數據！）
+        // 🌟 master 預設工號庫（大小寫容錯與多重映射）
         const defaultStaffIds = {
             "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
             "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
@@ -159,7 +363,12 @@
         var employeesList = [];
         var holidaysData = {};
         var bookingsData = {};
+        var nextMonthBookingsData = {}; // 加載跨月預約
         var staffIds = {}; 
+        var rawProfiles = {};
+        var sandboxHistory = [
+            { role: "model", parts: [{ text: "Hello 靚靚！我是 Crystal 🔮 您可以在下方輸入對答，測試我的最新人設、分店導航與 60 天預約功能唷！" }] }
+        ];
 
         const t = new Date();
         const formattedDate = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
@@ -192,12 +401,16 @@
             document.getElementById('section-staff').classList.add('hidden');
             document.getElementById('section-analytics').classList.add('hidden');
             document.getElementById('section-crm').classList.add('hidden');
+            document.getElementById('section-ai-control').classList.add('hidden'); 
+            document.getElementById('section-upcoming').classList.add('hidden'); // 新增
             document.getElementById(`section-${tabId}`).classList.remove('hidden');
 
             document.getElementById('tab-btn-matrix').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
             document.getElementById('tab-btn-staff').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
             document.getElementById('tab-btn-analytics').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
             document.getElementById('tab-btn-crm').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
+            document.getElementById('tab-btn-ai-control').className = "py-3 px-1 text-gray-500 hover:text-pink-600"; 
+            document.getElementById('tab-btn-upcoming').className = "py-3 px-1 text-gray-500 hover:text-pink-600 font-bold"; // 新增
             document.getElementById(`tab-btn-${tabId}`).className = "py-3 px-1 tab-active";
         }
 
@@ -209,24 +422,29 @@
             const dayNum = parseInt(parts[2]);
             const dayKey = `day_${dayNum}`;
 
+            // 計算下個月份 key
+            let nextM = parseInt(parts[1]) + 1;
+            let nextY = parseInt(parts[0]);
+            if (nextM > 12) { nextM = 1; nextY++; }
+            const nextMonthKey = `${nextY}-${String(nextM).padStart(2,'0')}`;
+
             Promise.all([
                 database.ref('v8_employees').once('value'),
                 database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
-                database.ref(`v8_bookings/${yearMonthKey}`).once('value')
-            ]).then(([empSnap, holSnap, bookSnap]) => {
+                database.ref(`v8_bookings/${yearMonthKey}`).once('value'),
+                database.ref(`v8_bookings/${nextMonthKey}`).once('value') // 新增拉取未來跨月
+            ]).then(([empSnap, holSnap, bookSnap, nextBookSnap]) => {
                 employeesList = empSnap.exists() ? empSnap.val() : [];
                 holidaysData = holSnap.exists() ? holSnap.val() : {};
                 bookingsData = bookSnap.exists() ? bookSnap.val() : {};
+                nextMonthBookingsData = nextBookSnap.exists() ? nextBookSnap.val() : {};
 
-                // 重設並克隆本地主字典
                 staffIds = Object.assign({}, defaultStaffIds);
-                
                 const cleanEmployees = Array.isArray(employeesList) ? employeesList.filter(Boolean) : Object.values(employeesList).filter(Boolean);
                 
                 cleanEmployees.forEach(e => {
                     if (e && e.name) {
                         let key = e.name.trim().toUpperCase();
-                        // 🌟 強力覆蓋：只要雲端的 id 是 "100"、空或未定義，一律用主字典強制預入編號！
                         if (!e.id || e.id === "100" || e.id === "") {
                             e.id = defaultStaffIds[key] || "100";
                         }
@@ -244,7 +462,13 @@
                 renderMatrixCanvas(workingStaffs, timeSlots, bookingsData, dayKey);
                 renderStaffConfigTab(cleanEmployees);
                 runBusinessIntelligenceAnalytics(bookingsData);
-                renderCRMRegistry(bookingsData);
+                
+                // 🚀 初始化對接未來未到預約總覽
+                renderUpcomingBookings(yearMonthKey, nextMonthKey);
+
+                // 🚀 初始化對接新 CRM 與 AI 智控台
+                startCRMListener();
+                loadAISettings();
             });
         }
 
@@ -308,6 +532,97 @@
             });
         }
 
+        // ==================== 📋 未完成預約總覽 (未來 60 天預約) ====================
+        function renderUpcomingBookings(currentMonthKey, nextMonthKey) {
+            const tbody = document.getElementById('upcoming-bookings-tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            const hkt = new Date(new Date().getTime() + 8 * 3600000);
+            const todayDay = hkt.getUTCDate();
+
+            let upcomingList = [];
+
+            function parseBookingsByMonth(bookings, monthKey, isCurrentMonth) {
+                Object.keys(bookings).forEach(staffName => {
+                    const staffB = bookings[staffName] || {};
+                    Object.keys(staffB).forEach(dayKey => {
+                        const dayNum = parseInt(dayKey.replace("day_", ""));
+                        
+                        // 🟢 過濾過去的時間：如果是當月，日期必須大於或等於今天
+                        if(isCurrentMonth && dayNum < todayDay) return;
+
+                        const slots = staffB[dayKey] || {};
+                        Object.keys(slots).forEach(slotId => {
+                            const b = slots[slotId];
+                            if(b && !b.status.includes('取消') && !b.status.includes('rejected')) {
+                                upcomingList.push({
+                                    id: slotId,
+                                    monthKey: monthKey,
+                                    dayKey: dayKey,
+                                    dateNum: dayNum,
+                                    staffName: staffName,
+                                    customer: b.customer || "顧客",
+                                    phone: b.phone || "無電話",
+                                    start: b.start || "12:00",
+                                    end: b.end || "13:30",
+                                    item: b.item || "常規項目",
+                                    serviceType: b.serviceType || "美甲",
+                                    status: b.status || "⏳ 待審",
+                                    remarks: b.remarks || ""
+                                });
+                            }
+                        });
+                    });
+                });
+            }
+
+            parseBookingsByMonth(bookingsData, currentMonthKey, true);
+            parseBookingsByMonth(nextMonthBookingsData, nextMonthKey, false);
+
+            if(upcomingList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-gray-400 font-bold">🙌 目前沒有任何未來的未完成預約。</td></tr>`;
+                return;
+            }
+
+            // 按年月、日期、時間排序
+            upcomingList.sort((a,b) => {
+                if(a.monthKey !== b.monthKey) return a.monthKey.localeCompare(b.monthKey);
+                if(a.dateNum !== b.dateNum) return a.dateNum - b.dateNum;
+                return timeToMins(a.start) - timeToMins(b.start);
+            });
+
+            upcomingList.forEach(b => {
+                let statusColor = b.status.includes('批准') ? 'text-emerald-600' : 'text-amber-600';
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="p-3 font-bold">${b.monthKey} ➔ ${b.dateNum} 號</td>
+                        <td class="p-3 font-extrabold text-blue-800">${b.start} - ${b.end}</td>
+                        <td class="p-3 font-bold text-gray-800">${b.customer}</td>
+                        <td class="p-3 text-pink-700 font-bold"><a href="https://wa.me/${b.phone}" target="_blank">💬 ${b.phone}</a></td>
+                        <td class="p-3"><span class="bg-pink-100 text-pink-800 font-bold px-2 py-1 rounded text-xs">#${staffIds[b.staffName] || '100'} ${b.staffName}</span></td>
+                        <td class="p-3 text-xs font-bold text-gray-700">${b.item}</td>
+                        <td class="p-3"><span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 font-bold">${b.serviceType}</span></td>
+                        <td class="p-3 text-xs text-gray-500 max-w-[150px] truncate" title="${b.remarks}">${b.remarks || '無'}</td>
+                        <td class="p-3 font-bold ${statusColor}">${b.status}</td>
+                        <td class="p-3 text-center">
+                            <button class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold" onclick="cancelUpcomingBooking('${b.monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}', '${b.customer}')">取消/刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function cancelUpcomingBooking(monthKey, staffName, dayKey, bookingId, customer) {
+            if(confirm(`⚠️ 確定要取消並刪除「${customer}」在 ${monthKey} 的這筆預約嗎？\n取消後該老師的時間空檔將會重新被釋放！`)) {
+                // 完全刪除或更改狀態
+                database.ref(`v8_bookings/${monthKey}/${staffName}/${dayKey}/${bookingId}`).remove().then(() => {
+                    showToast(`🎉 成功取消並清除「${customer}」的預約，空檔已重新釋放！`);
+                    loadEverything();
+                });
+            }
+        }
+
         function renderStaffConfigTab(staffs) {
             const tbody = document.getElementById('staff-table-body');
             tbody.innerHTML = '';
@@ -333,116 +648,61 @@
             });
         }
 
-        function addNewEmployeeRow() {
-            const tbody = document.getElementById('staff-table-body');
-            tbody.innerHTML += `
-                <tr class="border-b border-gray-100 hover:bg-gray-50">
-                    <td class="p-3"><input type="text" class="staff-id-field w-16 p-1 border rounded text-center font-bold text-gray-700" value="124"></td>
-                    <td class="p-3"><input type="text" class="staff-name-field w-24 p-1 border rounded font-bold" placeholder="名字"></td>
-                    <td class="p-3">
-                        <select class="staff-role-field p-1 border rounded text-xs">
-                            <option value="Full-time" selected>Full-time</option>
-                            <option value="Part-time">Part-time</option>
-                            <option value="學徒">學徒</option>
-                        </select>
-                    </td>
-                    <td class="p-3"><input type="text" class="staff-shops-field w-36 p-1 border rounded text-xs" value="G2, G38, GK3"></td>
-                    <td class="p-3"><input type="text" class="staff-times-field w-40 p-1 border rounded text-xs" value="12:00, 11:00, 13:00"></td>
-                    <td class="p-3"><button class="text-red-500 hover:text-red-700 text-xs font-bold" onclick="this.closest('tr').remove()">❌ 刪除</button></td>
-                </tr>
-            `;
-        }
-
-        function saveStaffRegistryToCloud() {
-            let list = [];
-            const rows = document.querySelectorAll('#staff-table-body tr');
-            rows.forEach(r => {
-                let id = r.querySelector('.staff-id-field').value.trim();
-                let name = r.querySelector('.staff-name-field').value.trim();
-                let role = r.querySelector('.staff-role-field').value;
-                let p_shops = r.querySelector('.staff-shops-field').value.trim();
-                let times = r.querySelector('.staff-times-field').value.trim();
-                if(name) {
-                    list.push({ id, name, role, p_shops, times });
-                }
-            });
-            database.ref('v8_employees').set(list).then(() => {
-                showToast("員工與工號大腦成功同步至 Firebase 雲端！預約介面已實時同步。");
-                loadEverything();
-            });
-        }
-
-        function runBusinessIntelligenceAnalytics(bookings) {
-            let total = 0;
-            let categories = { "美甲": 0, "美睫": 0, "紋繡": 0, "其他": 0 };
-            let stylists = {};
-
-            Object.keys(bookings).forEach(staffName => {
-                Object.keys(bookings[staffName]).forEach(dayKey => {
-                    let dayRaw = bookings[staffName][dayKey];
-                    let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
-                    list.filter(Boolean).forEach(b => {
-                        total++;
-                        let sType = b.serviceType || "其他";
-                        if(sType.includes("美甲")) categories["美甲"]++;
-                        else if(sType.includes("美睫")) categories["美睫"]++;
-                        else if(sType.includes("紋繡")) categories["紋繡"]++;
-                        else categories["其他"]++;
-
-                        stylists[staffName] = (stylists[staffName] || 0) + 1;
-                    });
-                });
-            });
-
-            document.getElementById('stat-total-bookings').innerText = total;
-
-            const catZone = document.getElementById('stat-service-breakdown');
-            catZone.innerHTML = '';
-            Object.keys(categories).forEach(cName => {
-                let count = categories[cName];
-                let percent = total > 0 ? Math.round((count / total) * 100) : 0;
-                catZone.innerHTML += `
-                    <div>
-                        <div class="flex justify-between text-xs font-bold text-gray-700">
-                            <span>${cName}</span><span>${count} 預約 (${percent}%)</span>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2 mt-1">
-                            <div class="bg-pink-600 h-2 rounded-full" style="width: ${percent}%"></div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            const stylZone = document.getElementById('stat-staff-breakdown');
-            stylZone.innerHTML = '';
-            let sortedStyl = Object.keys(stylists).map(k => ({ name: k, count: stylists[k] })).sort((a,b) => b.count - a.count);
-            sortedStyl.forEach((s, idx) => {
-                stylZone.innerHTML += `
-                    <div class="flex justify-between items-center text-xs p-2 border-b border-gray-50">
-                        <span class="font-bold text-gray-800">${idx+1}. #${staffIds[s.name] || '100'} ${s.name}</span>
-                        <span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-extrabold">${s.count} 次</span>
-                    </div>
-                `;
+        // ==================== 📇 顧客 CRM 檔案庫 ====================
+        function startCRMListener() {
+            if (typeof firebase === 'undefined' || !firebase.apps.length) return;
+            database.ref('v8_profiles').on('value', (snapshot) => {
+                rawProfiles = snapshot.val() || {};
+                renderCRMRegistry(bookingsData);
             });
         }
 
         function renderCRMRegistry(bookings) {
             const tbody = document.getElementById('crm-table-body');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             let crmMap = {};
+
+            // 1. 優先導入 Firebase 雲端 profiles 的基礎特徵
+            Object.keys(rawProfiles).forEach(phone => {
+                const p = rawProfiles[phone];
+                crmMap[phone] = {
+                    name: p.customerName || "未命名諮詢客",
+                    phone: phone,
+                    status: p.status || "Inquiring",
+                    lastTeacher: p.lastTeacher || "無",
+                    preferredStyle: p.preferredStyle || "無特別指定款式",
+                    traits: p.traits || "尚無對話提取特徵",
+                    count: p.visitCount || 0,
+                    timestamp: p.timestamp || 0
+                };
+            });
+
+            // 2. 深度與看板預約 bookings 二合一併入
             Object.keys(bookings).forEach(staffName => {
+                if(!bookings[staffName]) return;
                 Object.keys(bookings[staffName]).forEach(dayKey => {
                     let dayRaw = bookings[staffName][dayKey];
                     let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
                     list.filter(Boolean).forEach(b => {
                         if (b.customer && b.phone) {
-                            let key = b.customer + "_" + b.phone;
-                            if(!crmMap[key]) {
-                                crmMap[key] = { name: b.customer, phone: b.phone, count: 0, types: new Set() };
+                            let phone = b.phone.trim();
+                            if (!crmMap[phone]) {
+                                crmMap[phone] = {
+                                    name: b.customer,
+                                    phone: phone,
+                                    status: "Active Booker",
+                                    lastTeacher: staffName,
+                                    preferredStyle: "無",
+                                    traits: "網頁預約系統自動登記入檔",
+                                    count: 0,
+                                    timestamp: b.timestamp || new Date().getTime()
+                                };
                             }
-                            crmMap[key].count++;
-                            crmMap[key].types.add(b.serviceType || "美甲");
+                            crmMap[phone].count++;
+                            crmMap[phone].status = "Active Booker";
+                            crmMap[phone].lastTeacher = staffName;
                         }
                     });
                 });
@@ -450,25 +710,354 @@
 
             let records = Object.values(crmMap);
             if(records.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400 font-bold">🙌 目前尚無歷史預約顧客資料紀錄。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">🙌 目前尚無顧客資料紀錄。</td></tr>`;
                 return;
             }
 
+            records.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
             records.forEach(c => {
-                let servicesArr = Array.from(c.types);
+                let statusBadge = (c.status === "Active Booker")
+                    ? `<span class="badge-status status-booker">🟢 Booker (已約)</span>`
+                    : `<span class="badge-status status-inquiring">🔵 Inquiring (諮詢)</span>`;
+
+                let timeStr = c.timestamp ? new Date(c.timestamp).toLocaleString() : '無紀錄';
+
                 tbody.innerHTML += `
-                    <tr class="border-b border-gray-100 hover:bg-pink-50">
+                    <tr class="border-b border-gray-100 hover:bg-pink-50/50">
                         <td class="p-3 font-bold text-gray-800">${c.name}</td>
                         <td class="p-3 text-pink-800 font-extrabold">${c.phone}</td>
-                        <td class="p-3 text-center"><span class="bg-pink-100 text-pink-700 px-2.5 py-1 rounded-full font-extrabold text-xs">${c.count} 次</span></td>
-                        <td class="p-3"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${servicesArr.join(' + ')}</span></td>
-                        <td class="p-3"><button class="bg-pink-600 hover:bg-pink-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold" onclick="navigator.clipboard.writeText('${c.phone}'); showToast('📱 已成功複製 ${c.name} 的完整手機號碼：${c.phone}');">複製號碼</button></td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3"><span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded text-xs font-bold">${c.lastTeacher}</span></td>
+                        <td class="p-3 text-xs text-gray-500 max-w-[150px] truncate" title="${c.preferredStyle}">${c.preferredStyle}</td>
+                        <td class="p-3 text-xs text-blue-600 max-w-[180px] truncate" title="${c.traits}">${c.traits}</td>
+                        <td class="p-3 text-center font-bold text-gray-700">${c.count} 次</td>
+                        <td class="p-3 text-[11px] text-gray-400">${timeStr}</td>
+                        <td class="p-3">
+                            <div class="flex gap-1.5 justify-center">
+                                <button class="bg-pink-600 hover:bg-pink-700 text-white text-xs px-2 py-1 rounded" onclick="navigator.clipboard.writeText('${c.phone}'); showToast('📱 已複製號碼：${c.phone}');">複製</button>
+                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded" onclick="openCRMModal('${c.phone}')">編輯</button>
+                            </div>
+                        </td>
                     </tr>
                 `;
             });
+        }
+
+        function filterCRMTable() {
+            const query = document.getElementById('crm-search-input').value.trim().toLowerCase();
+            const filterStatus = document.getElementById('crm-filter-status').value;
+            const tbody = document.getElementById('crm-table-body');
+            if(!tbody) return;
+
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const name = row.cells[0]?.innerText.toLowerCase() || '';
+                const phone = row.cells[1]?.innerText.toLowerCase() || '';
+                const statusHtml = row.cells[2]?.innerHTML || '';
+                
+                const matchesQuery = name.includes(query) || phone.includes(query);
+                let matchesStatus = true;
+                if (filterStatus === 'Active Booker') {
+                    matchesStatus = statusHtml.includes('Booker');
+                } else if (filterStatus === 'Inquiring') {
+                    matchesStatus = statusHtml.includes('Inquiring');
+                }
+
+                if (matchesQuery && matchesStatus) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        function openCRMModal(phone = '') {
+            const modal = document.getElementById('crm-edit-modal');
+            const title = document.getElementById('crm-modal-title');
+            
+            document.getElementById('crm-form-name').value = '';
+            document.getElementById('crm-form-phone').value = '';
+            document.getElementById('crm-form-phone').disabled = false;
+            document.getElementById('crm-form-status').value = 'Inquiring';
+            document.getElementById('crm-form-teacher').value = '';
+            document.getElementById('crm-form-pref').value = '';
+            document.getElementById('crm-form-traits').value = '';
+
+            if (phone) {
+                title.innerText = `👥 編輯顧客檔案 (${phone})`;
+                const p = rawProfiles[phone] || {};
+                document.getElementById('crm-form-name').value = p.customerName || '';
+                document.getElementById('crm-form-phone').value = phone;
+                document.getElementById('crm-form-phone').disabled = true;
+                document.getElementById('crm-form-status').value = p.status || 'Inquiring';
+                document.getElementById('crm-form-teacher').value = p.lastTeacher || '';
+                document.getElementById('crm-form-pref').value = p.preferredStyle || '';
+                document.getElementById('crm-form-traits').value = p.traits || '';
+            } else {
+                title.innerText = '👥 新建顧客檔案';
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCRMModal() {
+            const modal = document.getElementById('crm-edit-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function saveCRMRecord() {
+            const phone = document.getElementById('crm-form-phone').value.trim();
+            const name = document.getElementById('crm-form-name').value.trim();
+            const status = document.getElementById('crm-form-status').value;
+            const teacher = document.getElementById('crm-form-teacher').value.trim();
+            const pref = document.getElementById('crm-form-pref').value.trim();
+            const traits = document.getElementById('crm-form-traits').value.trim();
+
+            if (!phone || !name) {
+                alert('❌ 請填寫姓名與手機號碼！');
+                return;
+            }
+
+            const ref = database.ref(`v8_profiles/${phone}`);
+            ref.set({
+                customerName: name,
+                status: status,
+                lastTeacher: teacher,
+                preferredStyle: pref,
+                traits: traits,
+                visitCount: (rawProfiles[phone]?.visitCount) || 1,
+                timestamp: new Date().getTime()
+            }).then(() => {
+                showToast('🎉 顧客檔案成功發佈至雲端 CRM！');
+                closeCRMModal();
+            });
+        }
+
+        // ==================== 🚀 批次歷史對話 AI 深度提取核心 ====================
+        async function runBatchAIExtractor() {
+            const phone = document.getElementById('batch-crm-phone').value.trim();
+            const chats = document.getElementById('batch-crm-chats').value.trim();
+
+            if(!phone || !chats) {
+                alert('❌ 請務必輸入手機號碼與黏貼歷史聊天記錄！');
+                return;
+            }
+
+            showToast('⏳ 正在調用 Gemini AI 深度閱讀歷史對話中...', 'success');
+
+            const systemPrompt = `你是一個專業的水晶閣美睫美甲沙龍 CRM 大數據分析專家。
+你的任務是通讀經理提供的 WhatsApp 歷史對話片段，精準提煉出該客人的畫像。
+請【嚴格以標準 JSON】格式輸出，且不要包含任何 Markdown 格式(如 \`\`\`json)：
+{
+  "customerName": "分析出的姓名或稱呼(如果沒有，請用'親愛的顧客')",
+  "preferredStyle": "分析出的偏好款式、指甲避諱、卸甲與否、美甲/睫毛要求",
+  "traits": "分析出的聊天特徵摘要(例如：常預約週末、愛做貓眼、詢問過睫毛促銷、很有禮貌)",
+  "lastTeacher": "對話中為她服務或她指名的美甲師名字(如RUBY、阿璇，沒有填'無')"
+}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: "user", parts: [{ text: `顧客手機號: ${phone}\n對話記錄:\n${chats}` }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const data = await response.json();
+                let resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                
+                // 去除可能存在的 markdown 包裹
+                resultText = resultText.replace(/```json/gi, "").replace(/```/g, "").trim();
+                const parsed = JSON.parse(resultText);
+
+                // 寫入雲端資料庫
+                const ref = database.ref(`v8_profiles/${phone}`);
+                ref.set({
+                    customerName: parsed.customerName || "親愛的顧客",
+                    status: "Inquiring", // 默認設置為諮詢，如果有預約系統會自動同步更新為 Booker
+                    lastTeacher: parsed.lastTeacher || "無",
+                    preferredStyle: parsed.preferredStyle || "無紀錄",
+                    traits: parsed.traits || "歷史匯入特徵",
+                    visitCount: (rawProfiles[phone]?.visitCount) || 1,
+                    timestamp: new Date().getTime()
+                }).then(() => {
+                    showToast(`🎉 成功分析！已在 CRM 為 ${phone} 新建/覆蓋特徵！`);
+                    document.getElementById('batch-crm-chats').value = '';
+                });
+
+            } catch (err) {
+                console.error(err);
+                alert('❌ AI 批次分析提取失敗，請檢查輸入的內容是否過亂！');
+            }
+        }
+
+        // ==================== 🤖 AI 智控與自訂知識庫 ====================
+        function loadAISettings() {
+            if (typeof firebase === 'undefined' || !firebase.apps.length) return;
+            database.ref('v8_ai_settings').once('value').then((snapshot) => {
+                const settings = snapshot.val() || {};
+                
+                document.getElementById('ai-style-select').value = settings.style || '極致溫柔暖心 (預設)';
+                document.getElementById('ai-greeting-input').value = settings.greeting || '';
+                document.getElementById('ai-address-input').value = settings.address || '';
+                document.getElementById('ai-rules-input').value = settings.rules || '';
+                document.getElementById('ai-other-textarea').value = settings.other || '';
+
+                const container = document.getElementById('custom-kb-container');
+                container.innerHTML = '';
+                if (settings.customFields) {
+                    settings.customFields.forEach(f => {
+                        addCustomKBRow(f.title, f.content);
+                    });
+                }
+            });
+        }
+
+        function addCustomKBRow(title = '', content = '') {
+            const container = document.getElementById('custom-kb-container');
+            const row = document.createElement('div');
+            row.className = 'kb-field-row';
+            row.innerHTML = `
+                <button class="btn-field-del bg-rose-500 hover:bg-rose-600 text-white font-bold px-2 py-1 rounded text-[10px]" style="position: absolute; right: 10px; top: 10px;" onclick="this.parentElement.remove()">刪除</button>
+                <div class="space-y-2 pr-12">
+                    <input type="text" placeholder="欄位標題 (例：平日特惠)" class="kb-field-title bg-white p-1.5 border rounded text-xs font-bold text-gray-700 w-1/2" value="${title}">
+                    <textarea placeholder="規則說明 (例：週一至週五11:00-15:00美睫享九折)" class="kb-field-content w-full bg-white p-1.5 border rounded text-xs outline-none" rows="2">${content}</textarea>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function saveAISettingsToCloud() {
+            const style = document.getElementById('ai-style-select').value;
+            const greeting = document.getElementById('ai-greeting-input').value.trim();
+            const address = document.getElementById('ai-address-input').value.trim();
+            const rules = document.getElementById('ai-rules-input').value.trim();
+            const other = document.getElementById('ai-other-textarea').value.trim();
+
+            const customFields = [];
+            document.querySelectorAll('.kb-field-row').forEach(row => {
+                const title = row.querySelector('.kb-field-title').value.trim();
+                const content = row.querySelector('.kb-field-content').value.trim();
+                if (title && content) {
+                    customFields.push({ title, content });
+                }
+            });
+
+            const settingsData = {
+                style, greeting, address, rules, other, customFields,
+                lastUpdated: new Date().getTime()
+            };
+
+            database.ref('v8_ai_settings').set(settingsData).then(() => {
+                showToast("AI 人設與自訂知識庫已實時同步！機器人已同步學會！");
+            });
+        }
+
+        // ==================== 🧪 0成本沙盒測試聊天室 ====================
+        async function sendSandboxMessage() {
+            const input = document.getElementById('sandbox-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const box = document.getElementById('sandbox-messages-box');
+            box.innerHTML += `
+                <div class="bg-pink-100 p-3 rounded-lg shadow-sm border border-pink-200 text-xs text-pink-900 leading-relaxed max-w-[85%] self-end ml-auto">
+                    ${query}
+                </div>
+            `;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            const typingId = "typing-" + Date.now();
+            box.innerHTML += `
+                <div id="${typingId}" class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-xs text-gray-500 leading-relaxed max-w-[85%] animate-pulse">
+                    Crystal 正在查核排班與分析語氣中... ⏳
+                </div>
+            `;
+            box.scrollTop = box.scrollHeight;
+
+            try {
+                sandboxHistory.push({ role: "user", parts: [{ text: query }] });
+                
+                const style = document.getElementById('ai-style-select').value;
+                const greeting = document.getElementById('ai-greeting-input').value;
+                const address = document.getElementById('ai-address-input').value;
+                const rules = document.getElementById('ai-rules-input').value;
+                const other = document.getElementById('ai-other-textarea').value;
+                
+                let dynamicRulesText = "";
+                document.querySelectorAll('.kb-field-row').forEach(row => {
+                    const title = row.querySelector('.kb-field-title').value;
+                    const content = row.querySelector('.kb-field-content').value;
+                    if (title && content) {
+                        dynamicRulesText += `\n* 規則 - ${title}: ${content}`;
+                    }
+                });
+
+                const systemPrompt = `你是一位溫柔專業的美甲店管家「Crystal」，服務於「Crystal Pavilion 水晶閣」。
+【AI 人設設定】：
+- 說話風格與語氣：${style}
+- 指定首句問候語：${greeting}
+【店規與導航知識庫】：
+- 各分店位置地址引導：${address}
+- 定金與遲到規則：${rules}
+${dynamicRulesText}
+- 其他備忘錄：${other}
+【對答指令核心規則】：
+當與顧客達成共識，輸出：||BOOKING:{"customerName":"稱呼","staffName":"姓名","month":"2026-06","date":"13","time":"14:30","duration":90,"serviceType":"項目","mainCategory":"類別"}||
+如果分析出顧客的特徵，請輸出：||PROFILE:{"customerName":"姓名","preferredStyle":"喜好","status":"Active Booker或Inquiring","traits":"對話特徵備註"}||
+如果顧客要求【更改/修改/取消】現有的預約，你必須輸出取消舊預約指令：||CANCEL_BOOKING:{"month":"2026-06","date":"13","staffName":"姓名","time":"舊時間"}||
+回覆保持香港精品沙龍的高雅精煉！`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: sandboxHistory,
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById(typingId).remove();
+                
+                if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                    let reply = data.candidates[0].content.parts[0].text;
+                    
+                    if (reply.includes('||BOOKING:')) {
+                        box.innerHTML += `<div class="bg-blue-50 text-blue-800 text-[10px] p-2 rounded-lg border border-blue-100 text-center w-full">🔮 【系統沙盒提示】AI 觸發了自動「插旗預約」寫入指令！</div>`;
+                    }
+                    if (reply.includes('||PROFILE:')) {
+                        box.innerHTML += `<div class="bg-emerald-50 text-emerald-800 text-[10px] p-2 rounded-lg border border-emerald-100 text-center w-full">👥 【系統沙盒提示】AI 自動更新並提取了「顧客畫像」寫入 CRM！</div>`;
+                    }
+                    if (reply.includes('||CANCEL_BOOKING:')) {
+                        box.innerHTML += `<div class="bg-rose-50 text-rose-800 text-[10px] p-2 rounded-lg border border-rose-100 text-center w-full">🔴 【系統沙盒提示】AI 觸發了「取消舊預約」指令，正在釋放原空檔！</div>`;
+                    }
+
+                    reply = reply.replace(/\|\|BOOKING:.*?\|\|/g, "").replace(/\|\|PROFILE:.*?\|\|/g, "").replace(/\|\|CANCEL_BOOKING:.*?\|\|/g, "").trim();
+
+                    box.innerHTML += `
+                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-xs text-gray-700 leading-relaxed max-w-[85%]">
+                            ${reply}
+                        </div>
+                    `;
+                    sandboxHistory.push({ role: "model", parts: [{ text: reply }] });
+                } else {
+                    box.innerHTML += `<div class="bg-red-50 text-red-800 text-xs p-2 rounded-lg text-center w-full">⚠️ 調試連線異常，請檢查。</div>`;
+                }
+                box.scrollTop = box.scrollHeight;
+            } catch (err) {
+                if (document.getElementById(typingId)) document.getElementById(typingId).remove();
+                box.innerHTML += `<div class="bg-red-50 text-red-800 text-xs p-2 rounded-lg text-center w-full">❌ 連線失敗，請重試！</div>`;
+                box.scrollTop = box.scrollHeight;
+            }
         }
     </script>
 </body>
 </html>
 
-```
+
