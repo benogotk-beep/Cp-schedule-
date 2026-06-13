@@ -32,13 +32,25 @@
 </head>
 <body>
 
+    <!-- 🔐 二合一安全登入驗證遮罩 -->
     <div id="login-overlay">
-        <div class="login-box">
+        <div class="login-box" style="max-width: 340px; padding: 24px;">
             <div class="login-logo">🔮</div>
-            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店排班主機系統</h2>
-            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" onkeydown="if(event.key==='Enter') triggerGateLogin()">
-            <button class="login-btn" onclick="triggerGateLogin()">安全登入驗證</button>
-            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 口令錯誤，請重新輸入！</div>
+            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827; font-weight: bold;" id="login-box-title">水晶閣分店排班主機</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-bottom: 16px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #4b5563; display: block; margin-bottom: 4px;">登入帳號 (管理員或員工編號)：</label>
+                    <input type="text" id="login-username-input" class="login-input" placeholder="請輸入帳號/工號 (例: 101)" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #4b5563; display: block; margin-bottom: 4px;">安全認證密碼：</label>
+                    <input type="password" id="login-password-input" class="login-input" placeholder="請輸入密碼" maxlength="12" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold;" onkeydown="if(event.key==='Enter') triggerGateLogin()">
+                </div>
+            </div>
+
+            <button class="login-btn" onclick="triggerGateLogin()" style="width: 100%; padding: 12px; font-weight: bold;">安全登入驗證</button>
+            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 帳號或密碼錯誤，請重新輸入！</div>
         </div>
     </div>
 
@@ -50,10 +62,9 @@
         </div>
     </div>
 
-    <!-- 🏷️ 標籤導航列：在保持原版 100% 完整的基礎上，完美嵌入「🔮 預約對接中心」 -->
+    <!-- 🏷️ 標籤導航列 -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
-        <button class="tab-btn" id="nav-bookings" onclick="switchTab('tab-bookings')">🔮 預約對接中心 <span id="booking-badge-dot" style="background:var(--danger); color:white; border-radius:50%; width:8px; height:8px; display:none; margin-left:4px;"></span></button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
         <button class="tab-btn" id="nav-analysis" onclick="switchTab('tab-analysis')">📊 全月人手分析</button>
         <button class="tab-btn" id="nav-employees" onclick="switchTab('tab-employees')">👥 員工管理</button>
@@ -88,17 +99,6 @@
         </div>
         <div class="grid-4" id="monitor-panel"></div>
         <div id="shops-report-container"></div>
-    </div>
-
-    <!-- 🔮 預約對接中心 Tab 內容 (獨立高質感管理介面) -->
-    <div id="tab-bookings" class="tab-content" style="display: none;">
-        <div class="card">
-            <div class="title" style="margin-bottom: 8px;">🔮 實時雲端預約審核中樞</div>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">本頁面即時匯總兩個月（60天）內來自 WhatsApp AI 與預約網頁的嵌套預約請求。經理點擊「核准」後，系統會將時間點與顧客資料 100% 自動登記至下方日曆備忘錄中！</p>
-            <div id="live-bookings-container" class="scroll-box" style="background:#f8fafc; padding:15px; border-radius:14px; border:1px solid #cbd5e1; min-height:120px;">
-                <div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">⏳ 正在安全加載嵌套預約數據流...</div>
-            </div>
-        </div>
     </div>
 
     <div id="tab-my-month" class="tab-content" style="display: none;">
@@ -175,15 +175,16 @@
             </div>
             <div class="sub-table-title">🚨 美甲師告急日子總覽</div>
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #fca5a5;">
-                <table id="low-staff-table" style="background:#fffaf8;"><tbody id="low-staff-table-body"></tbody></table>
+                <table style="background:#fffaf8;"><tbody id="low-staff-table-body"></tbody></table>
             </div>
             <div class="sub-table-title">👑 美甲師充沛優勢日子總覽</div>
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #6ee7b7;">
-                <table id="high-staff-table" style="background:#f6fffb;"><tbody id="high-staff-table-body"></tbody></table>
+                <table style="background:#f6fffb;"><tbody id="high-staff-table-body"></tbody></table>
             </div>
         </div>
     </div>
 
+    <!-- 👥 員工管理 Tab -->
     <div id="tab-employees" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 10px;">員工職位時段資料庫</div>
@@ -191,7 +192,15 @@
             <div class="scroll-box">
                 <table>
                     <thead>
-                        <tr><th>員工姓名</th><th>職位類型</th><th>可支援店舖</th><th>班次時段對應</th><th>操作</th></tr>
+                        <tr>
+                            <th style="width: 80px; text-align: center;">員工編號</th>
+                            <th>員工姓名</th>
+                            <th>職位類型</th>
+                            <th>可支援店舖</th>
+                            <th>班次時段對應</th>
+                            <th style="width: 140px; text-align: center;">員工登入密碼</th>
+                            <th>操作</th>
+                        </tr>
                     </thead>
                     <tbody id="employee-table-body"></tbody>
                 </table>
@@ -220,9 +229,38 @@
         </div>
     </div>
 
+    <!-- ⚙️ 微調設定頁 -->
     <div id="tab-settings" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 12px;">⚙️ 系統核心微調參數控制台</div>
+            
+            <!-- 👥 帳密管理控制面板 -->
+            <div class="settings-section" style="background:#fff1f2; border:1px solid #fbcfe8; border-radius:12px; padding:16px; margin-bottom:16px;">
+                <span class="settings-label" style="color:#9d174d; font-weight:bold; font-size:14px; display:block; margin-bottom:4px;">👥 員工登入帳號與密碼大腦控制台</span>
+                <p style="font-size:11.5px; color:#64748b; margin-bottom:12px; line-height: 1.4;">
+                    管理員可在此直接「查閱、手動修改或一鍵批量重算」所有員工的認證帳密。修改後請務必點擊「儲存員工帳密變更」寫入雲端。
+                </p>
+                <div class="scroll-box" style="max-height: 220px; overflow-y: auto; background:white; border:1px solid #cbd5e1; border-radius:8px;">
+                    <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+                        <thead>
+                            <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; color:#475569;">
+                                <th style="padding:10px;">員工姓名</th>
+                                <th style="padding:10px; text-align:center; width:130px;">登入帳號 (員工工號)</th>
+                                <th style="padding:10px; text-align:center; width:150px;">認證密碼</th>
+                                <th style="padding:10px; text-align:center; width:110px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settings-accounts-tbody">
+                            <tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-weight:bold;">⏳ 正在加載員工帳密庫中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:10px; flex-wrap:wrap;">
+                    <button class="btn" style="background-color: #f59e0b; color:white; padding:8px 16px; font-size:12px; font-weight:bold;" onclick="triggerRegenerateAllPasswords()">🔄 全員一鍵重算預設密碼</button>
+                    <button class="btn btn-save" style="background-color: var(--primary); color:white; padding:8px 16px; font-size:12px; font-weight:bold;" onclick="saveEmployeesAccountsFromSettings()">💾 儲存員工帳密變更</button>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <span class="settings-label">🔐 全局網頁密碼控制門禁</span>
                 <div class="settings-row"><span>經理管理口令：</span><input type="text" id="cfg-pass-manager"></div>
@@ -241,7 +279,7 @@
             <div class="settings-section">
                 <span class="settings-label">📊 人手分析定義告急線</span>
                 <div class="settings-row"><span>美甲師 ⚠️ 告急人手：少於或等於</span><input type="number" id="cfg-limit-low" style="width:60px;"> 人</div>
-                <div class="settings-row"><span>美甲師 🟢 充沛人手：大於或等於</span><input type="number" id="cfg-limit-high" style="width:60px;"> 人</div>
+                <div class="settings-row"><span>美甲師 🟢 充沛人手：大於 or 等於</span><input type="number" id="cfg-limit-high" style="width:60px;"> 人</div>
             </div>
             <button class="btn btn-save" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發佈雲端</button>
         </div>
@@ -249,196 +287,412 @@
 
     <script src="app.js"></script>
 
-    <!-- 🔮 預約對接中心高階拉平解析器 (無感隔離，完美適配 iPad iOS Safari 渲染引擎) -->
+    <!-- 🔮 水晶閣安全權限防禦、員工帳密同步控制與設定頁查閱系統 -->
     <script>
-        let liveBookings = {};
+        // 1. 預設編號庫主字典 (與 Admin 決策中樞 100% 相同)
+        const defaultStaffIds = {
+            "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
+            "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
+            "澄澄": "113", "ALICE": "115", "阿璇": "116", "MANDY婷": "117", "Mandy婷": "117", "妙妙": "118",
+            "葉子": "119", "LUCIA": "120", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
+        };
 
-        function timeToMins(tStr) {
-            if (!tStr) return 0;
-            let p = tStr.split(':');
-            return (parseInt(p[0]) * 60) + (parseInt(p[1]) || 0);
-        }
+        let rawEmployees = [];
+        let loggedInEmployeeName = ""; // 如果是普通員工，儲存其姓名
 
-        // 監聽並加載當月嵌套預約數據
-        function startLiveBookingListener() {
-            if (typeof firebase === 'undefined' || !firebase.apps.length) return;
-            const db = firebase.database();
-            
-            // 對齊 app.js 的月份與年份選取
-            const hkt = new Date(new Date().getTime() + 8 * 3600000);
-            const year = (typeof state !== 'undefined' && state.currentYear) ? state.currentYear : hkt.getUTCFullYear();
-            const month = (typeof state !== 'undefined' && state.currentMonth) ? state.currentMonth : (hkt.getUTCMonth() + 1);
-            const monthKey = `${year}-${month < 10 ? '0'+month : month}`;
+        // 2. 二合一安全登入核心驗證器
+        window.triggerGateLogin = function() {
+            const usernameInput = document.getElementById('login-username-input');
+            const passwordInput = document.getElementById('login-password-input');
+            const failHint = document.getElementById('login-fail-hint');
 
-            db.ref(`v8_bookings/${monthKey}`).on('value', (snapshot) => {
-                liveBookings = snapshot.val() || {};
-                renderLiveBookings(liveBookings, monthKey);
-            });
-        }
+            if (!usernameInput || !passwordInput) return;
 
-        // 核心高難度：拉平多維度的 Staff -> day_DD -> BookingId 嵌套層次
-        function renderLiveBookings(bookings, monthKey) {
-            const container = document.getElementById('live-bookings-container');
-            const badgeDot = document.getElementById('booking-badge-dot');
-            if (!container) return;
-            container.innerHTML = '';
+            const uVal = usernameInput.value.trim();
+            const pVal = passwordInput.value.trim();
 
-            let flattenedBookings = [];
-
-            Object.keys(bookings).forEach(staffName => {
-                const staffB = bookings[staffName] || {};
-                Object.keys(staffB).forEach(dayKey => {
-                    const dayNum = dayKey.replace("day_", "");
-                    const slots = staffB[dayKey] || {};
-                    Object.keys(slots).forEach(slotId => {
-                        const b = slots[slotId];
-                        if (b) {
-                            flattenedBookings.push({
-                                id: slotId,
-                                staffName: staffName,
-                                dayKey: dayKey,
-                                date: dayNum,
-                                customerName: b.customer || "顧客",
-                                customerPhone: b.phone || "",
-                                phoneLast4: b.phoneLast4 || "",
-                                time: b.start || "12:00",
-                                endTime: b.end || "13:30",
-                                serviceType: b.item || "常規項目",
-                                mainCategory: b.serviceType || "美甲",
-                                status: b.status || "⏳ 待審",
-                                remarks: b.remarks || "",
-                                duration: b.duration || 90,
-                                timestamp: b.timestamp || 0
-                            });
-                        }
-                    });
-                });
-            });
-
-            // 控制 badge 小紅點提示
-            const pendingBookings = flattenedBookings.filter(b => b.status.includes('待審') || b.status.includes('pending') || b.status.includes('⏳'));
-            if (badgeDot) {
-                badgeDot.style.display = pendingBookings.length > 0 ? 'inline-block' : 'none';
-            }
-
-            if (flattenedBookings.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:30px; color:#94a3b8; font-weight:bold;">🙌 目前尚無任何預約紀錄。</div>`;
+            if (!uVal || !pVal) {
+                alert('❌ 請輸入您的帳號與密碼！');
                 return;
             }
 
-            // 按日期 -> 時間進行排序
-            flattenedBookings.sort((a, b) => {
-                if (parseInt(a.date) !== parseInt(b.date)) {
-                    return parseInt(a.date) - parseInt(b.date);
-                }
-                return timeToMins(a.time) - timeToMins(b.time);
-            });
-
-            let html = `<table>
-                <thead>
-                    <tr style="background:#f1f5f9;">
-                        <th>預約日期</th>
-                        <th>顧客姓名</th>
-                        <th>電話 (WhatsApp)</th>
-                        <th>指定人員</th>
-                        <th>時段</th>
-                        <th>預期耗時</th>
-                        <th>項目詳情</th>
-                        <th>大類</th>
-                        <th>備註</th>
-                        <th>狀態</th>
-                        <th style="text-align:center;">操作</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-            flattenedBookings.forEach(b => {
-                let statusColor = "orange";
-                let actionButtons = '';
-
-                if (b.status.includes('待審') || b.status.includes('pending') || b.status.includes('⏳') || b.status.includes('吉時') || b.status.includes('特殊')) {
-                    actionButtons = `
-                        <button class="btn" style="background:var(--success); color:white; padding:6px 12px; font-size:12px; margin-right:6px;" onclick="approveBooking('${monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}')">批准</button>
-                        <button class="btn" style="background:var(--danger); color:white; padding:6px 12px; font-size:12px;" onclick="rejectBooking('${monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}')">拒絕</button>
-                    `;
-                } else if (b.status.includes('批准') || b.status.includes('approved') || b.status.includes('🟢')) {
-                    statusColor = "green";
-                    actionButtons = `<span style="color:#64748b; font-size:12px;">已核准並排入備忘</span>`;
-                } else {
-                    statusColor = "red";
-                    actionButtons = `<span style="color:#94a3b8; font-size:12px;">已駁回</span>`;
-                }
-
-                html += `<tr>
-                    <td><b>${b.date} 號</b></td>
-                    <td><b>${b.customerName}</b></td>
-                    <td><a href="https://wa.me/${b.customerPhone}" target="_blank" style="color:var(--primary); font-weight:bold;">💬 ${b.customerPhone}</a></td>
-                    <td><span style="background:var(--primary-light); color:var(--primary); padding:2px 6px; border-radius:6px; font-weight:bold;">${b.staffName}</span></td>
-                    <td style="color:#1e3a8a; font-weight:bold;">${b.time} - ${b.endTime}</td>
-                    <td><b>${b.duration} 分鐘</b></td>
-                    <td style="font-size:12px;">${b.serviceType}</td>
-                    <td><span style="background:#fef3c7; color:#d97706; padding:2px 6px; border-radius:6px; font-size:11px; font-weight:bold;">${b.mainCategory}</span></td>
-                    <td style="font-size:11px; max-width:150px; overflow:hidden; text-overflow:ellipsis;">${b.remarks}</td>
-                    <td style="color:${statusColor}; font-weight:bold;">${b.status}</td>
-                    <td style="text-align:center;">${actionButtons}</td>
-                </tr>`;
-            });
-
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
-        // 批准預約 (自動同步登錄至當天排班備忘錄中，使其在大表完美顯示)
-        function approveBooking(monthKey, staffName, dayKey, bookingId) {
-            const db = firebase.database();
-            const b = liveBookings[staffName]?.[dayKey]?.[bookingId];
-            if (!b) return;
-
-            db.ref(`v8_bookings/${monthKey}/${staffName}/${dayKey}/${bookingId}/status`).set('🟢 已批准');
-
-            db.ref(`v8_special_notes/${monthKey}/${staffName}/${dayKey}`).set(`預約:${b.customer}(${b.item}, ${b.start})`).then(() => {
-                showToast(`🎉 預約核准成功！已自動將預約同步至 ${staffName} 老師當日的日曆大表與備註！`);
-            });
-        }
-
-        // 拒絕預約
-        function rejectBooking(monthKey, staffName, dayKey, bookingId) {
-            if (confirm("確定要拒絕這筆預約申請嗎？")) {
-                firebase.database().ref(`v8_bookings/${monthKey}/${staffName}/${dayKey}/${bookingId}/status`).set('🔴 已拒絕');
+            // A. 驗證是否為管理員帳號
+            if (uVal === "9343" && pVal === "6973") {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('role-display-text').innerText = '🔑 目前權限：管理員 (系統主機)';
+                
+                document.getElementById('main-system-tab-bar').style.display = 'flex';
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.style.display = 'inline-block');
+                
+                loggedInEmployeeName = ""; 
+                showToastMessage("🎉 歡迎回來，親愛的管理員！");
+                return;
             }
-        }
 
-        function showToast(msg) {
+            // B. 驗證是否為普通員工
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').once('value').then((snapshot) => {
+                    const list = snapshot.val() || [];
+                    const cleanList = Array.isArray(list) ? list.filter(Boolean) : Object.values(list).filter(Boolean);
+                    
+                    const matchedEmployee = cleanList.find(e => e && String(e.id || "").trim() === uVal);
+                    
+                    if (matchedEmployee) {
+                        const expectedPass = String(matchedEmployee.password || (matchedEmployee.id + "22")).trim();
+                        
+                        if (pVal === expectedPass) {
+                            document.getElementById('login-overlay').style.display = 'none';
+                            document.getElementById('role-display-text').innerText = `🔑 目前權限：員工 (${matchedEmployee.name})`;
+                            
+                            document.getElementById('main-system-tab-bar').style.display = 'flex';
+                            
+                            document.querySelectorAll('.tab-btn').forEach(btn => {
+                                if (btn.id === 'nav-schedule' || btn.id === 'nav-my-month') {
+                                    btn.style.display = 'inline-block';
+                                } else {
+                                    btn.style.display = 'none';
+                                }
+                            });
+
+                            switchTab('tab-schedule');
+                            loggedInEmployeeName = matchedEmployee.name;
+                            
+                            showToastMessage(`🎉 登入成功！歡迎您，${matchedEmployee.name} 老師`);
+                            if (failHint) failHint.style.display = 'none';
+                            return;
+                        }
+                    }
+                    
+                    if (failHint) failHint.style.display = 'block';
+                }).catch(err => {
+                    console.error("Firebase Auth database error:", err);
+                    alert("⚠️ 系統登入查詢中斷，請重試！");
+                });
+            } else {
+                alert("⏳ 排班系統晶片尚未就緒，請稍候 3 秒再重試！");
+            }
+        };
+
+        // 3. 高頻率背景安全鎖定器 (強制鎖定普通員工只看自己排班)
+        setInterval(() => {
+            if (loggedInEmployeeName) {
+                const select = document.getElementById('my-month-staff-select');
+                if (select) {
+                    if (select.value !== loggedInEmployeeName) {
+                        select.value = loggedInEmployeeName;
+                        const event = new Event('change');
+                        select.dispatchEvent(event);
+                    }
+                    select.disabled = true;
+                    select.style.pointerEvents = 'none';
+                    select.style.opacity = '0.75';
+                }
+            }
+        }, 100);
+
+        // 4. 安全登出機制
+        window.triggerGlobalLogout = function() {
+            if (confirm("確定要安全登出排班主機系統嗎？")) {
+                document.getElementById('login-username-input').value = "";
+                document.getElementById('login-password-input').value = "";
+                document.getElementById('login-overlay').style.display = 'flex';
+                document.getElementById('main-system-tab-bar').style.display = 'none';
+                document.getElementById('role-display-text').innerText = '🔑 目前權限：未登入';
+                loggedInEmployeeName = "";
+                showToastMessage("🔒 系統已安全登出。");
+            }
+        };
+
+        // 5. 員工管理頁面：工號改變時自動隨機算出新密碼
+        window.updateRowPassword = function(idInput) {
+            const tr = idInput.closest('tr');
+            if (!tr) return;
+            const passInput = tr.querySelector('.staff-pass-field');
+            if (passInput) {
+                const idVal = idInput.value.trim();
+                if (idVal) {
+                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                }
+            }
+        };
+
+        // 6. 員工列表渲染 (支援直接修改與獨立隨機重算鈕)
+        window.renderEmployeesList = function(employees) {
+            const tbody = document.getElementById('employee-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            employees.forEach(e => {
+                if (!e) return;
+                const key = e.name ? e.name.trim().toUpperCase() : '';
+                const code = e.id || defaultStaffIds[e.name] || "100";
+                const pass = e.password || (code + String(Math.floor(Math.random() * 90 + 10)));
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <input type="text" class="staff-id-field" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${code}" oninput="updateRowPassword(this)">
+                        </td>
+                        <td>
+                            <input type="text" class="staff-name-field" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.name || ''}">
+                        </td>
+                        <td>
+                            <select class="staff-role-field" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <option value="Full-time" ${e.role === 'Full-time' ? 'selected' : ''}>Full-time</option>
+                                <option value="Part-time" ${e.role === 'Part-time' ? 'selected' : ''}>Part-time</option>
+                                <option value="學徒" ${e.role === '學徒' ? 'selected' : ''}>學徒</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" class="staff-shops-field" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.p_shops || ''}">
+                        </td>
+                        <td>
+                            <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.times || ''}">
+                        </td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
+                                <input type="text" class="staff-pass-field" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${pass}">
+                                <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        // 員工行內一鍵重算
+        window.regenerateEmployeeRowPass = function(btn) {
+            const tr = btn.closest('tr');
+            if (!tr) return;
+            const idInput = tr.querySelector('.staff-id-field');
+            const passInput = tr.querySelector('.staff-pass-field');
+            if (idInput && passInput) {
+                const idVal = idInput.value.trim();
+                if (idVal) {
+                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                    showToastMessage("🔄 密碼重算完成！");
+                } else {
+                    alert("⚠️ 請先輸入該員工的工號！");
+                }
+            }
+        };
+
+        // 新增員工行
+        window.addEmployeeRow = function() {
+            const tbody = document.getElementById('employee-table-body');
+            if (!tbody) return;
+            const randomSuffix = String(Math.floor(Math.random() * 90 + 10));
+            tbody.innerHTML += `
+                <tr>
+                    <td>
+                        <input type="text" class="staff-id-field" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="updateRowPassword(this)">
+                    </td>
+                    <td>
+                        <input type="text" class="staff-name-field" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" placeholder="姓名">
+                    </td>
+                    <td>
+                        <select class="staff-role-field" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <option value="Full-time">Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="學徒">學徒</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="staff-shops-field" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="G2, G38, GK3">
+                    </td>
+                    <td>
+                        <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="12:00, 11:00, 13:00">
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
+                            <input type="text" class="staff-pass-field" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124${randomSuffix}">
+                            <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)">🔄</button>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
+                    </td>
+                </tr>
+            `;
+        };
+
+        // 儲存員工設定
+        window.saveEmployeeData = function() {
+            const list = [];
+            const rows = document.querySelectorAll('#employee-table-body tr');
+            rows.forEach(tr => {
+                const id = tr.querySelector('.staff-id-field').value.trim();
+                const name = tr.querySelector('.staff-name-field').value.trim();
+                const role = tr.querySelector('.staff-role-field').value;
+                const p_shops = tr.querySelector('.staff-shops-field').value.trim();
+                const times = tr.querySelector('.staff-times-field').value.trim();
+                const password = tr.querySelector('.staff-pass-field').value.trim();
+                if (name) {
+                    list.push({ id, name, role, p_shops, times, password });
+                }
+            });
+
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').set(list).then(() => {
+                    showToastMessage('🎉 員工設定與專屬登入帳密已同步上雲端！');
+                }).catch(err => {
+                    alert('儲存失敗: ' + err.message);
+                });
+            }
+        };
+
+        // ==================== ⚙️ 微調設定頁：帳密專屬管理面板核心 ====================
+        
+        // 渲染微調設定頁面中的帳密表
+        window.renderSettingsAccountsList = function(employees) {
+            const tbody = document.getElementById('settings-accounts-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (employees.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-weight:bold;">⚠️ 雲端尚無員工名單！請先在員工管理頁新增。</td></tr>`;
+                return;
+            }
+
+            employees.forEach((e, idx) => {
+                if (!e) return;
+                const code = e.id || "100";
+                const pass = e.password || (code + "22");
+
+                tbody.innerHTML += `
+                    <tr style="border-bottom:1px solid #f1f5f9;" data-idx="${idx}">
+                        <td style="padding:10px; font-weight:bold; color:#1e293b;">${e.name || '未命名'}</td>
+                        <td style="padding:10px; text-align:center;">
+                            <input type="text" class="sett-id-field" style="width:100px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${code}" oninput="updateSettingsRowPassword(this)">
+                        </td>
+                        <td style="padding:10px; text-align:center;">
+                            <input type="text" class="sett-pass-field" style="width:120px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${pass}">
+                        </td>
+                        <td style="padding:10px; text-align:center;">
+                            <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="regenerateSettingsRowPassword(this)">🔄 重算</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        // 設定頁：工號手動修改時
+        window.updateSettingsRowPassword = function(idInput) {
+            const tr = idInput.closest('tr');
+            if (!tr) return;
+            const passInput = tr.querySelector('.sett-pass-field');
+            if (passInput) {
+                const idVal = idInput.value.trim();
+                if (idVal) {
+                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                }
+            }
+        };
+
+        // 設定頁：一鍵重算單人
+        window.regenerateSettingsRowPassword = function(btn) {
+            const tr = btn.closest('tr');
+            if (!tr) return;
+            const idInput = tr.querySelector('.sett-id-field');
+            const passInput = tr.querySelector('.sett-pass-field');
+            if (idInput && passInput) {
+                const idVal = idInput.value.trim();
+                if (idVal) {
+                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                    showToastMessage("🔄 密碼重算完成！");
+                }
+            }
+        };
+
+        // 設定頁：一鍵批量重算預設密碼 (工號 + 2位隨機數)
+        window.triggerRegenerateAllPasswords = function() {
+            if (confirm("⚠️ 確定要為所有人「重新生成」隨機預設密碼（工號 + 2位隨機數）嗎？\n生成後需要點擊「儲存員工帳密變更」才會正式寫入雲端！")) {
+                const rows = document.querySelectorAll('#settings-accounts-tbody tr');
+                rows.forEach(tr => {
+                    const idInput = tr.querySelector('.sett-id-field');
+                    const passInput = tr.querySelector('.sett-pass-field');
+                    if (idInput && passInput) {
+                        const idVal = idInput.value.trim();
+                        passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                    }
+                });
+                showToastMessage("⚡ 已在本機重算，請記得點擊右下角儲存發佈！");
+            }
+        };
+
+        // 設定頁：儲存帳密
+        window.saveEmployeesAccountsFromSettings = function() {
+            const rows = document.querySelectorAll('#settings-accounts-tbody tr');
+            const updatedList = [...rawEmployees]; 
+
+            rows.forEach((tr, index) => {
+                const idInput = tr.querySelector('.sett-id-field');
+                const passInput = tr.querySelector('.sett-pass-field');
+                if (idInput && passInput && updatedList[index]) {
+                    updatedList[index].id = idInput.value.trim();
+                    updatedList[index].password = passInput.value.trim();
+                }
+            });
+
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').set(updatedList).then(() => {
+                    showToastMessage('🎉 員工登入帳號及密碼成功同步至雲端大腦！');
+                }).catch(err => {
+                    alert('儲存變更失敗: ' + err.message);
+                });
+            }
+        };
+
+        // 自定義高質感 Toast
+        function showToastMessage(msg) {
             const toast = document.createElement('div');
-            toast.style.cssText = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#0f172a; color:white; border:1px solid var(--success); padding:16px 24px; border-radius:16px; font-weight:bold; font-size:14px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3); z-index:9999999; text-align:center; max-width:90%;";
+            toast.style.cssText = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1e293b; color:white; border:1px solid #db2777; padding:12px 24px; border-radius:12px; font-weight:bold; font-size:13px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); z-index:999999; text-align:center;";
             toast.innerText = msg;
             document.body.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 4000);
+            setTimeout(() => { toast.remove(); }, 3000);
         }
 
-        // 當經理切換日曆月份或年份時，動態更新預約對接中心的數據
-        const bindEventsInterval = setInterval(() => {
-            const ySelect = document.getElementById('schedule-year-select');
-            const mSelect = document.getElementById('schedule-month-select');
-            if (ySelect && mSelect) {
-                ySelect.addEventListener('change', () => setTimeout(startLiveBookingListener, 300));
-                mSelect.addEventListener('change', () => setTimeout(startLiveBookingListener, 300));
-                clearInterval(bindEventsInterval);
-            }
-        }, 1000);
-
-        // 每隔一秒安全檢查 Firebase 載入情況，啟動實時預約監控大腦
-        const checkDbInterval = setInterval(() => {
-            try {
-                if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-                    startLiveBookingListener();
-                    clearInterval(checkDbInterval);
-                }
-            } catch (err) {
-                console.error("Safely catching database polling initialization error:", err);
+        // 7. 與雲端即時同步員工表，雙向覆蓋渲染
+        const syncEmployeesInterval = setInterval(() => {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').on('value', (snapshot) => {
+                    const data = snapshot.val() || [];
+                    rawEmployees = Array.isArray(data) ? data.filter(Boolean) : Object.values(data).filter(Boolean);
+                    
+                    // 🔮 雲端歷史數據自動檢測與專屬隨機密碼公式升級 (徹底解決預設帳密相同問題)
+                    let needAutoCorrect = false;
+                    rawEmployees.forEach(e => {
+                        if (!e) return;
+                        
+                        // 工號修正
+                        if (!e.id || e.id === "100" || e.id === "") {
+                            e.id = defaultStaffIds[e.name] || "124";
+                            needAutoCorrect = true;
+                        }
+                        
+                        // 密碼修正：如果密碼是 generic 的 placeholder (例如長度為零，或者全體是 "123456" 等重複值)，自動重算
+                        if (!e.password || e.password === "" || e.password === "123456" || e.password === "10022") {
+                            e.password = e.id + String(Math.floor(Math.random() * 90 + 10));
+                            needAutoCorrect = true;
+                        }
+                    });
+                    
+                    if (needAutoCorrect) {
+                        firebase.database().ref('v8_employees').set(rawEmployees);
+                    }
+                    
+                    // 同步載入！
+                    window.renderEmployeesList(rawEmployees);
+                    window.renderSettingsAccountsList(rawEmployees);
+                });
+                clearInterval(syncEmployeesInterval);
             }
         }, 1000);
     </script>
 </body>
 </html>
-```
+
+
