@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
-    <!-- 🔮 水晶閣安全守護晶片 - iPad Safari 萬能防崩潰阻斷器 -->
+    <!-- 🔮 水晶閣安全守護晶片 - iPad Safari 萬能防崩潰阻斷器 (強制杜絕任何 DOM 缺失報錯) -->
     <script>
         (function() {
             const originalGetElementById = document.getElementById;
@@ -62,7 +62,7 @@
         </div>
     </div>
 
-    <!-- 🏷️ 標籤導航列 (保持 `nav-bookings` 實體存在，防止 app.js 崩潰，但設為絕對不可見) -->
+    <!-- 🏷️ 標籤導航列 (保持 `nav-bookings` 實體存在防止崩潰，但設為絕對不可見) -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-bookings" style="display: none !important;" onclick="switchTab('tab-bookings')">🔮 預約對接中心</button>
@@ -102,7 +102,7 @@
         <div id="shops-report-container"></div>
     </div>
 
-    <!-- 🔮 預約對接中心 (實體存在防止 app.js 崩潰，但設為絕對不可見) -->
+    <!-- 🔮 預約對接中心 (實體存在防止 app.js 崩潰，但絕對不可見) -->
     <div id="tab-bookings" class="tab-content" style="display: none !important;">
         <div class="card"><div id="live-bookings-container"></div></div>
     </div>
@@ -291,27 +291,24 @@
         </div>
     </div>
 
-    <!-- ⚠️ 人手不足自訂高質感警示視窗 -->
-    <div id="manpower-warning-modal" class="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full border border-rose-100 shadow-2xl text-center" style="background: white !important;">
-            <div class="text-rose-500 text-4xl mb-3">⚠️</div>
-            <h3 class="text-lg font-extrabold text-slate-900 mb-2">當天上班人數不足</h3>
-            <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+    <!-- ⚠️ 人手不足自訂高質感警示視窗 (使用行內 CSS 強制鎖死 Fixed，不佔用任何頁面空間，預設 display: none !) -->
+    <div id="manpower-warning-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 999999; display: none; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+        <div style="background: white !important; border-radius: 16px; padding: 24px; max-width: 360px; width: 100%; border: 1px solid #fecdd3; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box;">
+            <div style="color: #f43f5e; font-size: 40px; margin-bottom: 12px; line-height: 1;">⚠️</div>
+            <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 8px 0; padding: 0;">當天上班人數不足</h3>
+            <p style="font-size: 13.5px; color: #475569; margin: 0 0 24px 0; padding: 0; line-height: 1.5; text-align: left;">
                 您申請放假的這一天，店內的核心美甲師人力已經達到或低於告急線！是否確定要繼續申請？
-                <br><strong class="text-rose-600">※ 若確定申請，您必須在備註中寫明理由。</strong>
+                <br><span style="color: #e11d48; font-weight: bold;">※ 若確定申請，您必須在備註中寫明理由。</span>
             </p>
-            <div style="display:flex; gap:12px; justify-content:center;">
-                <button id="warning-cancel-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs" style="padding: 8px 16px; border-radius: 8px;">取消申請</button>
-                <button id="warning-confirm-btn" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg text-xs" style="padding: 8px 16px; border-radius: 8px; background: #dc2626; color: white;">繼續申請</button>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="warning-cancel-btn" style="background: #f1f5f9; color: #475569; font-weight: bold; padding: 10px 20px; border-radius: 8px; font-size: 13px; border: none; cursor: pointer; outline: none;">取消申請</button>
+                <button id="warning-confirm-btn" style="background: #dc2626; color: white; font-weight: bold; padding: 10px 20px; border-radius: 8px; font-size: 13px; border: none; cursor: pointer; outline: none;">繼續申請</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
-
     <!-- 🔮 水晶閣安全權限防禦、員工帳密同步控制與設定頁查閱系統 -->
     <script>
-        // 1. 預設編號庫主字典
         const defaultStaffIds = {
             "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
             "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
@@ -351,7 +348,7 @@
                 
                 document.getElementById('main-system-tab-bar').style.display = 'flex';
                 document.querySelectorAll('.tab-btn').forEach(btn => {
-                    if (btn.id !== 'nav-bookings') { // 預約對接中心實體存在，但在標籤列對所有人不顯示
+                    if (btn.id !== 'nav-bookings') { 
                         btn.style.display = 'inline-block';
                     }
                 });
@@ -434,7 +431,7 @@
             }
         };
 
-        // 5. 員工工號手動修改連鎖密碼公式
+        // 5. 員工工號手動修改密碼
         window.updateRowPassword = function(idInput) {
             const tr = idInput.closest('tr');
             if (!tr) return;
@@ -675,7 +672,7 @@
             setTimeout(() => { toast.remove(); }, 3000);
         }
 
-        // ==================== 🧠 雲端大數據本地攔截器 (核心同步晶片) ====================
+        // ==================== 🧠 雲端數據本地攔截與儲存核心 ====================
         if (typeof firebase !== 'undefined' && firebase.database) {
             const originalRef = firebase.database.Database.prototype.ref;
             firebase.database.Database.prototype.ref = function(path) {
@@ -713,11 +710,9 @@
                 const monthKey = parts[parts.length - 1];
                 window.crystalStore.holidays[monthKey] = data;
             }
-            // 每當雲端放假、排班數據更新，立即驅動極簡化審批中心進行重繪優化！
             setTimeout(optimizeApprovalCenterUI, 200);
         }
 
-        // 7. 與雲端即時同步員工表，雙向覆蓋渲染
         const syncEmployeesInterval = setInterval(() => {
             if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
                 firebase.database().ref('v8_employees').on('value', (snapshot) => {
@@ -748,12 +743,11 @@
             }
         }, 1000);
 
-        // ==================== 🏖️ 審批中心 UI 極簡重構與同行放假精算引擎 ====================
+        // ==================== 🏖️ 審批中心極簡重構 & 放假人手精算晶片 ====================
         function optimizeApprovalCenterUI() {
             const container = document.getElementById('smart-approval-list-container');
             if (!container) return;
 
-            // 抓取所有的申請卡片 (Employee block)
             const cards = container.querySelectorAll('.card, [class*="card"]');
             cards.forEach(card => {
                 let applicantName = "";
@@ -764,24 +758,21 @@
                     if (match) applicantName = match[1].trim();
                 }
 
-                // 遍歷卡片內的所有日期行
                 const rows = card.querySelectorAll('tr, li, .row, div[style*="background"]');
                 rows.forEach(row => {
                     const text = row.innerText || "";
                     if (text.includes('號') && (text.includes('星期') || text.includes('上班') || text.includes('已批准'))) {
-                        // 1. 🔍 尋找核心 Checkbox
                         const checkbox = row.querySelector('input[type="checkbox"]');
                         if (checkbox) {
                             if (!checkbox.checked) {
-                                // ❌ 沒有打勾 (代表該員工並未在這一天申請放假) ➔ 物理隱藏，保持介面極簡
+                                // ❌ 沒有勾選放假申請的日子 ➔ 完全物理隱藏，保持審批頁極簡！
                                 row.style.setProperty('display', 'none', 'important');
                             } else {
-                                // 🟢 有勾選放假 ➔ 顯示它，並注入同行人數分析特徵
+                                // 🟢 確實申請放假的日子 ➔ 顯示，並精準注入人手與放假比對數據
                                 row.style.display = '';
                                 injectManpowerDetailsToRow(row, applicantName);
                             }
                         } else {
-                            // 容錯：如果沒有 checkbox，判斷是否有紅色 highlight
                             const isRedBackground = row.style.backgroundColor.includes('rgb(254') || 
                                                     row.style.backgroundColor.includes('rgb(253') || 
                                                     row.classList.contains('bg-red-50') || 
@@ -795,9 +786,8 @@
             });
         }
 
-        // 精算放假人數：當天不包括該申請人，有多少位核心美甲師放假
-        function getManicuristsOffCount(dayNum, excludeName) {
-            let count = 0;
+        // 計算 HKT 下當天上班人手統計數據 (排除申請人)
+        function getManpowerStatsOnDay(dayNum, excludeName) {
             const hkt = new Date(new Date().getTime() + 8 * 3600000);
             const year = hkt.getUTCFullYear();
             const month = hkt.getUTCMonth() + 1;
@@ -806,18 +796,33 @@
             const holidays = window.crystalStore.holidays[monthKey] || {};
             const employees = window.crystalStore.employees || [];
 
+            const manicurists = employees.filter(e => e && e.role !== "學徒");
+            const totalMani = manicurists.length;
+
+            let offManiCountExcludingApplicant = 0;
+            let totalOffManiCount = 0;
+
             Object.keys(holidays).forEach(staffName => {
-                if (staffName === excludeName) return; // 排除申請人自己
-                
-                const empInfo = employees.find(e => e && e.name === staffName);
-                if (empInfo && empInfo.role === "學徒") return; // 排除學徒，只算核心美甲師
+                const emp = employees.find(e => e && e.name === staffName);
+                if (emp && emp.role === "學徒") return; 
 
                 const daysOff = holidays[staffName] || [];
                 if (daysOff.includes(dayNum)) {
-                    count++;
+                    totalOffManiCount++;
+                    if (staffName !== excludeName) {
+                        offManiCountExcludingApplicant++;
+                    }
                 }
             });
-            return count;
+
+            // 實時計算當天剩餘上班人數
+            const workingManiCount = totalMani - totalOffManiCount;
+
+            return {
+                offExcludingApplicant: offManiCountExcludingApplicant,
+                working: workingManiCount,
+                totalMani: totalMani
+            };
         }
 
         function injectManpowerDetailsToRow(row, applicantName) {
@@ -826,19 +831,20 @@
             if (!match) return;
             const dayNum = parseInt(match[1]);
 
-            const countOff = getManicuristsOffCount(dayNum, applicantName);
+            const stats = getManpowerStatsOnDay(dayNum, applicantName);
 
             let badge = row.querySelector('.manpower-dynamic-badge');
             if (!badge) {
                 badge = document.createElement('div');
                 badge.className = 'manpower-dynamic-badge';
-                badge.style.cssText = "font-size:12px; font-weight:extrabold; color:#9d174d; margin-top:4px; background:#fff1f2; border:1px solid #fbcfe8; padding:4px 8px; border-radius:6px; display:inline-block; text-align:left;";
+                badge.style.cssText = "font-size:12px; font-weight:bold; color:#be185d; margin-top:6px; background:#fff1f2; border:1px solid #fbcfe8; padding:6px 10px; border-radius:8px; display:block; text-align:left; line-height:1.4;";
                 row.appendChild(badge);
             }
-            badge.innerHTML = `⚠️ 當天不包括 ${applicantName}，已有 <span style="color:#e11d48; font-size:13px;">${countOff}</span> 位核心美甲師放假`;
+            // 完全對齊經理指示的極簡顯示格式
+            badge.innerHTML = `🏖️ 當天不包括 ${applicantName} 有 <span style="color:#e11d48; font-weight:bold;">${stats.offExcludingApplicant}</span> 位美甲師放假 ｜ 📢 可供申請人手：${dayNum}號 (${stats.working}人上班)`;
         }
 
-        // 用 MutationObserver 實時守護審批中心，只要一加載，瞬間完成極簡化
+        // 使用 MutationObserver 即時精簡監控審批中心渲染
         const approvalObserver = new MutationObserver(() => {
             optimizeApprovalCenterUI();
         });
@@ -848,9 +854,8 @@
         }
 
 
-        // ==================== 🏖️ 員工請假端：告急防撞警示與備註理由強制防禦系統 ====================
+        // ==================== 🏖️ 員工請假端：人手不足警示與強制填寫理由 ====================
 
-        // 判斷該天請假是否會導致上班美甲師低於或等於告急線
         function isManpowerShortageOnDay(dayNum) {
             const hkt = new Date(new Date().getTime() + 8 * 3600000);
             const year = hkt.getUTCFullYear();
@@ -860,7 +865,6 @@
             const holidays = window.crystalStore.holidays[monthKey] || {};
             const employees = window.crystalStore.employees || [];
 
-            // 讀取經理在微調設定頁設置的「美甲師告急人手線」
             let alertThreshold = 3; 
             const limitInput = document.getElementById('cfg-limit-low');
             if (limitInput && limitInput.value) {
@@ -882,21 +886,18 @@
             });
 
             const currentWorkingCount = totalMani - offManiCount;
-            // 假如加上這次請假，當天上班人數是否會低於或等於告急限額
             return (currentWorkingCount - 1) <= alertThreshold;
         }
 
         let pendingConfirmCallback = null;
 
-        // 綁定事件攔截器：在 Capture Phase 完美攔截員工點選放假的 Click
+        // 監聽員工個人排班，進行人手短缺 Click 攔截
         const myMonthCalendarBody = document.getElementById('my-month-calendar-body');
         if (myMonthCalendarBody) {
             myMonthCalendarBody.addEventListener('click', function(e) {
                 const target = e.target;
                 
-                // 尋找點選的「要求放假鈕」或 checkbox
                 if (target.classList.contains('btn-leave') || target.tagName === 'BUTTON' || target.type === 'checkbox') {
-                    // 如果帶有 bypass 標誌，放行讓 app.js 自行處理
                     if (target.dataset.bypassCheck === "true") {
                         delete target.dataset.bypassCheck;
                         return;
@@ -909,25 +910,21 @@
                     const dayNum = parseInt(dayText);
                     if (isNaN(dayNum)) return;
 
-                    // 判斷是否為「申請放假」動作 (當前狀態如果是上班，點選就是請假)
                     const isAlreadyHoliday = tr.classList.contains('is-leave') || target.classList.contains('active') || target.checked;
                     
                     if (!isAlreadyHoliday) {
-                        // 核心精算：如果上班美甲師不足
                         if (isManpowerShortageOnDay(dayNum)) {
-                            // 🛑 阻斷原點擊事件與 bubbling
+                            // 🛑 阻斷原點選放假事件
                             e.stopPropagation();
                             e.preventDefault();
 
-                            // 顯示水晶閣高質感防撞警示視窗
+                            // 顯示原生 Fixed 警示彈窗 (使用 inline property 設定 display)
                             const modal = document.getElementById('manpower-warning-modal');
                             if (modal) {
-                                modal.classList.remove('hidden');
-                                modal.classList.add('flex');
+                                modal.style.setProperty('display', 'flex', 'important');
                             }
 
                             pendingConfirmCallback = function() {
-                                // 員工選擇繼續申請 ➔ 將該行備註標紅，並強迫填寫理由
                                 const remarkInput = tr.querySelector('input[type="text"]');
                                 if (remarkInput) {
                                     remarkInput.placeholder = "⚠️ 當天人手告急，此處必須填寫請假理由！";
@@ -936,13 +933,11 @@
                                     remarkInput.focus();
                                 }
 
-                                // 打上 bypass 標籤，並重新點擊按鈕
                                 target.dataset.bypassCheck = "true";
                                 target.click();
                             };
                         }
                     } else {
-                        // 如果是「取消放假」，清除必填與紅色樣式
                         const remarkInput = tr.querySelector('input[type="text"]');
                         if (remarkInput) {
                             remarkInput.placeholder = "";
@@ -951,15 +946,14 @@
                         }
                     }
                 }
-            }, true); // 關鍵：設定為 true 啟用 Capture Phase 優先權
+            }, true); 
         }
 
-        // 綁定警示視窗按鈕點擊
+        // 警示彈窗按鈕響應控制
         document.getElementById('warning-cancel-btn').addEventListener('click', () => {
             const modal = document.getElementById('manpower-warning-modal');
             if (modal) {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
+                modal.style.setProperty('display', 'none', 'important');
             }
             pendingConfirmCallback = null;
         });
@@ -967,8 +961,7 @@
         document.getElementById('warning-confirm-btn').addEventListener('click', () => {
             const modal = document.getElementById('manpower-warning-modal');
             if (modal) {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
+                modal.style.setProperty('display', 'none', 'important');
             }
             if (pendingConfirmCallback) {
                 pendingConfirmCallback();
@@ -976,11 +969,11 @@
             }
         });
 
-        // ==================== 💾 提交儲存按鈕點擊：強制審查備註是否填寫 ====================
+        // ==================== 💾 提交安全防禦攔截：備註不填寫理由則強制阻斷 ====================
         const saveBtn = document.getElementById('my-month-save-btn');
         if (saveBtn) {
             const originalOnClick = saveBtn.onclick;
-            saveBtn.removeAttribute('onclick'); // 移除行內點擊，由安全控鎖接管
+            saveBtn.removeAttribute('onclick'); 
 
             saveBtn.addEventListener('click', function(e) {
                 let checkFailed = false;
@@ -1005,7 +998,6 @@
                 if (checkFailed) {
                     alert("❌ 儲存失敗：部分放假申請日期店內人手不足，請在備註欄填寫正當理由後再點擊儲存！");
                 } else {
-                    // 完全合規 ➔ 安全放行
                     if (typeof saveSpecialNotesAndHolidaysData === 'function') {
                         saveSpecialNotesAndHolidaysData();
                     }
