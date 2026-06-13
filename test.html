@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -198,7 +198,7 @@
                             <th>職位類型</th>
                             <th>可支援店舖</th>
                             <th>班次時段對應</th>
-                            <th style="width: 110px; text-align: center;">員工登入密碼</th>
+                            <th style="width: 140px; text-align: center;">員工登入密碼</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -229,16 +229,16 @@
         </div>
     </div>
 
-    <!-- ⚙️ 微調設定頁 (追加員工帳密安全查閱與修改面板) -->
+    <!-- ⚙️ 微調設定頁 -->
     <div id="tab-settings" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 12px;">⚙️ 系統核心微調參數控制台</div>
             
-            <!-- 👥 帳密管理核心控制面板 (與員工管理資料源實時雙向綁定) -->
+            <!-- 👥 帳密管理控制面板 -->
             <div class="settings-section" style="background:#fff1f2; border:1px solid #fbcfe8; border-radius:12px; padding:16px; margin-bottom:16px;">
                 <span class="settings-label" style="color:#9d174d; font-weight:bold; font-size:14px; display:block; margin-bottom:4px;">👥 員工登入帳號與密碼大腦控制台</span>
                 <p style="font-size:11.5px; color:#64748b; margin-bottom:12px; line-height: 1.4;">
-                    管理員可在此直接「查閱、更改或一鍵重算」所有員工的登入帳號（員工工號）與 5 位數安全認證密碼。修改後點擊「💾 儲存員工帳密變更」即可安全發佈上雲端。
+                    管理員可在此直接「查閱、手動修改或一鍵批量重算」所有員工的認證帳密。修改後請務必點擊「儲存員工帳密變更」寫入雲端。
                 </p>
                 <div class="scroll-box" style="max-height: 220px; overflow-y: auto; background:white; border:1px solid #cbd5e1; border-radius:8px;">
                     <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
@@ -255,7 +255,8 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:10px; flex-wrap:wrap;">
+                    <button class="btn" style="background-color: #f59e0b; color:white; padding:8px 16px; font-size:12px; font-weight:bold;" onclick="triggerRegenerateAllPasswords()">🔄 全員一鍵重算預設密碼</button>
                     <button class="btn btn-save" style="background-color: var(--primary); color:white; padding:8px 16px; font-size:12px; font-weight:bold;" onclick="saveEmployeesAccountsFromSettings()">💾 儲存員工帳密變更</button>
                 </div>
             </div>
@@ -299,7 +300,7 @@
         let rawEmployees = [];
         let loggedInEmployeeName = ""; // 如果是普通員工，儲存其姓名
 
-        // 2. 二合一安全登入核心驗證器 (管理員 9343/6973 vs 員工工號+安全密碼)
+        // 2. 二合一安全登入核心驗證器
         window.triggerGateLogin = function() {
             const usernameInput = document.getElementById('login-username-input');
             const passwordInput = document.getElementById('login-password-input');
@@ -320,16 +321,15 @@
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('role-display-text').innerText = '🔑 目前權限：管理員 (系統主機)';
                 
-                // 管理員可見所有標籤頁
                 document.getElementById('main-system-tab-bar').style.display = 'flex';
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.style.display = 'inline-block');
                 
-                loggedInEmployeeName = ""; // 清空員工鎖定
+                loggedInEmployeeName = ""; 
                 showToastMessage("🎉 歡迎回來，親愛的管理員！");
                 return;
             }
 
-            // B. 驗證是否為普通員工 (查詢 Firebase 中該工號的密碼)
+            // B. 驗證是否為普通員工
             if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
                 firebase.database().ref('v8_employees').once('value').then((snapshot) => {
                     const list = snapshot.val() || [];
@@ -344,10 +344,8 @@
                             document.getElementById('login-overlay').style.display = 'none';
                             document.getElementById('role-display-text').innerText = `🔑 目前權限：員工 (${matchedEmployee.name})`;
                             
-                            // 隱藏非員工權限標籤頁
                             document.getElementById('main-system-tab-bar').style.display = 'flex';
                             
-                            // 員工僅可看 每日排班 (#nav-schedule) 與 個人當月排班 (#nav-my-month)
                             document.querySelectorAll('.tab-btn').forEach(btn => {
                                 if (btn.id === 'nav-schedule' || btn.id === 'nav-my-month') {
                                     btn.style.display = 'inline-block';
@@ -356,10 +354,7 @@
                                 }
                             });
 
-                            // 強制選取第一個合法頁面
                             switchTab('tab-schedule');
-                            
-                            // 鎖定員工個人排班
                             loggedInEmployeeName = matchedEmployee.name;
                             
                             showToastMessage(`🎉 登入成功！歡迎您，${matchedEmployee.name} 老師`);
@@ -395,7 +390,7 @@
             }
         }, 100);
 
-        // 4. 重寫安全登出機制
+        // 4. 安全登出機制
         window.triggerGlobalLogout = function() {
             if (confirm("確定要安全登出排班主機系統嗎？")) {
                 document.getElementById('login-username-input').value = "";
@@ -421,7 +416,7 @@
             }
         };
 
-        // 6. 員工管理頁：渲染原始員工名單 (與工號及安全密碼配對)
+        // 6. 員工列表渲染 (支援直接修改與獨立隨機重算鈕)
         window.renderEmployeesList = function(employees) {
             const tbody = document.getElementById('employee-table-body');
             if (!tbody) return;
@@ -455,7 +450,10 @@
                             <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.times || ''}">
                         </td>
                         <td>
-                            <input type="text" class="staff-pass-field" style="width: 100px; text-align: center; font-weight: bold; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px;" readonly value="${pass}">
+                            <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
+                                <input type="text" class="staff-pass-field" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${pass}">
+                                <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>
+                            </div>
                         </td>
                         <td>
                             <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
@@ -463,6 +461,23 @@
                     </tr>
                 `;
             });
+        };
+
+        // 員工行內一鍵重算
+        window.regenerateEmployeeRowPass = function(btn) {
+            const tr = btn.closest('tr');
+            if (!tr) return;
+            const idInput = tr.querySelector('.staff-id-field');
+            const passInput = tr.querySelector('.staff-pass-field');
+            if (idInput && passInput) {
+                const idVal = idInput.value.trim();
+                if (idVal) {
+                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                    showToastMessage("🔄 密碼重算完成！");
+                } else {
+                    alert("⚠️ 請先輸入該員工的工號！");
+                }
+            }
         };
 
         // 新增員工行
@@ -492,7 +507,10 @@
                         <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="12:00, 11:00, 13:00">
                     </td>
                     <td>
-                        <input type="text" class="staff-pass-field" style="width: 100px; text-align: center; font-weight: bold; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px;" readonly value="124${randomSuffix}">
+                        <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
+                            <input type="text" class="staff-pass-field" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124${randomSuffix}">
+                            <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)">🔄</button>
+                        </div>
                     </td>
                     <td>
                         <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
@@ -561,7 +579,7 @@
             });
         };
 
-        // 設定頁：工號手動修改時，自動生成公式密碼
+        // 設定頁：工號手動修改時
         window.updateSettingsRowPassword = function(idInput) {
             const tr = idInput.closest('tr');
             if (!tr) return;
@@ -574,7 +592,7 @@
             }
         };
 
-        // 設定頁：一鍵重算隨機密碼鈕
+        // 設定頁：一鍵重算單人
         window.regenerateSettingsRowPassword = function(btn) {
             const tr = btn.closest('tr');
             if (!tr) return;
@@ -584,14 +602,31 @@
                 const idVal = idInput.value.trim();
                 if (idVal) {
                     passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                    showToastMessage("🔄 密碼重算完成！");
                 }
             }
         };
 
-        // 設定頁：儲存帳密修改至雲端 (不遺漏角色與分店等資料)
+        // 設定頁：一鍵批量重算預設密碼 (工號 + 2位隨機數)
+        window.triggerRegenerateAllPasswords = function() {
+            if (confirm("⚠️ 確定要為所有人「重新生成」隨機預設密碼（工號 + 2位隨機數）嗎？\n生成後需要點擊「儲存員工帳密變更」才會正式寫入雲端！")) {
+                const rows = document.querySelectorAll('#settings-accounts-tbody tr');
+                rows.forEach(tr => {
+                    const idInput = tr.querySelector('.sett-id-field');
+                    const passInput = tr.querySelector('.sett-pass-field');
+                    if (idInput && passInput) {
+                        const idVal = idInput.value.trim();
+                        passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                    }
+                });
+                showToastMessage("⚡ 已在本機重算，請記得點擊右下角儲存發佈！");
+            }
+        };
+
+        // 設定頁：儲存帳密
         window.saveEmployeesAccountsFromSettings = function() {
             const rows = document.querySelectorAll('#settings-accounts-tbody tr');
-            const updatedList = [...rawEmployees]; // 克隆完整的本地員工陣列
+            const updatedList = [...rawEmployees]; 
 
             rows.forEach((tr, index) => {
                 const idInput = tr.querySelector('.sett-id-field');
@@ -627,7 +662,29 @@
                     const data = snapshot.val() || [];
                     rawEmployees = Array.isArray(data) ? data.filter(Boolean) : Object.values(data).filter(Boolean);
                     
-                    // 🔮 實時雙向渲染：員工管理頁 與 微調設定頁 同步載入！
+                    // 🔮 雲端歷史數據自動檢測與專屬隨機密碼公式升級 (徹底解決預設帳密相同問題)
+                    let needAutoCorrect = false;
+                    rawEmployees.forEach(e => {
+                        if (!e) return;
+                        
+                        // 工號修正
+                        if (!e.id || e.id === "100" || e.id === "") {
+                            e.id = defaultStaffIds[e.name] || "124";
+                            needAutoCorrect = true;
+                        }
+                        
+                        // 密碼修正：如果密碼是 generic 的 placeholder (例如長度為零，或者全體是 "123456" 等重複值)，自動重算
+                        if (!e.password || e.password === "" || e.password === "123456" || e.password === "10022") {
+                            e.password = e.id + String(Math.floor(Math.random() * 90 + 10));
+                            needAutoCorrect = true;
+                        }
+                    });
+                    
+                    if (needAutoCorrect) {
+                        firebase.database().ref('v8_employees').set(rawEmployees);
+                    }
+                    
+                    // 同步載入！
                     window.renderEmployeesList(rawEmployees);
                     window.renderSettingsAccountsList(rawEmployees);
                 });
@@ -638,4 +695,4 @@
 </body>
 </html>
 
-
+```
