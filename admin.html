@@ -17,7 +17,7 @@
         .time-col { background: #f1f5f9 !important; font-weight: bold; color: #1e293b; position: sticky; left: 0; z-index: 10; width: 65px; text-align: center; }
         .cell-booked { background: #fff1f2; border-left: 3px solid #db2777 !important; color: #9d174d; text-align: left !important; padding-left: 8px !important; }
         
-        /* 🔮 新增 AI 控制台 & CRM 專屬高端樣式 */
+        /* 🔮 AI 控制台 & CRM 專屬高端樣式 */
         .kb-field-row { background: #fffafc; border: 1px solid #fce7f3; border-radius: 12px; padding: 12px; margin-bottom: 10px; position: relative; }
         .badge-status { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
         .status-inquiring { background: #e0f2fe; color: #0369a1; }
@@ -65,12 +65,12 @@
         </div>
     </div>
 
-    <!-- 📋 TAB 2: 未來預約總覽面板 (新追加) -->
+    <!-- 📋 TAB 2: 未來預約總覽面板 -->
     <div id="section-upcoming" class="max-w-7xl mx-auto hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div class="mb-4">
                 <h3 class="text-lg font-bold text-gray-900">📋 未完成預約總覽 (未來 60 天未到預約)</h3>
-                <p class="text-xs text-gray-500 mt-1">系統已自動過濾掉過去的歷史，僅顯示從今天香港時間（HKT）起，所有尚未進行的預約項目。</p>
+                <p class="text-xs text-gray-500 mt-1">系統已自動過濾過去的歷史，僅顯示從今天起尚未進行的預約項目。</p>
             </div>
             
             <div class="overflow-x-auto">
@@ -97,7 +97,7 @@
         </div>
     </div>
 
-    <!-- 📇 TAB 3: 顧客 CRM 檔案庫 (深度進化優化版 + AI 批次提取) -->
+    <!-- 📇 TAB 3: 顧客 CRM 檔案庫 -->
     <div id="section-crm" class="max-w-7xl mx-auto hidden">
         <!-- 💡 批次對話 AI 提取模組 -->
         <div class="bg-white rounded-2xl shadow-sm border border-pink-100 p-6 mb-6">
@@ -114,7 +114,7 @@
                 </div>
                 <div class="md:col-span-7">
                     <label class="text-xs font-bold text-gray-600 block mb-1">貼入 WhatsApp 歷史聊天文字段落:</label>
-                    <textarea id="batch-crm-chats" rows="2" placeholder="貼上對話記錄，例如：&#13;顧客: 嗨，我想問 RUBY 下星期天下午有空嗎？我想做單色加貓眼。&#13;水晶閣: RUBY 下星期天下午 2 點可以呀！" class="w-full bg-white p-2 rounded-lg border border-gray-200 text-xs outline-none"></textarea>
+                    <textarea id="batch-crm-chats" rows="2" placeholder="貼上對話記錄..." class="w-full bg-white p-2 rounded-lg border border-gray-200 text-xs outline-none"></textarea>
                 </div>
                 <div class="md:col-span-2 flex items-end">
                     <button class="bg-pink-700 hover:bg-pink-800 text-white font-bold text-xs p-3 rounded-lg w-full" onclick="runBatchAIExtractor()">🚀 開始 AI 智能分析</button>
@@ -224,7 +224,7 @@
                 </div>
             </div>
 
-            <!-- 右欄：0成本 AI 對話調試沙盒 (5 cols) -->
+            <!-- 右欄：0成本 AI 對話調試沙盒 -->
             <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col h-[650px] lg:h-auto">
                 <div class="mb-4">
                     <h3 class="text-lg font-bold text-gray-900">🧪 AI 測試沙盒對話窗</h3>
@@ -363,7 +363,7 @@
         var employeesList = [];
         var holidaysData = {};
         var bookingsData = {};
-        var nextMonthBookingsData = {}; // 加載跨月預約
+        var nextMonthBookingsData = {}; 
         var staffIds = {}; 
         var rawProfiles = {};
         var sandboxHistory = [
@@ -383,6 +383,7 @@
 
         function showToast(message, type = "success") {
             const container = document.getElementById('toast-container');
+            if(!container) return;
             const toast = document.createElement('div');
             toast.className = `px-4 py-3 rounded-xl shadow-lg font-bold text-sm transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${
                 type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
@@ -402,7 +403,7 @@
             document.getElementById('section-analytics').classList.add('hidden');
             document.getElementById('section-crm').classList.add('hidden');
             document.getElementById('section-ai-control').classList.add('hidden'); 
-            document.getElementById('section-upcoming').classList.add('hidden'); // 新增
+            document.getElementById('section-upcoming').classList.add('hidden'); 
             document.getElementById(`section-${tabId}`).classList.remove('hidden');
 
             document.getElementById('tab-btn-matrix').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
@@ -410,7 +411,7 @@
             document.getElementById('tab-btn-analytics').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
             document.getElementById('tab-btn-crm').className = "py-3 px-1 text-gray-500 hover:text-pink-600";
             document.getElementById('tab-btn-ai-control').className = "py-3 px-1 text-gray-500 hover:text-pink-600"; 
-            document.getElementById('tab-btn-upcoming').className = "py-3 px-1 text-gray-500 hover:text-pink-600 font-bold"; // 新增
+            document.getElementById('tab-btn-upcoming').className = "py-3 px-1 text-gray-500 hover:text-pink-600 font-bold"; 
             document.getElementById(`tab-btn-${tabId}`).className = "py-3 px-1 tab-active";
         }
 
@@ -422,7 +423,6 @@
             const dayNum = parseInt(parts[2]);
             const dayKey = `day_${dayNum}`;
 
-            // 計算下個月份 key
             let nextM = parseInt(parts[1]) + 1;
             let nextY = parseInt(parts[0]);
             if (nextM > 12) { nextM = 1; nextY++; }
@@ -432,7 +432,7 @@
                 database.ref('v8_employees').once('value'),
                 database.ref(`v8_holidays/${yearMonthKey}`).once('value'),
                 database.ref(`v8_bookings/${yearMonthKey}`).once('value'),
-                database.ref(`v8_bookings/${nextMonthKey}`).once('value') // 新增拉取未來跨月
+                database.ref(`v8_bookings/${nextMonthKey}`).once('value') 
             ]).then(([empSnap, holSnap, bookSnap, nextBookSnap]) => {
                 employeesList = empSnap.exists() ? empSnap.val() : [];
                 holidaysData = holSnap.exists() ? holSnap.val() : {};
@@ -463,17 +463,19 @@
                 renderStaffConfigTab(cleanEmployees);
                 runBusinessIntelligenceAnalytics(bookingsData);
                 
-                // 🚀 初始化對接未來未到預約總覽
+                // 🚀 初始化未來預約與 CRM 監聽
                 renderUpcomingBookings(yearMonthKey, nextMonthKey);
-
-                // 🚀 初始化對接新 CRM 與 AI 智控台
                 startCRMListener();
                 loadAISettings();
+            }).catch(err => {
+                console.error("Firebase initialized data load failed: ", err);
+                showToast("雲端大腦資料同步中斷，請重整頁面！", "error");
             });
         }
 
         function renderMatrixCanvas(staffs, timeSlots, bookings, dayKey) {
             const table = document.getElementById('matrix-table-canvas');
+            if(!table) return;
             table.innerHTML = '';
 
             let headerHtml = `<thead><tr class="bg-gray-100"><th class="time-col p-2 text-xs font-extrabold border">時間軸</th>`;
@@ -484,12 +486,14 @@
             headerHtml += `</tr></thead><tbody>`;
             table.innerHTML += headerHtml;
 
+            const safeBookings = bookings || {};
+
             timeSlots.forEach(slotTime => {
                 let rowHtml = `<tr class="border-b"><td class="time-col p-1 text-[11px] border">${slotTime}</td>`;
                 let currentSlotMins = timeToMins(slotTime);
 
                 staffs.forEach(staff => {
-                    let rawBook = bookings[staff.name]?.[dayKey] || {};
+                    let rawBook = safeBookings[staff.name]?.[dayKey] || {};
                     let staffDayBookings = Array.isArray(rawBook) ? rawBook : Object.values(rawBook);
                     staffDayBookings = staffDayBookings.filter(Boolean);
 
@@ -503,11 +507,12 @@
                     if (matchedBooking) {
                         if (currentSlotMins === timeToMins(matchedBooking.start) || slotTime.endsWith('00')) {
                             let badges = '';
-                            if (matchedBooking.status && matchedBooking.status.includes('待審')) badges += `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-1 py-0.5 rounded text-[9px] mr-1">⏳ 需批</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('特殊')) badges += `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-1 py-0.5 rounded text-[9px] mr-1">⏰ 自選</span>`;
-                            if (matchedBooking.status && matchedBooking.status.includes('吉時')) badges += `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-1 py-0.5 rounded text-[9px] mr-1">🟢 吉時</span>`;
+                            let bStatus = matchedBooking.status ? String(matchedBooking.status) : "";
+                            if (bStatus.includes('待審')) badges += `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-1 py-0.5 rounded text-[9px] mr-1">⏳ 需批</span>`;
+                            if (bStatus.includes('特殊')) badges += `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-1 py-0.5 rounded text-[9px] mr-1">⏰ 自選</span>`;
+                            if (bStatus.includes('吉時')) badges += `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-1 py-0.5 rounded text-[9px] mr-1">🟢 吉時</span>`;
 
-                            let rem = matchedBooking.remarks || '';
+                            let rem = matchedBooking.remarks ? String(matchedBooking.remarks) : '';
                             if (rem.includes('趕時間')) badges += `<span class="bg-orange-50 text-orange-600 px-1 rounded text-[9px] mr-1 border border-orange-100">⚡ 趕</span>`;
                             if (rem.includes('免拆甲')) badges += `<span class="bg-sky-50 text-sky-600 px-1 rounded text-[9px] mr-1 border border-sky-100">🚫 免</span>`;
                             if (rem.includes('手腳同做')) badges += `<span class="bg-teal-50 text-teal-600 px-1 rounded text-[9px] mr-1 border border-teal-100">🤝 同</span>`;
@@ -532,99 +537,120 @@
             });
         }
 
-        // ==================== 📋 未完成預約總覽 (未來 60 天預約) ====================
+        // ==================== 📋 未完成預約總覽 (未來 60 天預約 - 帶全面高強度防禦性保護) ====================
         function renderUpcomingBookings(currentMonthKey, nextMonthKey) {
             const tbody = document.getElementById('upcoming-bookings-tbody');
             if(!tbody) return;
-            tbody.innerHTML = '';
+            
+            try {
+                tbody.innerHTML = '';
+                const hkt = new Date(new Date().getTime() + 8 * 3600000);
+                const todayDay = hkt.getUTCDate();
 
-            const hkt = new Date(new Date().getTime() + 8 * 3600000);
-            const todayDay = hkt.getUTCDate();
+                let upcomingList = [];
 
-            let upcomingList = [];
-
-            function parseBookingsByMonth(bookings, monthKey, isCurrentMonth) {
-                Object.keys(bookings).forEach(staffName => {
-                    const staffB = bookings[staffName] || {};
-                    Object.keys(staffB).forEach(dayKey => {
-                        const dayNum = parseInt(dayKey.replace("day_", ""));
+                function parseBookingsByMonth(bookings, monthKey, isCurrentMonth) {
+                    if (!bookings || typeof bookings !== 'object') return;
+                    
+                    Object.keys(bookings).forEach(staffName => {
+                        const staffB = bookings[staffName];
+                        if (!staffB || typeof staffB !== 'object') return;
                         
-                        // 🟢 過濾過去的時間：如果是當月，日期必須大於或等於今天
-                        if(isCurrentMonth && dayNum < todayDay) return;
+                        Object.keys(staffB).forEach(dayKey => {
+                            const dayNum = parseInt(dayKey.replace("day_", ""));
+                            if (isNaN(dayNum)) return;
+                            
+                            // 🟢 過濾當月過去的日期
+                            if(isCurrentMonth && dayNum < todayDay) return;
 
-                        const slots = staffB[dayKey] || {};
-                        Object.keys(slots).forEach(slotId => {
-                            const b = slots[slotId];
-                            if(b && !b.status.includes('取消') && !b.status.includes('rejected')) {
-                                upcomingList.push({
-                                    id: slotId,
-                                    monthKey: monthKey,
-                                    dayKey: dayKey,
-                                    dateNum: dayNum,
-                                    staffName: staffName,
-                                    customer: b.customer || "顧客",
-                                    phone: b.phone || "無電話",
-                                    start: b.start || "12:00",
-                                    end: b.end || "13:30",
-                                    item: b.item || "常規項目",
-                                    serviceType: b.serviceType || "美甲",
-                                    status: b.status || "⏳ 待審",
-                                    remarks: b.remarks || ""
-                                });
-                            }
+                            const slots = staffB[dayKey];
+                            if (!slots || typeof slots !== 'object') return;
+                            
+                            Object.keys(slots).forEach(slotId => {
+                                const b = slots[slotId];
+                                if(b && typeof b === 'object') {
+                                    const status = b.status ? String(b.status) : "⏳ 待審";
+                                    
+                                    // 排除已取消、已拒絕的項目
+                                    if(!status.includes('取消') && !status.includes('rejected') && !status.includes('已拒絕')) {
+                                        upcomingList.push({
+                                            id: slotId,
+                                            monthKey: monthKey,
+                                            dayKey: dayKey,
+                                            dateNum: dayNum,
+                                            staffName: staffName,
+                                            customer: b.customer || "顧客",
+                                            phone: b.phone ? String(b.phone) : "無電話",
+                                            start: b.start || "12:00",
+                                            end: b.end || "13:30",
+                                            item: b.item || "常規項目",
+                                            serviceType: b.serviceType || "美甲",
+                                            status: status,
+                                            remarks: b.remarks ? String(b.remarks) : ""
+                                        });
+                                    }
+                                }
+                            });
                         });
                     });
+                }
+
+                parseBookingsByMonth(bookingsData || {}, currentMonthKey, true);
+                parseBookingsByMonth(nextMonthBookingsData || {}, nextMonthKey, false);
+
+                if(upcomingList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-gray-400 font-bold">🙌 目前沒有任何未來的未完成預約。</td></tr>`;
+                    return;
+                }
+
+                // 按年月、日期、時間升序排序
+                upcomingList.sort((a,b) => {
+                    if(a.monthKey !== b.monthKey) return a.monthKey.localeCompare(b.monthKey);
+                    if(a.dateNum !== b.dateNum) return a.dateNum - b.dateNum;
+                    return timeToMins(a.start) - timeToMins(b.start);
                 });
+
+                let html = "";
+                upcomingList.forEach(b => {
+                    let statusColor = b.status.includes('批准') ? 'text-emerald-600' : 'text-amber-600';
+                    html += `
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-3 font-bold">${b.monthKey} ➔ ${b.dateNum} 號</td>
+                            <td class="p-3 font-extrabold text-blue-800">${b.start} - ${b.end}</td>
+                            <td class="p-3 font-bold text-gray-800">${b.customer}</td>
+                            <td class="p-3 text-pink-700 font-bold"><a href="https://wa.me/${b.phone}" target="_blank">💬 ${b.phone}</a></td>
+                            <td class="p-3"><span class="bg-pink-100 text-pink-800 font-bold px-2 py-1 rounded text-xs font-bold">#${staffIds[b.staffName] || '100'} ${b.staffName}</span></td>
+                            <td class="p-3 text-xs font-bold text-gray-700">${b.item}</td>
+                            <td class="p-3"><span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 font-bold">${b.serviceType}</span></td>
+                            <td class="p-3 text-xs text-gray-500 max-w-[150px] truncate" title="${b.remarks}">${b.remarks || '無'}</td>
+                            <td class="p-3 font-bold ${statusColor}">${b.status}</td>
+                            <td class="p-3 text-center">
+                                <button class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold" onclick="cancelUpcomingBooking('${b.monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}', '${b.customer}')">取消/刪除</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error("Error inside renderUpcomingBookings: ", err);
+                tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-rose-500 font-bold">❌ 預約總覽載入出錯：${err.message}</td></tr>`;
             }
-
-            parseBookingsByMonth(bookingsData, currentMonthKey, true);
-            parseBookingsByMonth(nextMonthBookingsData, nextMonthKey, false);
-
-            if(upcomingList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-gray-400 font-bold">🙌 目前沒有任何未來的未完成預約。</td></tr>`;
-                return;
-            }
-
-            // 按年月、日期、時間排序
-            upcomingList.sort((a,b) => {
-                if(a.monthKey !== b.monthKey) return a.monthKey.localeCompare(b.monthKey);
-                if(a.dateNum !== b.dateNum) return a.dateNum - b.dateNum;
-                return timeToMins(a.start) - timeToMins(b.start);
-            });
-
-            upcomingList.forEach(b => {
-                let statusColor = b.status.includes('批准') ? 'text-emerald-600' : 'text-amber-600';
-                tbody.innerHTML += `
-                    <tr class="border-b border-gray-100 hover:bg-gray-50">
-                        <td class="p-3 font-bold">${b.monthKey} ➔ ${b.dateNum} 號</td>
-                        <td class="p-3 font-extrabold text-blue-800">${b.start} - ${b.end}</td>
-                        <td class="p-3 font-bold text-gray-800">${b.customer}</td>
-                        <td class="p-3 text-pink-700 font-bold"><a href="https://wa.me/${b.phone}" target="_blank">💬 ${b.phone}</a></td>
-                        <td class="p-3"><span class="bg-pink-100 text-pink-800 font-bold px-2 py-1 rounded text-xs">#${staffIds[b.staffName] || '100'} ${b.staffName}</span></td>
-                        <td class="p-3 text-xs font-bold text-gray-700">${b.item}</td>
-                        <td class="p-3"><span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 font-bold">${b.serviceType}</span></td>
-                        <td class="p-3 text-xs text-gray-500 max-w-[150px] truncate" title="${b.remarks}">${b.remarks || '無'}</td>
-                        <td class="p-3 font-bold ${statusColor}">${b.status}</td>
-                        <td class="p-3 text-center">
-                            <button class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold" onclick="cancelUpcomingBooking('${b.monthKey}', '${b.staffName}', '${b.dayKey}', '${b.id}', '${b.customer}')">取消/刪除</button>
-                        </td>
-                    </tr>
-                `;
-            });
         }
 
         function cancelUpcomingBooking(monthKey, staffName, dayKey, bookingId, customer) {
             if(confirm(`⚠️ 確定要取消並刪除「${customer}」在 ${monthKey} 的這筆預約嗎？\n取消後該老師的時間空檔將會重新被釋放！`)) {
-                // 完全刪除或更改狀態
                 database.ref(`v8_bookings/${monthKey}/${staffName}/${dayKey}/${bookingId}`).remove().then(() => {
                     showToast(`🎉 成功取消並清除「${customer}」的預約，空檔已重新釋放！`);
                     loadEverything();
+                }).catch(err => {
+                    alert("刪除預約失敗: " + err.message);
                 });
             }
         }
 
         function renderStaffConfigTab(staffs) {
             const tbody = document.getElementById('staff-table-body');
+            if(!tbody) return;
             tbody.innerHTML = '';
             staffs.forEach((e, idx) => {
                 let key = e.name.trim().toUpperCase();
@@ -648,7 +674,112 @@
             });
         }
 
-        // ==================== 📇 顧客 CRM 檔案庫 ====================
+        function addNewEmployeeRow() {
+            const tbody = document.getElementById('staff-table-body');
+            if(!tbody) return;
+            tbody.innerHTML += `
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="p-3"><input type="text" class="staff-id-field w-16 p-1 border rounded text-center font-bold text-gray-700" value="124"></td>
+                    <td class="p-3"><input type="text" class="staff-name-field w-24 p-1 border rounded font-bold" placeholder="名字"></td>
+                    <td class="p-3">
+                        <select class="staff-role-field p-1 border rounded text-xs">
+                            <option value="Full-time" selected>Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="學徒">學徒</option>
+                        </select>
+                    </td>
+                    <td class="p-3"><input type="text" class="staff-shops-field w-36 p-1 border rounded text-xs" value="G2, G38, GK3"></td>
+                    <td class="p-3"><input type="text" class="staff-times-field w-40 p-1 border rounded text-xs" value="12:00, 11:00, 13:00"></td>
+                    <td class="p-3"><button class="text-red-500 hover:text-red-700 text-xs font-bold" onclick="this.closest('tr').remove()">❌ 刪除</button></td>
+                </tr>
+            `;
+        }
+
+        function saveStaffRegistryToCloud() {
+            let list = [];
+            const rows = document.querySelectorAll('#staff-table-body tr');
+            rows.forEach(r => {
+                let id = r.querySelector('.staff-id-field').value.trim();
+                let name = r.querySelector('.staff-name-field').value.trim();
+                let role = r.querySelector('.staff-role-field').value;
+                let p_shops = r.querySelector('.staff-shops-field').value.trim();
+                let times = r.querySelector('.staff-times-field').value.trim();
+                if(name) {
+                    list.push({ id, name, role, p_shops, times });
+                }
+            });
+            database.ref('v8_employees').set(list).then(() => {
+                showToast("員工與工號大腦成功同步至 Firebase 雲端！預約介面已實時同步。");
+                loadEverything();
+            });
+        }
+
+        function runBusinessIntelligenceAnalytics(bookings) {
+            let total = 0;
+            let categories = { "美甲": 0, "美睫": 0, "紋繡": 0, "其他": 0 };
+            let stylists = {};
+
+            const safeBookings = bookings || {};
+
+            Object.keys(safeBookings).forEach(staffName => {
+                const staffData = safeBookings[staffName];
+                if(!staffData || typeof staffData !== 'object') return;
+                
+                Object.keys(staffData).forEach(dayKey => {
+                    let dayRaw = staffData[dayKey];
+                    if (!dayRaw) return;
+                    let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
+                    list.filter(Boolean).forEach(b => {
+                        total++;
+                        let sType = b.serviceType || "其他";
+                        if(sType.includes("美甲")) categories["美甲"]++;
+                        else if(sType.includes("美睫")) categories["美睫"]++;
+                        else if(sType.includes("紋繡")) categories["紋繡"]++;
+                        else categories["其他"]++;
+
+                        stylists[staffName] = (stylists[staffName] || 0) + 1;
+                    });
+                });
+            });
+
+            const statTotalBox = document.getElementById('stat-total-bookings');
+            if(statTotalBox) statTotalBox.innerText = total;
+
+            const catZone = document.getElementById('stat-service-breakdown');
+            if(catZone) {
+                catZone.innerHTML = '';
+                Object.keys(categories).forEach(cName => {
+                    let count = categories[cName];
+                    let percent = total > 0 ? Math.round((count / total) * 100) : 0;
+                    catZone.innerHTML += `
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-gray-700">
+                                <span>${cName}</span><span>${count} 預約 (${percent}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2 mt-1">
+                                <div class="bg-pink-600 h-2 rounded-full" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const stylZone = document.getElementById('stat-staff-breakdown');
+            if(stylZone) {
+                stylZone.innerHTML = '';
+                let sortedStyl = Object.keys(stylists).map(k => ({ name: k, count: stylists[k] })).sort((a,b) => b.count - a.count);
+                sortedStyl.forEach((s, idx) => {
+                    stylZone.innerHTML += `
+                        <div class="flex justify-between items-center text-xs p-2 border-b border-gray-50">
+                            <span class="font-bold text-gray-800">${idx+1}. #${staffIds[s.name] || '100'} ${s.name}</span>
+                            <span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-extrabold">${s.count} 次</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // ==================== 📇 顧客 CRM 檔案庫 (強力容錯、安全轉換) ====================
         function startCRMListener() {
             if (typeof firebase === 'undefined' || !firebase.apps.length) return;
             database.ref('v8_profiles').on('value', (snapshot) => {
@@ -660,88 +791,103 @@
         function renderCRMRegistry(bookings) {
             const tbody = document.getElementById('crm-table-body');
             if(!tbody) return;
-            tbody.innerHTML = '';
+            
+            try {
+                tbody.innerHTML = '';
+                let crmMap = {};
 
-            let crmMap = {};
+                // 1. 優先導入 Firebase 雲端 profiles 的基礎特徵 (防護空指針)
+                const safeProfiles = rawProfiles || {};
+                Object.keys(safeProfiles).forEach(phone => {
+                    const p = safeProfiles[phone];
+                    if(!p) return;
+                    crmMap[phone] = {
+                        name: p.customerName || "未命名諮詢客",
+                        phone: String(phone),
+                        status: p.status || "Inquiring",
+                        lastTeacher: p.lastTeacher || "無",
+                        preferredStyle: p.preferredStyle || "無特別指定款式",
+                        traits: p.traits || "尚無對話提取特徵",
+                        count: p.visitCount || 0,
+                        timestamp: p.timestamp || 0
+                    };
+                });
 
-            // 1. 優先導入 Firebase 雲端 profiles 的基礎特徵
-            Object.keys(rawProfiles).forEach(phone => {
-                const p = rawProfiles[phone];
-                crmMap[phone] = {
-                    name: p.customerName || "未命名諮詢客",
-                    phone: phone,
-                    status: p.status || "Inquiring",
-                    lastTeacher: p.lastTeacher || "無",
-                    preferredStyle: p.preferredStyle || "無特別指定款式",
-                    traits: p.traits || "尚無對話提取特徵",
-                    count: p.visitCount || 0,
-                    timestamp: p.timestamp || 0
-                };
-            });
-
-            // 2. 深度與看板預約 bookings 二合一併入
-            Object.keys(bookings).forEach(staffName => {
-                if(!bookings[staffName]) return;
-                Object.keys(bookings[staffName]).forEach(dayKey => {
-                    let dayRaw = bookings[staffName][dayKey];
-                    let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
-                    list.filter(Boolean).forEach(b => {
-                        if (b.customer && b.phone) {
-                            let phone = b.phone.trim();
-                            if (!crmMap[phone]) {
-                                crmMap[phone] = {
-                                    name: b.customer,
-                                    phone: phone,
-                                    status: "Active Booker",
-                                    lastTeacher: staffName,
-                                    preferredStyle: "無",
-                                    traits: "網頁預約系統自動登記入檔",
-                                    count: 0,
-                                    timestamp: b.timestamp || new Date().getTime()
-                                };
+                // 2. 深度與看板預約 bookings 二合一併入 (防護 number 型 phone 等類型錯誤)
+                const safeBookings = bookings || {};
+                Object.keys(safeBookings).forEach(staffName => {
+                    const staffData = safeBookings[staffName];
+                    if(!staffData || typeof staffData !== 'object') return;
+                    
+                    Object.keys(staffData).forEach(dayKey => {
+                        let dayRaw = staffData[dayKey];
+                        if (!dayRaw) return;
+                        let list = Array.isArray(dayRaw) ? dayRaw : Object.values(dayRaw);
+                        
+                        list.filter(Boolean).forEach(b => {
+                            if (b && typeof b === 'object' && b.customer && b.phone) {
+                                let phone = String(b.phone).trim(); // 強制轉為字串，安全過濾 trim
+                                if (!crmMap[phone]) {
+                                    crmMap[phone] = {
+                                        name: b.customer,
+                                        phone: phone,
+                                        status: "Active Booker",
+                                        lastTeacher: staffName,
+                                        preferredStyle: "無",
+                                        traits: "網頁預約系統自動登記入檔",
+                                        count: 0,
+                                        timestamp: b.timestamp || new Date().getTime()
+                                    };
+                                }
+                                crmMap[phone].count++;
+                                crmMap[phone].status = "Active Booker";
+                                crmMap[phone].lastTeacher = staffName;
                             }
-                            crmMap[phone].count++;
-                            crmMap[phone].status = "Active Booker";
-                            crmMap[phone].lastTeacher = staffName;
-                        }
+                        });
                     });
                 });
-            });
 
-            let records = Object.values(crmMap);
-            if(records.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">🙌 目前尚無顧客資料紀錄。</td></tr>`;
-                return;
+                let records = Object.values(crmMap);
+                if(records.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 font-bold">🙌 目前尚無顧客資料紀錄。</td></tr>`;
+                    return;
+                }
+
+                // 按照最後通訊時間降序
+                records.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                let html = "";
+                records.forEach(c => {
+                    let statusBadge = (c.status === "Active Booker")
+                        ? `<span class="badge-status status-booker">🟢 Booker (已約)</span>`
+                        : `<span class="badge-status status-inquiring">🔵 Inquiring (諮詢)</span>`;
+
+                    let timeStr = c.timestamp ? new Date(c.timestamp).toLocaleString() : '無紀錄';
+
+                    html += `
+                        <tr class="border-b border-gray-100 hover:bg-pink-50/50">
+                            <td class="p-3 font-bold text-gray-800">${c.name}</td>
+                            <td class="p-3 text-pink-800 font-extrabold">${c.phone}</td>
+                            <td class="p-3">${statusBadge}</td>
+                            <td class="p-3"><span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded text-xs font-bold">${c.lastTeacher}</span></td>
+                            <td class="p-3 text-xs text-gray-500 max-w-[150px] truncate" title="${c.preferredStyle}">${c.preferredStyle}</td>
+                            <td class="p-3 text-xs text-blue-600 max-w-[180px] truncate" title="${c.traits}">${c.traits}</td>
+                            <td class="p-3 text-center font-bold text-gray-700">${c.count} 次</td>
+                            <td class="p-3 text-[11px] text-gray-400">${timeStr}</td>
+                            <td class="p-3">
+                                <div class="flex gap-1.5 justify-center">
+                                    <button class="bg-pink-600 hover:bg-pink-700 text-white text-xs px-2 py-1 rounded" onclick="navigator.clipboard.writeText('${c.phone}'); showToast('📱 已複製號碼：${c.phone}');">複製</button>
+                                    <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded" onclick="openCRMModal('${c.phone}')">編輯</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error("Error inside renderCRMRegistry: ", err);
+                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-rose-500 font-bold">❌ CRM 載入出錯：${err.message}</td></tr>`;
             }
-
-            records.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-            records.forEach(c => {
-                let statusBadge = (c.status === "Active Booker")
-                    ? `<span class="badge-status status-booker">🟢 Booker (已約)</span>`
-                    : `<span class="badge-status status-inquiring">🔵 Inquiring (諮詢)</span>`;
-
-                let timeStr = c.timestamp ? new Date(c.timestamp).toLocaleString() : '無紀錄';
-
-                tbody.innerHTML += `
-                    <tr class="border-b border-gray-100 hover:bg-pink-50/50">
-                        <td class="p-3 font-bold text-gray-800">${c.name}</td>
-                        <td class="p-3 text-pink-800 font-extrabold">${c.phone}</td>
-                        <td class="p-3">${statusBadge}</td>
-                        <td class="p-3"><span class="bg-pink-100 text-pink-700 px-2 py-0.5 rounded text-xs font-bold">${c.lastTeacher}</span></td>
-                        <td class="p-3 text-xs text-gray-500 max-w-[150px] truncate" title="${c.preferredStyle}">${c.preferredStyle}</td>
-                        <td class="p-3 text-xs text-blue-600 max-w-[180px] truncate" title="${c.traits}">${c.traits}</td>
-                        <td class="p-3 text-center font-bold text-gray-700">${c.count} 次</td>
-                        <td class="p-3 text-[11px] text-gray-400">${timeStr}</td>
-                        <td class="p-3">
-                            <div class="flex gap-1.5 justify-center">
-                                <button class="bg-pink-600 hover:bg-pink-700 text-white text-xs px-2 py-1 rounded" onclick="navigator.clipboard.writeText('${c.phone}'); showToast('📱 已複製號碼：${c.phone}');">複製</button>
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded" onclick="openCRMModal('${c.phone}')">編輯</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
         }
 
         function filterCRMTable() {
@@ -774,6 +920,7 @@
 
         function openCRMModal(phone = '') {
             const modal = document.getElementById('crm-edit-modal');
+            if(!modal) return;
             const title = document.getElementById('crm-modal-title');
             
             document.getElementById('crm-form-name').value = '';
@@ -785,7 +932,7 @@
             document.getElementById('crm-form-traits').value = '';
 
             if (phone) {
-                title.innerText = `👥 編輯顧客檔案 (${phone})`;
+                if(title) title.innerText = `👥 編輯顧客檔案 (${phone})`;
                 const p = rawProfiles[phone] || {};
                 document.getElementById('crm-form-name').value = p.customerName || '';
                 document.getElementById('crm-form-phone').value = phone;
@@ -795,7 +942,7 @@
                 document.getElementById('crm-form-pref').value = p.preferredStyle || '';
                 document.getElementById('crm-form-traits').value = p.traits || '';
             } else {
-                title.innerText = '👥 新建顧客檔案';
+                if(title) title.innerText = '👥 新建顧客檔案';
             }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -803,6 +950,7 @@
 
         function closeCRMModal() {
             const modal = document.getElementById('crm-edit-modal');
+            if(!modal) return;
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }
@@ -870,15 +1018,13 @@
                 const data = await response.json();
                 let resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
                 
-                // 去除可能存在的 markdown 包裹
                 resultText = resultText.replace(/```json/gi, "").replace(/```/g, "").trim();
                 const parsed = JSON.parse(resultText);
 
-                // 寫入雲端資料庫
                 const ref = database.ref(`v8_profiles/${phone}`);
                 ref.set({
                     customerName: parsed.customerName || "親愛的顧客",
-                    status: "Inquiring", // 默認設置為諮詢，如果有預約系統會自動同步更新為 Booker
+                    status: "Inquiring", 
                     lastTeacher: parsed.lastTeacher || "無",
                     preferredStyle: parsed.preferredStyle || "無紀錄",
                     traits: parsed.traits || "歷史匯入特徵",
@@ -891,7 +1037,7 @@
 
             } catch (err) {
                 console.error(err);
-                alert('❌ AI 批次分析提取失敗，請檢查輸入的內容是否過亂！');
+                alert('❌ AI 批次分析提取失敗，請檢查輸入的內容是否過慢、過多或格式亂碼！');
             }
         }
 
@@ -908,17 +1054,20 @@
                 document.getElementById('ai-other-textarea').value = settings.other || '';
 
                 const container = document.getElementById('custom-kb-container');
-                container.innerHTML = '';
-                if (settings.customFields) {
-                    settings.customFields.forEach(f => {
-                        addCustomKBRow(f.title, f.content);
-                    });
+                if(container) {
+                    container.innerHTML = '';
+                    if (settings.customFields) {
+                        settings.customFields.forEach(f => {
+                            addCustomKBRow(f.title, f.content);
+                        });
+                    }
                 }
             });
         }
 
         function addCustomKBRow(title = '', content = '') {
             const container = document.getElementById('custom-kb-container');
+            if(!container) return;
             const row = document.createElement('div');
             row.className = 'kb-field-row';
             row.innerHTML = `
@@ -964,8 +1113,9 @@
             if (!query) return;
 
             const box = document.getElementById('sandbox-messages-box');
+            if(!box) return;
             box.innerHTML += `
-                <div class="bg-pink-100 p-3 rounded-lg shadow-sm border border-pink-200 text-xs text-pink-900 leading-relaxed max-w-[85%] self-end ml-auto">
+                <div class="bg-pink-100 p-3 rounded-lg shadow-sm border border-pink-200 text-xs text-pink-900 leading-relaxed max-w-[85%] self-end ml-auto text-right">
                     ${query}
                 </div>
             `;
@@ -1023,7 +1173,8 @@ ${dynamicRulesText}
                 });
 
                 const data = await response.json();
-                document.getElementById(typingId).remove();
+                const typingEl = document.getElementById(typingId);
+                if(typingEl) typingEl.remove();
                 
                 if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
                     let reply = data.candidates[0].content.parts[0].text;
@@ -1041,7 +1192,7 @@ ${dynamicRulesText}
                     reply = reply.replace(/\|\|BOOKING:.*?\|\|/g, "").replace(/\|\|PROFILE:.*?\|\|/g, "").replace(/\|\|CANCEL_BOOKING:.*?\|\|/g, "").trim();
 
                     box.innerHTML += `
-                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-xs text-gray-700 leading-relaxed max-w-[85%]">
+                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-xs text-gray-700 leading-relaxed max-w-[85%] text-left">
                             ${reply}
                         </div>
                     `;
@@ -1051,7 +1202,8 @@ ${dynamicRulesText}
                 }
                 box.scrollTop = box.scrollHeight;
             } catch (err) {
-                if (document.getElementById(typingId)) document.getElementById(typingId).remove();
+                const typingEl = document.getElementById(typingId);
+                if(typingEl) typingEl.remove();
                 box.innerHTML += `<div class="bg-red-50 text-red-800 text-xs p-2 rounded-lg text-center w-full">❌ 連線失敗，請重試！</div>`;
                 box.scrollTop = box.scrollHeight;
             }
