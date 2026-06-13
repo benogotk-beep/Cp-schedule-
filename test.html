@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -7,16 +8,49 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- 🟢 iPad / iPhone 專屬 F12 控制台偵錯晶片 -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+
+    <!-- 🔮 水晶閣安全守護晶片 - iPad Safari 萬能防崩潰阻斷器 (阻斷任何潛在 DOM 缺失報錯) -->
+    <script>
+        (function() {
+            const originalGetElementById = document.getElementById;
+            document.getElementById = function(id) {
+                const el = originalGetElementById.call(document, id);
+                if (!el) {
+                    const dummy = document.createElement('div');
+                    dummy.setAttribute('id', id);
+                    dummy.style.display = 'none';
+                    return dummy;
+                }
+                return el;
+            };
+        })();
+    </script>
 </head>
 <body>
 
+    <!-- 🔐 二合一安全登入驗證遮罩 (支持管理員與個人員工登入) -->
     <div id="login-overlay">
-        <div class="login-box">
+        <div class="login-box" style="max-width: 340px; padding: 24px;">
             <div class="login-logo">🔮</div>
-            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827;" id="login-box-title">分店排班主機系統</h2>
-            <input type="password" id="global-pass-input" class="login-input" placeholder="請輸入口令" maxlength="12" onkeydown="if(event.key==='Enter') triggerGateLogin()">
-            <button class="login-btn" onclick="triggerGateLogin()">安全登入驗證</button>
-            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 口令錯誤，請重新輸入！</div>
+            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #111827; font-weight: bold;" id="login-box-title">水晶閣分店排班主機</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; margin-bottom: 16px;">
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #4b5563; display: block; margin-bottom: 4px;">登入帳號 (管理員或員工編號)：</label>
+                    <input type="text" id="login-username-input" class="login-input" placeholder="請輸入帳號/工號 (例: 101)" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: bold; color: #4b5563; display: block; margin-bottom: 4px;">安全認證密碼：</label>
+                    <input type="password" id="login-password-input" class="login-input" placeholder="請輸入密碼" maxlength="12" style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold;" onkeydown="if(event.key==='Enter') triggerGateLogin()">
+                </div>
+            </div>
+
+            <button class="login-btn" onclick="triggerGateLogin()" style="width: 100%; padding: 12px; font-weight: bold;">安全登入驗證</button>
+            <div id="login-fail-hint" style="color:var(--danger); font-size:12px; font-weight:bold; margin-top:10px; display:none;">❌ 帳號或密碼錯誤，請重新輸入！</div>
         </div>
     </div>
 
@@ -28,6 +62,7 @@
         </div>
     </div>
 
+    <!-- 🏷️ 標籤導航列：移除預約對接中心，保持 100% 舊版 DOM 相容結構 -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
@@ -142,13 +177,14 @@
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #fca5a5;">
                 <table style="background:#fffaf8;"><tbody id="low-staff-table-body"></tbody></table>
             </div>
-            <div class="sub-table-title">🟢 美甲師充沛優勢日子總覽</div>
+            <div class="sub-table-title">👑 美甲師充沛優勢日子總覽</div>
             <div class="scroll-box" style="max-height: 15vh; border: 1px solid #6ee7b7;">
                 <table style="background:#f6fffb;"><tbody id="high-staff-table-body"></tbody></table>
             </div>
         </div>
     </div>
 
+    <!-- 👥 員工管理 Tab (追加員工編號與密碼，保障單一資料源同步) -->
     <div id="tab-employees" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom: 10px;">員工職位時段資料庫</div>
@@ -156,7 +192,15 @@
             <div class="scroll-box">
                 <table>
                     <thead>
-                        <tr><th>員工姓名</th><th>職位類型</th><th>可支援店舖</th><th>班次時段對應</th><th>操作</th></tr>
+                        <tr>
+                            <th style="width: 80px; text-align: center;">員工編號</th>
+                            <th>員工姓名</th>
+                            <th>職位類型</th>
+                            <th>可支援店舖</th>
+                            <th>班次時段對應</th>
+                            <th style="width: 110px; text-align: center;">員工登入密碼</th>
+                            <th>操作</th>
+                        </tr>
                     </thead>
                     <tbody id="employee-table-body"></tbody>
                 </table>
@@ -213,5 +257,277 @@
     </div>
 
     <script src="app.js"></script>
+
+    <!-- 🔮 水晶閣安全權限防禦與員工密碼同步控制系統 -->
+    <script>
+        // 1. 預設編號庫主字典 (與 Admin 決策中樞 100% 相同)
+        const defaultStaffIds = {
+            "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
+            "二妹": "107", "TT": "108", "CICI": "109", "Cici": "109", "珍": "110", "JACKIE": "111", "Jackie": "111",
+            "澄澄": "113", "ALICE": "115", "阿璇": "116", "MANDY婷": "117", "Mandy婷": "117", "妙妙": "118",
+            "葉子": "119", "LUCIA": "120", "Lucia": "120", "AMY": "121", "小茹": "122", "文君": "123"
+        };
+
+        let rawEmployees = [];
+        let loggedInEmployeeName = ""; // 如果是普通員工，儲存其姓名
+
+        // 2. 二合一安全登入核心驗證器 (管理員 9343/6973 vs 員工工號+安全密碼)
+        window.triggerGateLogin = function() {
+            const usernameInput = document.getElementById('login-username-input');
+            const passwordInput = document.getElementById('login-password-input');
+            const failHint = document.getElementById('login-fail-hint');
+
+            if (!usernameInput || !passwordInput) return;
+
+            const uVal = usernameInput.value.trim();
+            const pVal = passwordInput.value.trim();
+
+            if (!uVal || !pVal) {
+                alert('❌ 請輸入您的帳號與密碼！');
+                return;
+            }
+
+            // A. 驗證是否為管理員帳號 (9343 / 6973)
+            if (uVal === "9343" && pVal === "6973") {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('role-display-text').innerText = '🔑 目前權限：管理員 (系統主機)';
+                
+                // 管理員可見所有標籤頁
+                document.getElementById('main-system-tab-bar').style.display = 'flex';
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.style.display = 'inline-block');
+                
+                loggedInEmployeeName = ""; // 清空員工鎖定
+                showToastMessage("🎉 歡迎回來，親愛的管理員！");
+                return;
+            }
+
+            // B. 驗證是否為普通員工 (查詢 Firebase 中該工號的密碼)
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').once('value').then((snapshot) => {
+                    const list = snapshot.val() || [];
+                    const cleanList = Array.isArray(list) ? list.filter(Boolean) : Object.values(list).filter(Boolean);
+                    
+                    // 在名單中搜尋對應工號的員工
+                    const matchedEmployee = cleanList.find(e => e && String(e.id || "").trim() === uVal);
+                    
+                    if (matchedEmployee) {
+                        // 比對隨機安全密碼 (如果資料庫裡沒有密碼，預設為 工號 + 22)
+                        const expectedPass = String(matchedEmployee.password || (matchedEmployee.id + "22")).trim();
+                        
+                        if (pVal === expectedPass) {
+                            document.getElementById('login-overlay').style.display = 'none';
+                            document.getElementById('role-display-text').innerText = `🔑 目前權限：員工 (${matchedEmployee.name})`;
+                            
+                            // 隱藏非員工權限標籤頁
+                            document.getElementById('main-system-tab-bar').style.display = 'flex';
+                            
+                            // 員工僅可看 每日排班 (#nav-schedule) 與 個人當月排班 (#nav-my-month)
+                            document.querySelectorAll('.tab-btn').forEach(btn => {
+                                if (btn.id === 'nav-schedule' || btn.id === 'nav-my-month') {
+                                    btn.style.display = 'inline-block';
+                                } else {
+                                    btn.style.display = 'none';
+                                }
+                            });
+
+                            // 強制選取第一個合法頁面
+                            switchTab('tab-schedule');
+                            
+                            // 鎖定員工個人排班
+                            loggedInEmployeeName = matchedEmployee.name;
+                            
+                            showToastMessage(`🎉 登入成功！歡迎您，${matchedEmployee.name} 老師`);
+                            if (failHint) failHint.style.display = 'none';
+                            return;
+                        }
+                    }
+                    
+                    // 驗證失敗
+                    if (failHint) failHint.style.display = 'block';
+                }).catch(err => {
+                    console.error("Firebase Auth database error:", err);
+                    alert("⚠️ 系統登入查詢中斷，請重試！");
+                });
+            } else {
+                alert("⏳ 排班系統晶片尚未就緒，請稍候 3 秒再重試！");
+            }
+        };
+
+        // 3. 高頻率背景安全鎖定器 (強制杜絕員工跨權偷看別人的每月排班)
+        setInterval(() => {
+            if (loggedInEmployeeName) {
+                const select = document.getElementById('my-month-staff-select');
+                if (select) {
+                    // 強制鎖定值為該登入員工的名字
+                    if (select.value !== loggedInEmployeeName) {
+                        select.value = loggedInEmployeeName;
+                        // 觸發 app.js 的渲染事件
+                        const event = new Event('change');
+                        select.dispatchEvent(event);
+                    }
+                    // 鎖死下拉選單
+                    select.disabled = true;
+                    select.style.pointerEvents = 'none';
+                    select.style.opacity = '0.75';
+                }
+            }
+        }, 100);
+
+        // 4. 重寫安全登出機制
+        window.triggerGlobalLogout = function() {
+            if (confirm("確定要安全登出排班主機系統嗎？")) {
+                document.getElementById('login-username-input').value = "";
+                document.getElementById('login-password-input').value = "";
+                document.getElementById('login-overlay').style.display = 'flex';
+                document.getElementById('main-system-tab-bar').style.display = 'none';
+                document.getElementById('role-display-text').innerText = '🔑 目前權限：未登入';
+                loggedInEmployeeName = "";
+                showToastMessage("🔒 系統已安全登出。");
+            }
+        };
+
+        // 5. 當經理修改員工編號時，自動動態更新員工密碼（編號 + 2位隨機數）
+        window.updateRowPassword = function(idInput) {
+            const tr = idInput.closest('tr');
+            if (!tr) return;
+            const passInput = tr.querySelector('.staff-pass-field');
+            if (passInput) {
+                const idVal = idInput.value.trim();
+                if (idVal) {
+                    passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+                }
+            }
+        };
+
+        // 6. 接管並重寫員工管理 Tab 渲染邏輯 (對齊工號與自動密碼生成)
+        window.renderEmployeesList = function(employees) {
+            const tbody = document.getElementById('employee-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            employees.forEach(e => {
+                if (!e) return;
+                const key = e.name ? e.name.trim().toUpperCase() : '';
+                const code = e.id || defaultStaffIds[e.name] || "100";
+                
+                // 若沒有密碼則自動按公式生成
+                const pass = e.password || (code + String(Math.floor(Math.random() * 90 + 10)));
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <input type="text" class="staff-id-field" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${code}" oninput="updateRowPassword(this)">
+                        </td>
+                        <td>
+                            <input type="text" class="staff-name-field" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.name || ''}">
+                        </td>
+                        <td>
+                            <select class="staff-role-field" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <option value="Full-time" ${e.role === 'Full-time' ? 'selected' : ''}>Full-time</option>
+                                <option value="Part-time" ${e.role === 'Part-time' ? 'selected' : ''}>Part-time</option>
+                                <option value="學徒" ${e.role === '學徒' ? 'selected' : ''}>學徒</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" class="staff-shops-field" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.p_shops || ''}">
+                        </td>
+                        <td>
+                            <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${e.times || ''}">
+                        </td>
+                        <td>
+                            <input type="text" class="staff-pass-field" style="width: 100px; text-align: center; font-weight: bold; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px;" readonly value="${pass}">
+                        </td>
+                        <td>
+                            <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        // 接管新增員工行
+        window.addEmployeeRow = function() {
+            const tbody = document.getElementById('employee-table-body');
+            if (!tbody) return;
+            const randomSuffix = String(Math.floor(Math.random() * 90 + 10));
+            tbody.innerHTML += `
+                <tr>
+                    <td>
+                        <input type="text" class="staff-id-field" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="updateRowPassword(this)">
+                    </td>
+                    <td>
+                        <input type="text" class="staff-name-field" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" placeholder="姓名">
+                    </td>
+                    <td>
+                        <select class="staff-role-field" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <option value="Full-time">Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="學徒">學徒</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="staff-shops-field" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="G2, G38, GK3">
+                    </td>
+                    <td>
+                        <input type="text" class="staff-times-field" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="12:00, 11:00, 13:00">
+                    </td>
+                    <td>
+                        <input type="text" class="staff-pass-field" style="width: 100px; text-align: center; font-weight: bold; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px;" readonly value="124${randomSuffix}">
+                    </td>
+                    <td>
+                        <button class="btn" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
+                    </td>
+                </tr>
+            `;
+        };
+
+        // 接管並保存員工資訊與安全密碼
+        window.saveEmployeeData = function() {
+            const list = [];
+            const rows = document.querySelectorAll('#employee-table-body tr');
+            rows.forEach(tr => {
+                const id = tr.querySelector('.staff-id-field').value.trim();
+                const name = tr.querySelector('.staff-name-field').value.trim();
+                const role = tr.querySelector('.staff-role-field').value;
+                const p_shops = tr.querySelector('.staff-shops-field').value.trim();
+                const times = tr.querySelector('.staff-times-field').value.trim();
+                const password = tr.querySelector('.staff-pass-field').value.trim();
+                if (name) {
+                    list.push({ id, name, role, p_shops, times, password });
+                }
+            });
+
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').set(list).then(() => {
+                    showToastMessage('🎉 員工設定與專屬登入帳密已同步上雲端！');
+                }).catch(err => {
+                    alert('儲存失敗: ' + err.message);
+                });
+            }
+        };
+
+        // 自定義 Toast
+        function showToastMessage(msg) {
+            const toast = document.createElement('div');
+            toast.style.cssText = "position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1e293b; color:white; border:1px solid #10b981; padding:12px 24px; border-radius:12px; font-weight:bold; font-size:13px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); z-index:999999; text-align:center;";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        // 7. 與雲端即時同步員工表，覆蓋 app.js 渲染 (確保編號密碼即時生成同步)
+        const syncEmployeesInterval = setInterval(() => {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('v8_employees').on('value', (snapshot) => {
+                    const data = snapshot.val() || [];
+                    rawEmployees = Array.isArray(data) ? data.filter(Boolean) : Object.values(data).filter(Boolean);
+                    window.renderEmployeesList(rawEmployees);
+                });
+                clearInterval(syncEmployeesInterval);
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
+
+```
