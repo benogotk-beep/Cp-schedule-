@@ -47,7 +47,7 @@ const defaultHolidaysData = {
     "澄澄": [3, 4, 17, 18], "葉子": [29, 30], "阿平": [1, 2, 3, 4, 5, 6, 7], "阿璇": [13, 14, 15, 16], "Cici": [], "珍": [], "文君": []
 };
 
-// 3. 預設全局設定值 (若雲端無數據則以此初始化)
+// 3. 預設全局設定值
 const defaultSystemSettings = {
     passManager: "8888", passEmployee: "1234", webTitle: "分店智能排班系統 V10.0",
     lockDay: 26, maxFtLeave: 5, maxPtLeave: 20, limitLow: 3, limitHigh: 5
@@ -77,19 +77,33 @@ function setupSettingsListener() {
 }
 
 function applyDynamicSettingsToUI() {
-    document.getElementById('cfg-pass-manager').value = state.settings.passManager || "8888";
-    document.getElementById('cfg-pass-employee').value = state.settings.passEmployee || "1234";
-    document.getElementById('cfg-web-title').value = state.settings.webTitle || "分店智能排班系統 V10.0";
-    document.getElementById('cfg-lock-day').value = state.settings.lockDay || 26;
-    document.getElementById('cfg-max-ft-leave').value = state.settings.maxFtLeave || 5;
-    document.getElementById('cfg-max-pt-leave').value = state.settings.maxPtLeave || 20;
-    document.getElementById('cfg-limit-low').value = state.settings.limitLow || 3;
-    document.getElementById('cfg-limit-high').value = state.settings.limitHigh || 5;
+    // 🛡️ 安全 DOM 哨兵守衛，防止 Null TypeError 造成執行序中斷崩潰
+    const cfgMgr = document.getElementById('cfg-pass-manager');
+    const cfgEmp = document.getElementById('cfg-pass-employee');
+    const cfgTitle = document.getElementById('cfg-web-title');
+    const cfgLock = document.getElementById('cfg-lock-day');
+    const cfgMaxFt = document.getElementById('cfg-max-ft-leave');
+    const cfgMaxPt = document.getElementById('cfg-max-pt-leave');
+    const cfgLimitL = document.getElementById('cfg-limit-low');
+    const cfgLimitH = document.getElementById('cfg-limit-high');
+
+    if (cfgMgr) cfgMgr.value = state.settings.passManager || "8888";
+    if (cfgEmp) cfgEmp.value = state.settings.passEmployee || "1234";
+    if (cfgTitle) cfgTitle.value = state.settings.webTitle || "分店智能排班系統 V10.0";
+    if (cfgLock) cfgLock.value = state.settings.lockDay || 26;
+    if (cfgMaxFt) cfgMaxFt.value = state.settings.maxFtLeave || 5;
+    if (cfgMaxPt) cfgMaxPt.value = state.settings.maxPtLeave || 20;
+    if (cfgLimitL) cfgLimitL.value = state.settings.limitLow || 3;
+    if (cfgLimitH) cfgLimitH.value = state.settings.limitHigh || 5;
     
     document.title = state.settings.webTitle; 
-    document.getElementById('web-title-tag').innerText = state.settings.webTitle;
-    document.getElementById('login-box-title').innerText = state.settings.webTitle;
-    document.getElementById('page-main-title').innerHTML = `${state.settings.webTitle} <span style="color:var(--warning);">[動態體]</span>`;
+    const webTag = document.getElementById('web-title-tag');
+    const loginTitle = document.getElementById('login-box-title');
+    const mainTitle = document.getElementById('page-main-title');
+
+    if (webTag) webTag.innerText = state.settings.webTitle;
+    if (loginTitle) loginTitle.innerText = state.settings.webTitle;
+    if (mainTitle) mainTitle.innerHTML = `${state.settings.webTitle} <span style="color:var(--warning);">[動態體]</span>`;
     
     if (cloudLoads.emp && cloudLoads.hol && cloudLoads.ovr && cloudLoads.note) runScheduler();
 }
@@ -583,7 +597,302 @@ function renderHolidayTable() {
     });
 }
 
-// ==================== ⚙️ 核心演算法：智能分配沙盒排班 ====================
+// ==================== 👥 員工資料庫表與安全帳密維護 ====================
+function renderEmployeeTable() {
+    const tbody = document.getElementById('employee-table-body'); 
+    if(!tbody) return; 
+    tbody.innerHTML = '';
+    const isReadonly = (state.currentRole !== 'manager') ? 'disabled' : '';
+    
+    state.employees.forEach((emp, index) => {
+        let currentRole = emp.role || 'Full-time';
+        const code = emp.id || defaultStaffIds[emp.name] || "100";
+        const pass = emp.password || (code + "22");
+        
+        tbody.innerHTML += `
+            <tr>
+                <td>
+                    <input type="text" class="emp-id-input" ${isReadonly} style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${code}" oninput="updateEmployeeRowPassword(this, ${index})">
+                </td>
+                <td>
+                    <input type="text" class="emp-name-input" ${isReadonly} style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${emp.name}">
+                </td>
+                <td>
+                    <select class="emp-type-select" ${isReadonly} style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <option value="Full-time" ${currentRole === 'Full-time' ? 'selected' : ''}>Full-time</option>
+                        <option value="Part-time" ${currentRole === 'Part-time' ? 'selected' : ''}>Part-time</option>
+                        <option value="學徒" ${currentRole === '學徒' ? 'selected' : ''}>學徒</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="emp-shops-input" ${isReadonly} style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${emp.p_shops || ''}">
+                </td>
+                <td>
+                    <input type="text" class="emp-times-input" ${isReadonly} style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${emp.times || ''}">
+                </td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
+                        <input type="text" class="emp-pass-input" ${isReadonly} style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${pass}">
+                        <button class="btn" ${isReadonly} style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-del" ${isReadonly} style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function updateEmployeeRowPassword(idInput) {
+    const tr = idInput.closest('tr');
+    if (!tr) return;
+    const passInput = tr.querySelector('.emp-pass-input');
+    if (passInput) {
+        const idVal = idInput.value.trim();
+        if (idVal) {
+            passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+        }
+    }
+}
+
+function regenerateEmployeeRowPass(btn) {
+    const tr = btn.closest('tr');
+    if (!tr) return;
+    const idInput = tr.querySelector('.emp-id-input') || tr.querySelector('.sett-id-field');
+    const passInput = tr.querySelector('.emp-pass-input') || tr.querySelector('.sett-pass-field');
+    if (idInput && passInput) {
+        const idVal = idInput.value.trim();
+        if (idVal) {
+            passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+            showToastMessage("🔄 密碼重算完成！");
+        } else {
+            alert("⚠️ 請先輸入工號！");
+        }
+    }
+}
+
+function addEmployeeRow() {
+    if(state.currentRole !== 'manager') return; 
+    const tbody = document.getElementById('employee-table-body'); 
+    if(!tbody) return;
+    const randomSuffix = String(Math.floor(Math.random() * 90 + 10));
+    tbody.innerHTML += `
+        <tr>
+            <td>
+                <input type="text" class="emp-id-input" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="updateEmployeeRowPassword(this)">
+            </td>
+            <td>
+                <input type="text" class="emp-name-input" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" placeholder="姓名">
+            </td>
+            <td>
+                <select class="emp-type-select" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <option value="Full-time" selected>Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="學徒">學徒</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" class="emp-shops-input" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="G2, G38, GK3">
+            </td>
+            <td>
+                <input type="text" class="emp-times-input" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="11:00, 12:00, 13:00">
+            </td>
+            <td>
+                <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
+                    <input type="text" class="emp-pass-input" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124${randomSuffix}">
+                    <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)">🔄</button>
+                </div>
+            </td>
+            <td>
+                <button class="btn btn-del" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest('tr').remove()">刪除</button>
+            </td>
+        </tr>
+    `;
+}
+
+function saveEmployeeData() {
+    if (state.currentRole !== 'manager') return; 
+    const rows = document.querySelectorAll('#employee-table-body tr'); 
+    let newEmps = [];
+    rows.forEach(row => { 
+        const id = row.querySelector('.emp-id-input').value.trim();
+        const name = row.querySelector('.emp-name-input').value.trim(); 
+        const role = row.querySelector('.emp-type-select').value;
+        const p_shops = row.querySelector('.emp-shops-input').value;
+        const times = row.querySelector('.emp-times-input').value;
+        const password = row.querySelector('.emp-pass-input').value.trim();
+        if(!name) return; 
+        newEmps.push({ id, name, role, p_shops, times, password }); 
+    });
+    state.employees = newEmps;
+    if(isCloudMode && database) { 
+        database.ref(`v8_employees`).set(state.employees).then(() => { showToastMessage('👥 員工設定與安全帳密已成功發佈！'); }); 
+    } else { 
+        localStorage.setItem('v8_employees', JSON.stringify(state.employees)); 
+        showToastMessage('💾 員工名單已儲存至本地！'); 
+        populateStaffDropdown(); 
+        renderSettingsAccountsList(state.employees);
+    }
+}
+
+// ==================== ⚙️ 微調設定頁：員工帳密管理渲染與操作 ====================
+function renderSettingsAccountsList(employees) {
+    const tbody = document.getElementById('settings-accounts-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (employees.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-weight:bold;">⚠️ 雲端尚無員工名單！請先在員工管理頁新增。</td></tr>`;
+        return;
+    }
+
+    employees.forEach((e, idx) => {
+        if (!e) return;
+        const code = e.id || "100";
+        const pass = e.password || (code + "22");
+
+        tbody.innerHTML += `
+            <tr style="border-bottom:1px solid #f1f5f9;" data-idx="${idx}">
+                <td style="padding:10px; font-weight:bold; color:#1e293b;">${e.name || '未命名'}</td>
+                <td style="padding:10px; text-align:center;">
+                    <input type="text" class="sett-id-field" style="width:100px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${code}" oninput="updateSettingsRowPassword(this)">
+                </td>
+                <td style="padding:10px; text-align:center;">
+                    <input type="text" class="sett-pass-field" style="width:120px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${pass}">
+                </td>
+                <td style="padding:10px; text-align:center;">
+                    <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="regenerateEmployeeRowPass(this)">🔄 重算</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function updateSettingsRowPassword(idInput) {
+    const tr = idInput.closest('tr');
+    if (!tr) return;
+    const passInput = tr.querySelector('.sett-pass-field');
+    if (passInput) {
+        const idVal = idInput.value.trim();
+        if (idVal) {
+            passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+        }
+    }
+}
+
+function triggerRegenerateAllPasswords() {
+    if (confirm("⚠️ 確定要為所有人「重新生成」隨機預設密碼嗎？\n生成後需要點擊右下角「儲存員工帳密變更」才會正式寫入雲端！")) {
+        const rows = document.querySelectorAll('#settings-accounts-tbody tr');
+        rows.forEach(tr => {
+            const idInput = tr.querySelector('.sett-id-field');
+            const passInput = tr.querySelector('.sett-pass-field');
+            if (idInput && passInput) {
+                const idVal = idInput.value.trim();
+                passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
+            }
+        });
+        showToastMessage("⚡ 已在本機重算，請記得點擊儲存變更！");
+    }
+}
+
+function saveEmployeesAccountsFromSettings() {
+    const rows = document.querySelectorAll('#settings-accounts-tbody tr');
+    const updatedList = [...state.employees]; 
+
+    rows.forEach((tr, index) => {
+        const idInput = tr.querySelector('.sett-id-field');
+        const passInput = tr.querySelector('.sett-pass-field');
+        if (idInput && passInput && updatedList[index]) {
+            updatedList[index].id = idInput.value.trim();
+            updatedList[index].password = passInput.value.trim();
+        }
+    });
+
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        firebase.database().ref('v8_employees').set(updatedList).then(() => {
+            showToastMessage('🎉 員工登入帳號及密碼成功同步至雲端大腦！');
+        }).catch(err => {
+            alert('儲存變更失敗: ' + err.message);
+        });
+    }
+}
+
+function saveHolidayData() {
+    if(state.currentRole !== 'manager') return; 
+    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+    if(isCloudMode && database) { 
+        database.ref(`v8_holidays/${monthKey}`).set(state.holidays).then(() => { showToastMessage('🏖️ 放假大表已成功發佈！'); }); 
+    } 
+}
+
+function handleManualSlotChange(shop, index, field, value) {
+    const dayKey = `day_${state.currentDay}`; 
+    if (!state.overrides[dayKey]) { 
+        state.overrides[dayKey] = JSON.parse(document.getElementById('current-rendered-data-cache').value); 
+    }
+    state.overrides[dayKey][shop][index][field] = value; 
+    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+    if(isCloudMode && database) { 
+        database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]); 
+    } else { 
+        localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); 
+        refreshBadgesOnly(state.overrides[dayKey]); 
+    }
+}
+
+function resetCurrentDayToAuto() {
+    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
+    if(isCloudMode && database) { 
+        database.ref(`v8_overrides/${monthKey}/day_${state.currentDay}`).remove(); 
+    } else { 
+        if(state.overrides[`day_${state.currentDay}`]) { 
+            delete state.overrides[`day_${state.currentDay}`]; 
+            localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); 
+            runScheduler(); 
+        } 
+    }
+}
+
+function refreshBadgesOnly(reportData) {
+    let shopCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; 
+    ['F79', 'GK3', 'G38', 'G2'].forEach(shop => { 
+        reportData[shop].forEach(slot => { if(slot.name) shopCounts[shop]++; }); 
+    });
+    renderMonitorBadges(shopCounts);
+}
+
+// ==================== ⚙️ 演算法與每日排班邏輯核心 ====================
+function runScheduler() {
+    let leavesToday = []; 
+    state.employees.forEach(emp => { if ((state.holidays[emp.name] || []).includes(state.currentDay)) leavesToday.push(emp.name); });
+    
+    const dayKey = `day_${state.currentDay}`; 
+    let report = {}; 
+    let activeStaff = state.employees.filter(e => !(state.holidays[e.name] || []).includes(state.currentDay));
+    let manicurists = activeStaff.filter(e => e.role !== '學徒'); 
+    let apprentices = activeStaff.filter(e => e.role === '學徒');
+    
+    const totalTextEl = document.getElementById('total-working-text'); 
+    const leaveBoxEl = document.getElementById('today-leave-names-box');
+    
+    if (state.overrides[dayKey]) {
+        report = state.overrides[dayKey];
+        if(totalTextEl) totalTextEl.innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 美甲師：<b>${manicurists.length}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${activeStaff.length}</b> 人 (⚠️手動微調模式)`;
+        if(leaveBoxEl) leaveBoxEl.innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
+        refreshBadgesOnly(report); 
+        renderInteractiveReport(report); 
+        return;
+    }
+    
+    let result = calculateDaySchedule(state.currentDay); 
+    report = result.report;
+    if(totalTextEl) totalTextEl.innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 美甲師：<b>${result.manicuristCount}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${result.totalCount}</b> 人`;
+    if(leaveBoxEl) leaveBoxEl.innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
+    refreshBadgesOnly(report); 
+    renderInteractiveReport(report);
+}
+
 function calculateDaySchedule(dayNumber) {
     let report = { F79: [], GK3: [], G38: [], G2: [] }; 
     let isSun = isSunday(state.currentYear, state.currentMonth, dayNumber);
@@ -716,7 +1025,7 @@ function autoExtractTime(emp, shift, isSun, shop) {
     }
 }
 
-// ==================== 💾 下載時空備份封包與還原 ====================
+// ==================== 💾 下載與時空還原 ====================
 function downloadTimeCapsuleBackup() {
     const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
     const backupPackage = { v8_employees: state.employees, v8_holidays: state.holidays, v8_overrides: state.overrides, v8_settings: state.settings, v8_special_notes: state.notes };
@@ -838,35 +1147,38 @@ function triggerSafeUIRender() {
     }
 }
 
-// ==================== 🚀 核心執行啟動入口 ====================
-calculateAutoDefaultDate(); 
-initYearMonthDropdowns();
+// ==================== 🚀 核心監聽封裝啟動入口 ====================
+// 💡 全面封裝在 DOMContentLoaded 中，保證 100% 網頁 DOM 樹與 Overrides 全部載入後才初始化 Firebase 與排班！
+window.addEventListener('DOMContentLoaded', () => {
+    calculateAutoDefaultDate(); 
+    initYearMonthDropdowns();
 
-if (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined') {
-    try {
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
-        database.ref(".info/connected").on("value", function(snap) { 
-            if (snap.val() === true) { 
-                isCloudMode = true; 
-                setupSettingsListener(); 
-                handleDateContextChange(); 
-            } 
-        });
-    } catch(e) { isCloudMode = false; }
-}
-
-setTimeout(function() {
-    if (!isCloudMode) {
-        const ind = document.getElementById('cloud-indicator'); 
-        if(ind) { 
-            ind.className = "cloud-status status-offline"; 
-            ind.innerText = "⚠️ 獨立離線模式下運作（本地快取保護中）"; 
-        }
-        state.settings = JSON.parse(localStorage.getItem('v8_settings')) || JSON.parse(JSON.stringify(defaultSystemSettings)); 
-        applyDynamicSettingsToUI(); 
-        loadLocalFallbackContext();
+    if (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined') {
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            database.ref(".info/connected").on("value", function(snap) { 
+                if (snap.val() === true) { 
+                    isCloudMode = true; 
+                    setupSettingsListener(); 
+                    handleDateContextChange(); 
+                } 
+            });
+        } catch(e) { isCloudMode = false; }
     }
-}, 1500);
+
+    setTimeout(function() {
+        if (!isCloudMode) {
+            const ind = document.getElementById('cloud-indicator'); 
+            if(ind) { 
+                ind.className = "cloud-status status-offline"; 
+                ind.innerText = "⚠️ 獨立離線模式下運作（本地快取保護中）"; 
+            }
+            state.settings = JSON.parse(localStorage.getItem('v8_settings')) || JSON.parse(JSON.stringify(defaultSystemSettings)); 
+            applyDynamicSettingsToUI(); 
+            loadLocalFallbackContext();
+        }
+    }, 1500);
+});
 
 
