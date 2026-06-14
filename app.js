@@ -1,6 +1,6 @@
 
 // 🔮 雲端資料庫連線鎖匙 (與分店智能主機 100% 保持一致)
-var firebaseConfig = {
+window.firebaseConfig = {
     apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
     authDomain: "cp-schedule.firebaseapp.com",
     databaseURL: "https://cp-schedule-default-rtdb.firebaseio.com/",
@@ -11,8 +11,16 @@ var firebaseConfig = {
     measurementId: "G-W0L45WCMV2"
 };
 
-// 1. 預設備份員工名單 (在雲端數據尚未加載完成或處於離線狀態時自動啟用)
-const defaultEmployees = [
+// 1. 預設工號與密碼對應表
+window.defaultStaffIds = {
+    "阿平": "101", "RUBY": "102", "如意": "103", "影": "105", "慧嫻": "106",
+    "二妹": "107", "TT": "108", "Cici": "109", "CICI": "109", "珍": "110", "Jackie": "111", "JACKIE": "111",
+    "澄澄": "113", "ALICE": "115", "阿璇": "116", "Mandy婷": "117", "MANDY婷": "117", "妙妙": "118",
+    "葉子": "119", "Lucia": "120", "LUCIA": "120", "AMY": "121", "小茹": "122", "文君": "123"
+};
+
+// 2. 預設備份員工名單 (在雲端數據尚未加載完成或處於離線狀態時自動啟用)
+window.defaultEmployees = [
     { "name": "阿平", "p_shops": "G2, G38, GK3, F79", "role": "Full-time", "times": "12:00, 13:00" },
     { "name": "RUBY", "p_shops": "G2, G38, GK3", "role": "Part-time", "times": "11:00, 18:00" },
     { "name": "如意", "p_shops": "F79", "role": "Full-time", "times": "12:00" },
@@ -35,8 +43,8 @@ const defaultEmployees = [
     { "name": "文君", "p_shops": "G2, G38, GK3", "role": "學徒", "times": "11:00, 12:00, 13:00" }
 ];
 
-// 2. 預設原始放假數據 (僅作為離線備用)
-const defaultHolidaysData = {
+// 3. 預設原始放假數據 (僅作為離線備用)
+window.defaultHolidaysData = {
     "ALICE": [8, 17, 27, 7], "AMY": [9, 18, 19, 20, 1, 2, 3, 4], 
     "Jackie": [1, 2, 3, 7, 8, 9, 10, 14, 15, 19, 20, 21, 22, 23, 24, 28, 29], 
     "Lucia": [19, 27, 28], "Mandy婷": [5, 12, 19, 20, 21, 28], 
@@ -47,36 +55,37 @@ const defaultHolidaysData = {
     "澄澄": [3, 4, 17, 18], "葉子": [29, 30], "阿平": [1, 2, 3, 4, 5, 6, 7], "阿璇": [13, 14, 15, 16], "Cici": [], "珍": [], "文君": []
 };
 
-// 3. 預設全局設定值
-const defaultSystemSettings = {
+// 4. 預設全域系統微調設定
+window.defaultSystemSettings = {
     passManager: "8888", passEmployee: "1234", webTitle: "分店智能排班系統 V10.0",
     lockDay: 26, maxFtLeave: 5, maxPtLeave: 20, limitLow: 3, limitHigh: 5
 };
 
-// 4. 全局狀態與 Firebase 變量
-var database = null; 
-var isCloudMode = false;
-let state = { 
+// 5. 系統大腦核心狀態變數
+window.database = null; 
+window.isCloudMode = false;
+window.state = { 
     employees: [], currentYear: 2026, currentMonth: 5, currentDay: 1, 
     holidays: {}, overrides: {}, notes: {}, pendingApprovals: {}, 
-    currentRole: 'none', localHolidaysDraft: {}, settings: JSON.parse(JSON.stringify(defaultSystemSettings))
+    currentRole: 'none', localHolidaysDraft: {}, settings: JSON.parse(JSON.stringify(window.defaultSystemSettings))
 };
 
-var empRef, holRef, ovrRef, appRef, noteRef, cfgRef;
-let cloudLoads = { emp: false, hol: false, ovr: false, note: false };
-let draggedSourceData = null;
+window.empRef = null; window.holRef = null; window.ovrRef = null; 
+window.appRef = null; window.noteRef = null; window.cfgRef = null;
+window.cloudLoads = { emp: false, hol: false, ovr: false, note: false };
+window.draggedSourceData = null;
 
 // ==================== ⚙️ 系統核心微調參數與同步監聽 ====================
-function setupSettingsListener() {
-    if(!database || !isCloudMode) return;
-    cfgRef = database.ref('v8_settings');
-    cfgRef.on('value', (snapshot) => {
-        state.settings = snapshot.exists() ? Object.assign({}, defaultSystemSettings, snapshot.val()) : JSON.parse(JSON.stringify(defaultSystemSettings));
-        applyDynamicSettingsToUI();
+window.setupSettingsListener = function() {
+    if(!window.database || !window.isCloudMode) return;
+    window.cfgRef = window.database.ref('v8_settings');
+    window.cfgRef.on('value', (snapshot) => {
+        window.state.settings = snapshot.exists() ? Object.assign({}, window.defaultSystemSettings, snapshot.val()) : JSON.parse(JSON.stringify(window.defaultSystemSettings));
+        window.applyDynamicSettingsToUI();
     });
-}
+};
 
-function applyDynamicSettingsToUI() {
+window.applyDynamicSettingsToUI = function() {
     // 🛡️ 安全 DOM 哨兵守衛，防止 Null TypeError 造成執行序中斷崩潰
     const cfgMgr = document.getElementById('cfg-pass-manager');
     const cfgEmp = document.getElementById('cfg-pass-employee');
@@ -87,50 +96,65 @@ function applyDynamicSettingsToUI() {
     const cfgLimitL = document.getElementById('cfg-limit-low');
     const cfgLimitH = document.getElementById('cfg-limit-high');
 
-    if (cfgMgr) cfgMgr.value = state.settings.passManager || "8888";
-    if (cfgEmp) cfgEmp.value = state.settings.passEmployee || "1234";
-    if (cfgTitle) cfgTitle.value = state.settings.webTitle || "分店智能排班系統 V10.0";
-    if (cfgLock) cfgLock.value = state.settings.lockDay || 26;
-    if (cfgMaxFt) cfgMaxFt.value = state.settings.maxFtLeave || 5;
-    if (cfgMaxPt) cfgMaxPt.value = state.settings.maxPtLeave || 20;
-    if (cfgLimitL) cfgLimitL.value = state.settings.limitLow || 3;
-    if (cfgLimitH) cfgLimitH.value = state.settings.limitHigh || 5;
+    if (cfgMgr) cfgMgr.value = window.state.settings.passManager || "8888";
+    if (cfgEmp) cfgEmp.value = window.state.settings.passEmployee || "1234";
+    if (cfgTitle) cfgTitle.value = window.state.settings.webTitle || "分店智能排班系統 V10.0";
+    if (cfgLock) cfgLock.value = window.state.settings.lockDay || 26;
+    if (cfgMaxFt) cfgMaxFt.value = window.state.settings.maxFtLeave || 5;
+    if (cfgMaxPt) cfgMaxPt.value = window.state.settings.maxPtLeave || 20;
+    if (cfgLimitL) cfgLimitL.value = window.state.settings.limitLow || 3;
+    if (cfgLimitH) cfgLimitH.value = window.state.settings.limitHigh || 5;
     
-    document.title = state.settings.webTitle; 
+    document.title = window.state.settings.webTitle; 
     const webTag = document.getElementById('web-title-tag');
     const loginTitle = document.getElementById('login-box-title');
     const mainTitle = document.getElementById('page-main-title');
 
-    if (webTag) webTag.innerText = state.settings.webTitle;
-    if (loginTitle) loginTitle.innerText = state.settings.webTitle;
-    if (mainTitle) mainTitle.innerHTML = `${state.settings.webTitle} <span style="color:var(--warning);">[動態體]</span>`;
+    if (webTag) webTag.innerText = window.state.settings.webTitle;
+    if (loginTitle) loginTitle.innerText = window.state.settings.webTitle;
+    if (mainTitle) mainTitle.innerHTML = `${window.state.settings.webTitle} <span style="color:var(--warning);">[動態體]</span>`;
     
-    if (cloudLoads.emp && cloudLoads.hol && cloudLoads.ovr && cloudLoads.note) runScheduler();
-}
-
-function saveGlobalSystemSettings() {
-    if (state.currentRole !== 'manager') return;
-    state.settings = {
-        passManager: document.getElementById('cfg-pass-manager').value.trim(),
-        passEmployee: document.getElementById('cfg-pass-employee').value.trim(),
-        webTitle: document.getElementById('cfg-web-title').value.trim(),
-        lockDay: parseInt(document.getElementById('cfg-lock-day').value),
-        maxFtLeave: parseInt(document.getElementById('cfg-max-ft-leave').value),
-        maxPtLeave: parseInt(document.getElementById('cfg-max-pt-leave').value),
-        limitLow: parseInt(document.getElementById('cfg-limit-low').value),
-        limitHigh: parseInt(document.getElementById('cfg-limit-high').value)
-    };
-    if (isCloudMode && database) {
-        database.ref('v8_settings').set(state.settings).then(() => { showToastMessage('⚙️ 全局配置已成功發佈至雲端！'); });
-    } else {
-        localStorage.setItem('v8_settings', JSON.stringify(state.settings)); 
-        showToastMessage('💾 配置已成功儲存至本地快取中！'); 
-        applyDynamicSettingsToUI();
+    if (window.cloudLoads.emp && window.cloudLoads.hol && window.cloudLoads.ovr && window.cloudLoads.note) {
+        window.runScheduler();
     }
-}
+};
+
+window.saveGlobalSystemSettings = function() {
+    if (window.state.currentRole !== 'manager') return;
+    
+    const cfgMgrVal = document.getElementById('cfg-pass-manager')?.value.trim();
+    const cfgEmpVal = document.getElementById('cfg-pass-employee')?.value.trim();
+    const cfgTitleVal = document.getElementById('cfg-web-title')?.value.trim();
+    const cfgLockVal = parseInt(document.getElementById('cfg-lock-day')?.value || 26);
+    const cfgMaxFtVal = parseInt(document.getElementById('cfg-max-ft-leave')?.value || 5);
+    const cfgMaxPtVal = parseInt(document.getElementById('cfg-max-pt-leave')?.value || 20);
+    const cfgLimitLVal = parseInt(document.getElementById('cfg-limit-low')?.value || 3);
+    const cfgLimitHVal = parseInt(document.getElementById('cfg-limit-high')?.value || 5);
+
+    window.state.settings = {
+        passManager: cfgMgrVal,
+        passEmployee: cfgEmpVal,
+        webTitle: cfgTitleVal,
+        lockDay: cfgLockVal,
+        maxFtLeave: cfgMaxFtVal,
+        maxPtLeave: cfgMaxPtVal,
+        limitLow: cfgLimitLVal,
+        limitHigh: cfgLimitHVal
+    };
+
+    if (window.isCloudMode && window.database) {
+        window.database.ref('v8_settings').set(window.state.settings).then(() => { 
+            showToastMessage('⚙️ 全局配置已成功發佈至雲端！'); 
+        });
+    } else {
+        localStorage.setItem('v8_settings', JSON.stringify(window.state.settings)); 
+        showToastMessage('💾 配置已成功儲存至本地快取中！'); 
+        window.applyDynamicSettingsToUI();
+    }
+};
 
 // ==================== 📅 每日排班沙盒渲染與拖拽 ====================
-function generateTimeOptions(selectedValue) {
+window.generateTimeOptions = function(selectedValue) {
     let optionsHtml = `<option value="">無班次</option>`; 
     let tClean = selectedValue || '';
     if (tClean.includes('(')) { 
@@ -146,44 +170,58 @@ function generateTimeOptions(selectedValue) {
         });
     }
     return optionsHtml;
-}
+};
 
-function handleSlotDragStart(e, shop, index) {
-    let report = JSON.parse(document.getElementById('current-rendered-data-cache').value);
-    draggedSourceData = { shop: shop, index: index, payload: report[shop][index] }; 
+window.handleSlotDragStart = function(e, shop, index) {
+    const cacheInput = document.getElementById('current-rendered-data-cache');
+    if (!cacheInput) return;
+    let report = JSON.parse(cacheInput.value);
+    window.draggedSourceData = { shop: shop, index: index, payload: report[shop][index] }; 
     e.currentTarget.classList.add('dragging'); 
     e.dataTransfer.effectAllowed = 'move';
-}
-function handleSlotDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function handleSlotDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-function handleSlotDrop(e, targetShop, targetIndex) {
+};
+
+window.handleSlotDragOver = function(e) { 
+    e.preventDefault(); 
+    e.currentTarget.classList.add('drag-over'); 
+};
+
+window.handleSlotDragLeave = function(e) { 
+    e.currentTarget.classList.remove('drag-over'); 
+};
+
+window.handleSlotDrop = function(e, targetShop, targetIndex) {
     e.preventDefault(); 
     e.currentTarget.classList.remove('drag-over'); 
     document.querySelectorAll('.slot-box').forEach(el => el.classList.remove('dragging'));
-    if (!draggedSourceData) return; 
-    const sourceShop = draggedSourceData.shop; 
-    const sourceIndex = draggedSourceData.index; 
+    if (!window.draggedSourceData) return; 
+    
+    const sourceShop = window.draggedSourceData.shop; 
+    const sourceIndex = window.draggedSourceData.index; 
     if (sourceShop === targetShop && sourceIndex === targetIndex) return;
     
-    const dayKey = `day_${state.currentDay}`; 
-    if (!state.overrides[dayKey]) { 
-        state.overrides[dayKey] = JSON.parse(document.getElementById('current-rendered-data-cache').value); 
-    }
-    let temp = state.overrides[dayKey][targetShop][targetIndex]; 
-    state.overrides[dayKey][targetShop][targetIndex] = state.overrides[dayKey][sourceShop][sourceIndex]; 
-    state.overrides[dayKey][sourceShop][sourceIndex] = temp;
-    
-    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-    if(isCloudMode && database) { 
-        database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]); 
-    } else { 
-        localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); 
-        runScheduler(); 
-    }
-    draggedSourceData = null;
-}
+    const dayKey = `day_${window.state.currentDay}`; 
+    const cacheInput = document.getElementById('current-rendered-data-cache');
+    if (!cacheInput) return;
 
-function renderMonitorBadges(shopCounts) {
+    if (!window.state.overrides[dayKey]) { 
+        window.state.overrides[dayKey] = JSON.parse(cacheInput.value); 
+    }
+    let temp = window.state.overrides[dayKey][targetShop][targetIndex]; 
+    window.state.overrides[dayKey][targetShop][targetIndex] = window.state.overrides[dayKey][sourceShop][sourceIndex]; 
+    window.state.overrides[dayKey][sourceShop][sourceIndex] = temp;
+    
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    if(window.isCloudMode && window.database) { 
+        window.database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(window.state.overrides[dayKey]); 
+    } else { 
+        localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(window.state.overrides)); 
+        window.runScheduler(); 
+    }
+    window.draggedSourceData = null;
+};
+
+window.renderMonitorBadges = function(shopCounts) {
     const monitorPanel = document.getElementById('monitor-panel'); 
     if(!monitorPanel) return; 
     monitorPanel.innerHTML = '';
@@ -205,59 +243,59 @@ function renderMonitorBadges(shopCounts) {
         }
         monitorPanel.innerHTML += `<div class="badge ${badgeClass}"><div style="font-weight:bold;">${shop}</div><div style="font-size:18px; font-weight:900; margin:2px 0;">${count}人</div><div style="font-size:10px; opacity:0.8;">${txt}</div></div>`;
     });
-}
+};
 
-function setupFirebaseListeners() {
-    if(!database || !isCloudMode) return; 
-    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-    cloudLoads = { emp: false, hol: false, ovr: false, note: false };
+window.setupFirebaseListeners = function() {
+    if(!window.database || !window.isCloudMode) return; 
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    window.cloudLoads = { emp: false, hol: false, ovr: false, note: false };
     
-    if(empRef) empRef.off(); 
-    if(holRef) holRef.off(); 
-    if(ovrRef) ovrRef.off(); 
-    if(appRef) appRef.off(); 
-    if(noteRef) noteRef.off();
+    if(window.empRef) window.empRef.off(); 
+    if(window.holRef) window.holRef.off(); 
+    if(window.ovrRef) window.ovrRef.off(); 
+    if(window.appRef) window.appRef.off(); 
+    if(window.noteRef) window.noteRef.off();
     
-    empRef = database.ref('v8_employees');
-    empRef.on('value', (snapshot) => { 
-        const val = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(defaultEmployees)); 
-        state.employees = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
-        cloudLoads.emp = true; 
-        triggerSafeUIRender(); 
+    window.empRef = window.database.ref('v8_employees');
+    window.empRef.on('value', (snapshot) => { 
+        const val = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(window.defaultEmployees)); 
+        window.state.employees = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+        window.cloudLoads.emp = true; 
+        window.triggerSafeUIRender(); 
     });
     
-    holRef = database.ref(`v8_holidays/${monthKey}`);
-    holRef.on('value', (snapshot) => { 
-        state.holidays = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(defaultHolidaysData)); 
-        state.localHolidaysDraft = JSON.parse(JSON.stringify(state.holidays)); 
-        cloudLoads.hol = true; 
-        triggerSafeUIRender(); 
+    window.holRef = window.database.ref(`v8_holidays/${monthKey}`);
+    window.holRef.on('value', (snapshot) => { 
+        window.state.holidays = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(window.defaultHolidaysData)); 
+        window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays)); 
+        window.cloudLoads.hol = true; 
+        window.triggerSafeUIRender(); 
     });
     
-    ovrRef = database.ref(`v8_overrides/${monthKey}`);
-    ovrRef.on('value', (snapshot) => { 
-        state.overrides = snapshot.exists() ? snapshot.val() : {}; 
-        cloudLoads.ovr = true; 
-        triggerSafeUIRender(); 
+    window.ovrRef = window.database.ref(`v8_overrides/${monthKey}`);
+    window.ovrRef.on('value', (snapshot) => { 
+        window.state.overrides = snapshot.exists() ? snapshot.val() : {}; 
+        window.cloudLoads.ovr = true; 
+        window.triggerSafeUIRender(); 
     });
     
-    noteRef = database.ref(`v8_special_notes/${monthKey}`);
-    noteRef.on('value', (snapshot) => { 
-        state.notes = snapshot.exists() ? snapshot.val() : {}; 
-        cloudLoads.note = true; 
-        triggerSafeUIRender(); 
+    window.noteRef = window.database.ref(`v8_special_notes/${monthKey}`);
+    window.noteRef.on('value', (snapshot) => { 
+        window.state.notes = snapshot.exists() ? snapshot.val() : {}; 
+        window.cloudLoads.note = true; 
+        window.triggerSafeUIRender(); 
     });
     
-    appRef = database.ref(`v8_pending_approvals/${monthKey}`); 
-    appRef.on('value', (snapshot) => { 
-        state.pendingApprovals = snapshot.exists() ? snapshot.val() : {}; 
-        if (typeof renderPendingApprovalsBox === 'function') {
-            renderPendingApprovalsBox(); 
+    window.appRef = window.database.ref(`v8_pending_approvals/${monthKey}`); 
+    window.appRef.on('value', (snapshot) => { 
+        window.state.pendingApprovals = snapshot.exists() ? snapshot.val() : {}; 
+        if (typeof window.renderPendingApprovalsBox === 'function') {
+            window.renderPendingApprovalsBox(); 
         }
     });
-}
+};
 
-function initYearMonthDropdowns() {
+window.initYearMonthDropdowns = function() {
     const yrSel = document.getElementById('schedule-year-select'); 
     const moSel = document.getElementById('schedule-month-select'); 
     if(!yrSel || !moSel) return;
@@ -270,63 +308,63 @@ function initYearMonthDropdowns() {
     for(let m=1; m<=12; m++) { 
         moSel.innerHTML += `<option value="${m}">${m} 月</option>`; 
     }
-    yrSel.value = state.currentYear; 
-    moSel.value = state.currentMonth; 
-    syncDayDropdown();
-}
+    yrSel.value = window.state.currentYear; 
+    moSel.value = window.state.currentMonth; 
+    window.syncDayDropdown();
+};
 
-function syncDayDropdown() {
+window.syncDayDropdown = function() {
     const daySel = document.getElementById('schedule-day-select'); 
     if(!daySel) return; 
     daySel.innerHTML = ''; 
-    let totalDays = getDaysInMonth(state.currentYear, state.currentMonth);
+    let totalDays = window.getDaysInMonth(window.state.currentYear, window.state.currentMonth);
     for(let d = 1; d <= totalDays; d++) { 
-        daySel.innerHTML += `<option value="${d}">${d} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, d)})</option>`; 
+        daySel.innerHTML += `<option value="${d}">${d} 日 (星期${window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d)})</option>`; 
     }
-    daySel.value = state.currentDay; 
+    daySel.value = window.state.currentDay; 
     daySel.onchange = function() { 
-        state.currentDay = parseInt(this.value); 
-        runScheduler(); 
+        window.state.currentDay = parseInt(this.value); 
+        window.runScheduler(); 
     };
-}
+};
 
-function handleDateContextChange() {
+window.handleDateContextChange = function() {
     const yrSel = document.getElementById('schedule-year-select'); 
     const moSel = document.getElementById('schedule-month-select'); 
     if(!yrSel || !moSel) return;
     
-    state.currentYear = parseInt(yrSel.value) || 2026; 
-    state.currentMonth = parseInt(moSel.value) || 5;
+    window.state.currentYear = parseInt(yrSel.value) || 2026; 
+    window.state.currentMonth = parseInt(moSel.value) || 5;
     
-    if (database && isCloudMode) { 
-        setupFirebaseListeners(); 
+    if (window.database && window.isCloudMode) { 
+        window.setupFirebaseListeners(); 
     } else { 
-        loadLocalFallbackContext(); 
+        window.loadLocalFallbackContext(); 
     }
-    syncDayDropdown(); 
+    window.syncDayDropdown(); 
     
     const titleEl = document.getElementById('holiday-title-text'); 
-    if(titleEl) titleEl.innerText = `${state.currentYear}年${state.currentMonth}月份放假表 (管理層大表)`;
-}
+    if(titleEl) titleEl.innerText = `${window.state.currentYear}年${window.state.currentMonth}月份放假表 (管理層大表)`;
+};
 
-function populateStaffDropdown() {
+window.populateStaffDropdown = function() {
     const sel = document.getElementById('my-month-staff-select'); 
     if(!sel) return; 
     const currentSelected = sel.value; 
     sel.innerHTML = '';
-    state.employees.forEach(e => { 
+    window.state.employees.forEach(e => { 
         sel.innerHTML += `<option value="${e.name}">${e.name} [${e.role}]</option>`; 
     });
-    if (currentSelected && state.employees.some(e => e.name === currentSelected)) { 
+    if (currentSelected && window.state.employees.some(e => e.name === currentSelected)) { 
         sel.value = currentSelected; 
     }
-}
+};
 
-function getDaysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
-function getDayOfWeekText(year, month, day) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(year, month - 1, day).getDay()]; }
-function isSunday(year, month, day) { return new Date(year, month - 1, day).getDay() === 0; }
+window.getDaysInMonth = function(year, month) { return new Date(year, month, 0).getDate(); };
+window.getDayOfWeekText = function(year, month, day) { return ['日', '一', '二', '三', '四', '五', '六'][new Date(year, month - 1, day).getDay()]; };
+window.isSunday = function(year, month, day) { return new Date(year, month - 1, day).getDay() === 0; };
 
-function renderInteractiveReport(report) {
+window.renderInteractiveReport = function(report) {
     let cacheInput = document.getElementById('current-rendered-data-cache');
     if(!cacheInput) { 
         cacheInput = document.createElement('input'); 
@@ -341,9 +379,9 @@ function renderInteractiveReport(report) {
     
     const headerColors = { F79: '#4f46e5', GK3: '#9333ea', G38: '#d97706', G2: '#0d9488' };
     let nameOptionsHtml = `<option value="">-- 空缺 --</option>`; 
-    state.employees.forEach(e => { nameOptionsHtml += `<option value="${e.name}">${e.name}</option>`; });
+    window.state.employees.forEach(e => { nameOptionsHtml += `<option value="${e.name}">${e.name}</option>`; });
     
-    const isManager = (state.currentRole === 'manager');
+    const isManager = (window.state.currentRole === 'manager');
     ['F79', 'GK3', 'G38', 'G2'].forEach(shop => {
         let slotsHtml = '';
         for (let i = 0; i < 6; i++) {
@@ -352,55 +390,57 @@ function renderInteractiveReport(report) {
             const isDisabled = !isManager ? 'disabled style="opacity:0.8; background:#f3f4f6;"' : ''; 
             let noteTextHtml = '';
             
-            if (slot.name && state.notes[slot.name] && state.notes[slot.name][`day_${state.currentDay}`]) { 
-                noteTextHtml = `<div class="slot-note-text" title="${state.notes[slot.name][`day_${state.currentDay}`]}">📝 ${state.notes[slot.name][`day_${state.currentDay}`]}</div>`; 
+            if (slot.name && window.state.notes[slot.name] && window.state.notes[slot.name][`day_${window.state.currentDay}`]) { 
+                noteTextHtml = `<div class="slot-note-text" title="${window.state.notes[slot.name][`day_${window.state.currentDay}`]}">📝 ${window.state.notes[slot.name][`day_${window.state.currentDay}`]}</div>`; 
             }
-            let timeDropdownHtml = `<select class="manual-time-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'time', this.value)">${generateTimeOptions(slot.time)}</select>`;
-            let dragAttributes = isManager ? `draggable="true" ondragstart="handleSlotDragStart(event, '${shop}', ${i})" ondragover="handleSlotDragOver(event)" ondragleave="handleSlotDragLeave(event)" ondrop="handleSlotDrop(event, '${shop}', ${i})"` : '';
-            slotsHtml += `<div class="slot-box" ${dragAttributes} data-shop="${shop}" data-index="${i}"><select class="manual-name-select" ${isDisabled} onchange="handleManualSlotChange('${shop}', ${i}, 'name', this.value)">${currentSelectHtml}</select>${timeDropdownHtml}${noteTextHtml}</div>`;
+            let timeDropdownHtml = `<select class="manual-time-select" ${isDisabled} onchange="window.handleManualSlotChange('${shop}', ${i}, 'time', this.value)">${window.generateTimeOptions(slot.time)}</select>`;
+            let dragAttributes = isManager ? `draggable="true" ondragstart="window.handleSlotDragStart(event, '${shop}', ${i})" ondragover="window.handleSlotDragOver(event)" ondragleave="window.handleSlotDragLeave(event)" ondrop="window.handleSlotDrop(event, '${shop}', ${i})"` : '';
+            slotsHtml += `<div class="slot-box" ${dragAttributes} data-shop="${shop}" data-index="${i}"><select class="manual-name-select" ${isDisabled} onchange="window.handleManualSlotChange('${shop}', ${i}, 'name', this.value)">${currentSelectHtml}</select>${timeDropdownHtml}${noteTextHtml}</div>`;
         }
         let currentCount = 0; 
         report[shop].forEach(s => { if(s.name) currentCount++; });
         reportContainer.innerHTML += `<div class="shop-box"><div class="shop-header" style="background: ${headerColors[shop]};"><span>${shop} 店鋪</span><span>當前共：${currentCount} 人</span></div><div class="grid-6">${slotsHtml}</div></div>`;
     });
-}
+};
 
 // ==================== 👤 個人當月排班月曆繪製 ====================
-function renderIndividualMonthCalendar() {
+window.renderIndividualMonthCalendar = function() {
     const tbody = document.getElementById('my-month-calendar-body'); 
     if(!tbody) return; 
     tbody.innerHTML = ''; 
-    const staffName = document.getElementById('my-month-staff-select').value; 
+    const staffName = document.getElementById('my-month-staff-select')?.value; 
     if(!staffName) return;
     
-    let totalDays = getDaysInMonth(state.currentYear, state.currentMonth); 
+    let totalDays = window.getDaysInMonth(window.state.currentYear, window.state.currentMonth); 
     const realToday = new Date(); 
     const realDayNum = realToday.getDate(); 
     const realMonthNum = realToday.getMonth() + 1; 
     const realYearNum = realToday.getFullYear(); 
-    const isManager = (state.currentRole === 'manager');
+    const isManager = (window.state.currentRole === 'manager');
     
     for (let d = 1; d <= totalDays; d++) {
-        let isWknd = getDayOfWeekText(state.currentYear, state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : ''; 
+        let isWknd = window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : ''; 
         let assignedShop = '<span style="color:#9ca3af;">-</span>'; 
         let assignedTime = '<span style="color:#9ca3af;">-</span>';
-        let isPastDay = (state.currentYear < realYearNum || (state.currentYear === realYearNum && state.currentMonth < realMonthNum) || (state.currentYear === realYearNum && state.currentMonth === realMonthNum && d < realDayNum));
+        let isPastDay = (window.state.currentYear < realYearNum || (window.state.currentYear === realYearNum && window.state.currentMonth < realMonthNum) || (window.state.currentYear === realYearNum && window.state.currentMonth === realMonthNum && d < realDayNum));
         
         let dayKey = `day_${d}`; 
-        let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report; 
+        let dayReport = window.state.overrides[dayKey] || window.calculateDaySchedule(d).report; 
         let activeUniqueManiSet = new Set();
         
         ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
-            dayReport[s].forEach(slot => { 
-                if(slot.name) { 
-                    const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
-                    if(staff && staff.role !== '學徒') activeUniqueManiSet.add(staff.name); 
-                } 
-            }); 
+            if (dayReport[s]) {
+                dayReport[s].forEach(slot => { 
+                    if(slot.name) { 
+                        const staff = window.state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                        if(staff && staff.role !== '學徒') activeUniqueManiSet.add(staff.name); 
+                    } 
+                }); 
+            }
         });
         
         let activeManiCount = activeUniqueManiSet.size; 
-        const isHolidayDraft = (state.localHolidaysDraft[staffName] || []).includes(d);
+        const isHolidayDraft = (window.state.localHolidaysDraft[staffName] || []).includes(d);
         
         if (isHolidayDraft) { 
             assignedShop = '<span style="color:var(--danger); font-weight:bold;">放假要求 🏖️</span>'; 
@@ -423,7 +463,7 @@ function renderIndividualMonthCalendar() {
             });
         }
         
-        let currentNote = (state.notes && state.notes[staffName] && state.notes[staffName][`day_${d}`]) ? state.notes[staffName][`day_${d}`] : ''; 
+        let currentNote = (window.state.notes && window.state.notes[staffName] && window.state.notes[staffName][`day_${d}`]) ? window.state.notes[staffName][`day_${d}`] : ''; 
         let btnHtml = ""; 
         let inputDisabledHtml = "";
         
@@ -433,48 +473,52 @@ function renderIndividualMonthCalendar() {
             inputDisabledHtml = `disabled style="background:#f3f4f6; color:#9ca3af; cursor:not-allowed;"`; 
         } else { 
             let activeClass = isHolidayDraft ? 'active' : ''; 
-            btnHtml = `<button class="holiday-btn ${activeClass}" onclick="toggleLocalHolidayDraft('${staffName}', ${d}, this)">放假</button>`; 
+            btnHtml = `<button class="holiday-btn ${activeClass}" onclick="window.toggleLocalHolidayDraft('${staffName}', ${d}, this)">放假</button>`; 
         }
         
         let maniBadgeStyle = "background:#cef7e5; color:#03543f;"; 
-        if(activeManiCount <= state.settings.limitLow) {
+        let limitLowVal = window.state.settings.limitLow || 3;
+        let limitHighVal = window.state.settings.limitHigh || 5;
+
+        if(activeManiCount <= limitLowVal) {
             maniBadgeStyle = "background:#fde8e8; color:#9b1c1c; font-weight:bold;"; 
-        } else if(activeManiCount < state.settings.limitHigh) {
+        } else if(activeManiCount < limitHighVal) {
             maniBadgeStyle = "background:#e6fbf4; color:#0d9488;";
         }
-        tbody.innerHTML += `<tr><td style="text-align:center; font-weight:bold; ${isPastDay?'color:#9ca3af;':''}">${isPastDay ? '🔒 ' : ''}${d} 日</td><td style="text-align:center; ${isWknd}">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</td><td style="text-align:center;"><span style="padding:2px 6px; border-radius:6px; font-size:11px; ${maniBadgeStyle}">${activeManiCount} 師</span></td><td style="text-align:center;">${assignedShop}</td><td style="text-align:center;">${assignedTime}</td><td style="text-align:center;">${btnHtml}</td><td><input type="text" class="calendar-special-note-input" data-day="${d}" data-staff="${staffName}" ${inputDisabledHtml} value="${currentNote}" placeholder="原因..."></td></tr>`;
+        tbody.innerHTML += `<tr><td style="text-align:center; font-weight:bold; ${isPastDay?'color:#9ca3af;':''}">${isPastDay ? '🔒 ' : ''}${d} 日</td><td style="text-align:center; ${isWknd}">${window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d)}</td><td style="text-align:center;"><span style="padding:2px 6px; border-radius:6px; font-size:11px; ${maniBadgeStyle}">${activeManiCount} 師</span></td><td style="text-align:center;">${assignedShop}</td><td style="text-align:center;">${assignedTime}</td><td style="text-align:center;">${btnHtml}</td><td><input type="text" class="calendar-special-note-input" data-day="${d}" data-staff="${staffName}" ${inputDisabledHtml} value="${currentNote}" placeholder="原因..."></td></tr>`;
     }
     const invertBtn = document.getElementById('my-month-invert-btn'); 
     if (invertBtn) { 
-        invertBtn.disabled = ((state.currentYear < realYearNum || (state.currentYear === realYearNum && state.currentMonth < realMonthNum)) && !isManager); 
+        invertBtn.disabled = ((window.state.currentYear < realYearNum || (window.state.currentYear === realYearNum && window.state.currentMonth < realMonthNum)) && !isManager); 
         invertBtn.style.opacity = invertBtn.disabled ? 0.4 : 1; 
     }
-}
+};
 
-function invertIndividualEmployeeHolidays() {
-    const staffName = document.getElementById('my-month-staff-select').value; 
+window.invertIndividualEmployeeHolidays = function() {
+    const staffName = document.getElementById('my-month-staff-select')?.value; 
     if(!staffName) return; 
-    const isManager = (state.currentRole === 'manager');
-    let totalDays = getDaysInMonth(state.currentYear, state.currentMonth); 
-    if (!state.localHolidaysDraft[staffName]) state.localHolidaysDraft[staffName] = []; 
+    const isManager = (window.state.currentRole === 'manager');
+    let totalDays = window.getDaysInMonth(window.state.currentYear, window.state.currentMonth); 
+    if (!window.state.localHolidaysDraft[staffName]) window.state.localHolidaysDraft[staffName] = []; 
     let inverted = [];
     
     for (let d = 1; d <= totalDays; d++) {
-        let isPastDay = (state.currentYear < 2026 || (state.currentYear === 2026 && state.currentMonth < 5) || (state.currentYear === 2026 && state.currentMonth === 5 && d < 1));
+        let isPastDay = (window.state.currentYear < 2026 || (window.state.currentYear === 2026 && window.state.currentMonth < 5) || (window.state.currentYear === 2026 && window.state.currentMonth === 5 && d < 1));
         if (isPastDay && !isManager) { 
-            if ((state.holidays[staffName] || []).includes(d)) inverted.push(d); 
+            if ((window.state.holidays[staffName] || []).includes(d)) inverted.push(d); 
         } else { 
-            if (!state.localHolidaysDraft[staffName].includes(d)) inverted.push(d); 
+            if (!window.state.localHolidaysDraft[staffName].includes(d)) inverted.push(d); 
         }
     }
-    state.localHolidaysDraft[staffName] = inverted; 
-    renderIndividualMonthCalendar();
-}
+    window.state.localHolidaysDraft[staffName] = inverted; 
+    window.renderIndividualMonthCalendar();
+};
 
 // ==================== 📊 全月分析與排班人手統計 ====================
-function applyColumnFilter(type) {
+window.applyColumnFilter = function(type) {
     document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active')); 
-    document.getElementById('filter-' + type).classList.add('active');
+    const filterBtn = document.getElementById('filter-' + type);
+    if (filterBtn) filterBtn.classList.add('active');
     
     if(type === 'all') {
         document.querySelectorAll('.col-mani, .col-app, .col-shops').forEach(el => el.style.display = '');
@@ -488,9 +532,9 @@ function applyColumnFilter(type) {
         document.querySelectorAll('.col-shops').forEach(el => el.style.display = ''); 
         document.querySelectorAll('.col-mani, .col-app').forEach(el => el.style.display = 'none'); 
     }
-}
+};
 
-function renderMonthlyAnalysis() {
+window.renderMonthlyAnalysis = function() {
     const tbody = document.getElementById('analysis-table-body'); 
     if(!tbody) return; 
     tbody.innerHTML = '';
@@ -500,33 +544,35 @@ function renderMonthlyAnalysis() {
     if(lowBody) lowBody.innerHTML = ''; 
     if(highBody) highBody.innerHTML = '';
     
-    let totalDays = getDaysInMonth(state.currentYear, state.currentMonth); 
+    let totalDays = window.getDaysInMonth(window.state.currentYear, window.state.currentMonth); 
     let lowStaffHtml = ""; 
     let highStaffHtml = ""; 
     let attendanceCounters = {};
     
-    state.employees.forEach(e => { attendanceCounters[e.name] = { totalLeave: 0, totalWork: 0, role: e.role || 'Full-time' }; });
+    window.state.employees.forEach(e => { attendanceCounters[e.name] = { totalLeave: 0, totalWork: 0, role: e.role || 'Full-time' }; });
     
     for (let d = 1; d <= totalDays; d++) {
         let dayKey = `day_${d}`; 
         let finalCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; 
         let totalWorkingApprentices = 0; 
-        let dayReport = state.overrides[dayKey] || calculateDaySchedule(d).report;
+        let dayReport = window.state.overrides[dayKey] || window.calculateDaySchedule(d).report;
         
         ['F79', 'GK3', 'G38', 'G2'].forEach(s => { 
-            dayReport[s].forEach(slot => { 
-                if(slot.name) { 
-                    const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
-                    if(staff) { 
-                        if(staff.role === '學徒') totalWorkingApprentices++; 
-                        else finalCounts[s]++; 
+            if (dayReport[s]) {
+                dayReport[s].forEach(slot => { 
+                    if(slot.name) { 
+                        const staff = window.state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                        if(staff) { 
+                            if(staff.role === '學徒') totalWorkingApprentices++; 
+                            else finalCounts[s]++; 
+                        } 
                     } 
-                } 
-            }); 
+                }); 
+            }
         });
         
-        state.employees.forEach(e => { 
-            if ((state.holidays[e.name] || []).includes(d)) { 
+        window.state.employees.forEach(e => { 
+            if ((window.state.holidays[e.name] || []).includes(d)) { 
                 if(attendanceCounters[e.name]) attendanceCounters[e.name].totalLeave++; 
             } else { 
                 if(attendanceCounters[e.name]) attendanceCounters[e.name].totalWork++; 
@@ -534,14 +580,14 @@ function renderMonthlyAnalysis() {
         });
         
         let totalWorkingMani = finalCounts.F79 + finalCounts.GK3 + finalCounts.G38 + finalCounts.G2;
-        let alertBgClass = totalWorkingMani <= state.settings.limitLow ? "bg-alert-red" : (totalWorkingMani >= state.settings.limitHigh ? "bg-alert-darkgreen" : "bg-alert-lightgreen");
-        let isWknd = getDayOfWeekText(state.currentYear, state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : '';
+        let alertBgClass = totalWorkingMani <= window.state.settings.limitLow ? "bg-alert-red" : (totalWorkingMani >= window.state.settings.limitHigh ? "bg-alert-darkgreen" : "bg-alert-lightgreen");
+        let isWknd = window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : '';
         
-        let rowHtml = `<tr><td style="text-align:center; font-weight:bold; width:65px;">${d} 日</td><td style="text-align:center; ${isWknd} width:55px;">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</td><td class="col-mani ${alertBgClass}" style="width:100px;">${totalWorkingMani} 師</td><td class="col-app" style="text-align:center; background:#f0fdf4; font-weight:bold; color:#0d9488; width:100px;">${totalWorkingApprentices} 徒</td><td class="col-shops normal-cell">${finalCounts.F79}人</td><td class="col-shops normal-cell">${finalCounts.GK3}人</td><td class="col-shops normal-cell">${finalCounts.G38}人</td><td class="col-shops normal-cell">${finalCounts.G2}人</td></tr>`;
+        let rowHtml = `<tr><td style="text-align:center; font-weight:bold; width:65px;">${d} 日</td><td style="text-align:center; ${isWknd} width:55px;">${window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d)}</td><td class="col-mani ${alertBgClass}" style="width:100px;">${totalWorkingMani} 師</td><td class="col-app" style="text-align:center; background:#f0fdf4; font-weight:bold; color:#0d9488; width:100px;">${totalWorkingApprentices} 徒</td><td class="col-shops normal-cell">${finalCounts.F79}人</td><td class="col-shops normal-cell">${finalCounts.GK3}人</td><td class="col-shops normal-cell">${finalCounts.G38}人</td><td class="col-shops normal-cell">${finalCounts.G2}人</td></tr>`;
         tbody.innerHTML += rowHtml; 
         
-        if(totalWorkingMani <= state.settings.limitLow) lowStaffHtml += rowHtml; 
-        if(totalWorkingMani >= state.settings.limitHigh) highStaffHtml += rowHtml;
+        if(totalWorkingMani <= window.state.settings.limitLow) lowStaffHtml += rowHtml; 
+        if(totalWorkingMani >= window.state.settings.limitHigh) highStaffHtml += rowHtml;
     }
     
     if(lowBody) lowBody.innerHTML = lowStaffHtml || `<tr><td style='text-align:center; padding:10px; color:#9ca3af;'>🙌 本月人手充裕。</td></tr>`;
@@ -555,39 +601,41 @@ function renderMonthlyAnalysis() {
             summaryBody.innerHTML += `<tr><td style="padding:6px 10px; font-weight:bold;">${name}</td><td style="text-align:center;">${info.role}</td><td style="text-align:center; color:var(--success);">${info.totalWork} 天</td><td style="text-align:center; color:var(--danger);">${info.totalLeave} 天</td></tr>`;
         });
     }
-    applyColumnFilter('all'); 
-}
+    window.applyColumnFilter('all'); 
+};
 
 // ==================== 🏖️ 管理大表：全月放假表繪製 ====================
-function renderHolidayTable() {
+window.renderHolidayTable = function() {
     const headerRow = document.getElementById('holiday-table-header-row'); 
     const tbody = document.getElementById('holiday-table-body'); 
     if(!headerRow || !tbody) return; 
     headerRow.innerHTML = ''; 
     tbody.innerHTML = '';
     
-    let totalDays = getDaysInMonth(state.currentYear, state.currentMonth); 
+    let totalDays = window.getDaysInMonth(window.state.currentYear, window.state.currentMonth); 
     headerRow.innerHTML += `<th class="sticky-col">員工放假總覽 📊</th>`;
     
     for(let d=1; d<=totalDays; d++) { 
-        let dayReport = state.overrides[`day_${d}`] || calculateDaySchedule(d).report; 
+        let dayReport = window.state.overrides[`day_${d}`] || window.calculateDaySchedule(d).report; 
         let tMani = 0, tApp = 0; 
         let activeUniqueManiSet = new Set();
         
-        dayReport['F79'].concat(dayReport['GK3'], dayReport['G38'], dayReport['G2']).forEach(slot => { 
-            if(slot.name) { 
-                const staff = state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
-                if(staff) { 
-                    if(staff.role === '學徒') tApp++; 
-                    else activeUniqueManiSet.add(staff.name); 
+        if (dayReport['F79']) {
+            dayReport['F79'].concat(dayReport['GK3'] || [], dayReport['G38'] || [], dayReport['G2'] || []).forEach(slot => { 
+                if(slot.name) { 
+                    const staff = window.state.employees.find(e => e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, '')); 
+                    if(staff) { 
+                        if(staff.role === '學徒') tApp++; 
+                        else activeUniqueManiSet.add(staff.name); 
+                    } 
                 } 
-            } 
-        });
-        headerRow.innerHTML += `<th style="text-align:center; min-width:42px; background:#f8fafc;"><span style="color:var(--primary); display:block;">${activeUniqueManiSet.size}師</span><span style="color:#0d9488; display:block;">${tApp}徒</span><b>${d}</b><br><span style="font-size:9px; font-weight:normal;">${getDayOfWeekText(state.currentYear, state.currentMonth, d)}</span></th>`; 
+            });
+        }
+        headerRow.innerHTML += `<th style="text-align:center; min-width:42px; background:#f8fafc;"><span style="color:var(--primary); display:block;">${activeUniqueManiSet.size}師</span><span style="color:#0d9488; display:block;">${tApp}徒</span><b>${d}</b><br><span style="font-size:9px; font-weight:normal;">${window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d)}</span></th>`; 
     }
-    state.employees.forEach(emp => {
+    window.state.employees.forEach(emp => {
         let dotsHtml = ''; 
-        const userHols = state.holidays[emp.name] || [];
+        const userHols = window.state.holidays[emp.name] || [];
         for(let d = 1; d <= totalDays; d++) { 
             let isActive = userHols.includes(d) ? 'active' : ''; 
             let dotText = userHols.includes(d) ? '假' : '-'; 
@@ -595,24 +643,24 @@ function renderHolidayTable() {
         }
         tbody.innerHTML += `<tr><td class="sticky-col"><span class="count-badge">${userHols.length}天</span><b>${emp.name}</b></td>${dotsHtml}</tr>`;
     });
-}
+};
 
 // ==================== 👥 員工資料庫表與安全帳密維護 ====================
-function renderEmployeeTable() {
+window.renderEmployeeTable = function() {
     const tbody = document.getElementById('employee-table-body'); 
     if(!tbody) return; 
     tbody.innerHTML = '';
-    const isReadonly = (state.currentRole !== 'manager') ? 'disabled' : '';
+    const isReadonly = (window.state.currentRole !== 'manager') ? 'disabled' : '';
     
-    state.employees.forEach((emp, index) => {
+    window.state.employees.forEach((emp, index) => {
         let currentRole = emp.role || 'Full-time';
-        const code = emp.id || defaultStaffIds[emp.name] || "100";
+        const code = emp.id || window.defaultStaffIds[emp.name] || "100";
         const pass = emp.password || (code + "22");
         
         tbody.innerHTML += `
             <tr>
                 <td>
-                    <input type="text" class="emp-id-input" ${isReadonly} style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${code}" oninput="updateEmployeeRowPassword(this, ${index})">
+                    <input type="text" class="emp-id-input" ${isReadonly} style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${code}" oninput="window.updateEmployeeRowPassword(this, ${index})">
                 </td>
                 <td>
                     <input type="text" class="emp-name-input" ${isReadonly} style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${emp.name}">
@@ -633,7 +681,7 @@ function renderEmployeeTable() {
                 <td>
                     <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
                         <input type="text" class="emp-pass-input" ${isReadonly} style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="${pass}">
-                        <button class="btn" ${isReadonly} style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>
+                        <button class="btn" ${isReadonly} style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="window.regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>
                     </div>
                 </td>
                 <td>
@@ -642,9 +690,9 @@ function renderEmployeeTable() {
             </tr>
         `;
     });
-}
+};
 
-function updateEmployeeRowPassword(idInput) {
+window.updateEmployeeRowPassword = function(idInput) {
     const tr = idInput.closest('tr');
     if (!tr) return;
     const passInput = tr.querySelector('.emp-pass-input');
@@ -654,9 +702,9 @@ function updateEmployeeRowPassword(idInput) {
             passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
         }
     }
-}
+};
 
-function regenerateEmployeeRowPass(btn) {
+window.regenerateEmployeeRowPass = function(btn) {
     const tr = btn.closest('tr');
     if (!tr) return;
     const idInput = tr.querySelector('.emp-id-input') || tr.querySelector('.sett-id-field');
@@ -670,17 +718,17 @@ function regenerateEmployeeRowPass(btn) {
             alert("⚠️ 請先輸入工號！");
         }
     }
-}
+};
 
-function addEmployeeRow() {
-    if(state.currentRole !== 'manager') return; 
+window.addEmployeeRow = function() {
+    if(window.state.currentRole !== 'manager') return; 
     const tbody = document.getElementById('employee-table-body'); 
     if(!tbody) return;
     const randomSuffix = String(Math.floor(Math.random() * 90 + 10));
     tbody.innerHTML += `
         <tr>
             <td>
-                <input type="text" class="emp-id-input" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="updateEmployeeRowPassword(this)">
+                <input type="text" class="emp-id-input" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="window.updateEmployeeRowPassword(this)">
             </td>
             <td>
                 <input type="text" class="emp-name-input" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" placeholder="姓名">
@@ -701,7 +749,7 @@ function addEmployeeRow() {
             <td>
                 <div style="display:flex; align-items:center; gap:4px; justify-content:center;">
                     <input type="text" class="emp-pass-input" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124${randomSuffix}">
-                    <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="regenerateEmployeeRowPass(this)">🔄</button>
+                    <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="window.regenerateEmployeeRowPass(this)">🔄</button>
                 </div>
             </td>
             <td>
@@ -709,10 +757,10 @@ function addEmployeeRow() {
             </td>
         </tr>
     `;
-}
+};
 
-function saveEmployeeData() {
-    if (state.currentRole !== 'manager') return; 
+window.saveEmployeeData = function() {
+    if (window.state.currentRole !== 'manager') return; 
     const rows = document.querySelectorAll('#employee-table-body tr'); 
     let newEmps = [];
     rows.forEach(row => { 
@@ -725,19 +773,21 @@ function saveEmployeeData() {
         if(!name) return; 
         newEmps.push({ id, name, role, p_shops, times, password }); 
     });
-    state.employees = newEmps;
-    if(isCloudMode && database) { 
-        database.ref(`v8_employees`).set(state.employees).then(() => { showToastMessage('👥 員工設定與安全帳密已成功發佈！'); }); 
+    window.state.employees = newEmps;
+    if(window.isCloudMode && window.database) { 
+        window.database.ref(`v8_employees`).set(window.state.employees).then(() => { 
+            showToastMessage('👥 員工設定與安全帳密已成功發佈！'); 
+        }); 
     } else { 
-        localStorage.setItem('v8_employees', JSON.stringify(state.employees)); 
+        localStorage.setItem('v8_employees', JSON.stringify(window.state.employees)); 
         showToastMessage('💾 員工名單已儲存至本地！'); 
-        populateStaffDropdown(); 
-        renderSettingsAccountsList(state.employees);
+        window.populateStaffDropdown(); 
+        window.renderSettingsAccountsList(window.state.employees);
     }
-}
+};
 
 // ==================== ⚙️ 微調設定頁：員工帳密管理渲染與操作 ====================
-function renderSettingsAccountsList(employees) {
+window.renderSettingsAccountsList = function(employees) {
     const tbody = document.getElementById('settings-accounts-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -756,20 +806,20 @@ function renderSettingsAccountsList(employees) {
             <tr style="border-bottom:1px solid #f1f5f9;" data-idx="${idx}">
                 <td style="padding:10px; font-weight:bold; color:#1e293b;">${e.name || '未命名'}</td>
                 <td style="padding:10px; text-align:center;">
-                    <input type="text" class="sett-id-field" style="width:100px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${code}" oninput="updateSettingsRowPassword(this)">
+                    <input type="text" class="sett-id-field" style="width:100px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${code}" oninput="window.updateSettingsRowPassword(this)">
                 </td>
                 <td style="padding:10px; text-align:center;">
                     <input type="text" class="sett-pass-field" style="width:120px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="${pass}">
                 </td>
                 <td style="padding:10px; text-align:center;">
-                    <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="regenerateEmployeeRowPass(this)">🔄 重算</button>
+                    <button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="window.regenerateEmployeeRowPass(this)">🔄 重算</button>
                 </td>
             </tr>
         `;
     });
-}
+};
 
-function updateSettingsRowPassword(idInput) {
+window.updateSettingsRowPassword = function(idInput) {
     const tr = idInput.closest('tr');
     if (!tr) return;
     const passInput = tr.querySelector('.sett-pass-field');
@@ -779,9 +829,9 @@ function updateSettingsRowPassword(idInput) {
             passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
         }
     }
-}
+};
 
-function triggerRegenerateAllPasswords() {
+window.triggerRegenerateAllPasswords = function() {
     if (confirm("⚠️ 確定要為所有人「重新生成」隨機預設密碼嗎？\n生成後需要點擊右下角「儲存員工帳密變更」才會正式寫入雲端！")) {
         const rows = document.querySelectorAll('#settings-accounts-tbody tr');
         rows.forEach(tr => {
@@ -794,11 +844,11 @@ function triggerRegenerateAllPasswords() {
         });
         showToastMessage("⚡ 已在本機重算，請記得點擊儲存變更！");
     }
-}
+};
 
-function saveEmployeesAccountsFromSettings() {
+window.saveEmployeesAccountsFromSettings = function() {
     const rows = document.querySelectorAll('#settings-accounts-tbody tr');
-    const updatedList = [...state.employees]; 
+    const updatedList = [...window.state.employees]; 
 
     rows.forEach((tr, index) => {
         const idInput = tr.querySelector('.sett-id-field');
@@ -816,88 +866,130 @@ function saveEmployeesAccountsFromSettings() {
             alert('儲存變更失敗: ' + err.message);
         });
     }
-}
+};
 
-function saveHolidayData() {
-    if(state.currentRole !== 'manager') return; 
-    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-    if(isCloudMode && database) { 
-        database.ref(`v8_holidays/${monthKey}`).set(state.holidays).then(() => { showToastMessage('🏖️ 放假大表已成功發佈！'); }); 
+window.saveHolidayData = function() {
+    if(window.state.currentRole !== 'manager') return; 
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    if(window.isCloudMode && window.database) { 
+        window.database.ref(`v8_holidays/${monthKey}`).set(window.state.holidays).then(() => { 
+            showToastMessage('🏖️ 放假大表已成功發佈！'); 
+        }); 
     } 
-}
+};
 
-function handleManualSlotChange(shop, index, field, value) {
-    const dayKey = `day_${state.currentDay}`; 
-    if (!state.overrides[dayKey]) { 
-        state.overrides[dayKey] = JSON.parse(document.getElementById('current-rendered-data-cache').value); 
-    }
-    state.overrides[dayKey][shop][index][field] = value; 
-    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-    if(isCloudMode && database) { 
-        database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(state.overrides[dayKey]); 
-    } else { 
-        localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); 
-        refreshBadgesOnly(state.overrides[dayKey]); 
-    }
-}
+window.handleManualSlotChange = function(shop, index, field, value) {
+    const dayKey = `day_${window.state.currentDay}`; 
+    const cacheInput = document.getElementById('current-rendered-data-cache');
+    if (!cacheInput) return;
 
-function resetCurrentDayToAuto() {
-    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-    if(isCloudMode && database) { 
-        database.ref(`v8_overrides/${monthKey}/day_${state.currentDay}`).remove(); 
+    if (!window.state.overrides[dayKey]) { 
+        window.state.overrides[dayKey] = JSON.parse(cacheInput.value); 
+    }
+    window.state.overrides[dayKey][shop][index][field] = value; 
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    if(window.isCloudMode && window.database) { 
+        window.database.ref(`v8_overrides/${monthKey}/${dayKey}`).set(window.state.overrides[dayKey]); 
     } else { 
-        if(state.overrides[`day_${state.currentDay}`]) { 
-            delete state.overrides[`day_${state.currentDay}`]; 
-            localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(state.overrides)); 
-            runScheduler(); 
+        localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(window.state.overrides)); 
+        window.refreshBadgesOnly(window.state.overrides[dayKey]); 
+    }
+};
+
+window.resetCurrentDayToAuto = function() {
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    if(window.isCloudMode && window.database) { 
+        window.database.ref(`v8_overrides/${monthKey}/day_${window.state.currentDay}`).remove(); 
+    } else { 
+        if(window.state.overrides[`day_${window.state.currentDay}`]) { 
+            delete window.state.overrides[`day_${window.state.currentDay}`]; 
+            localStorage.setItem(`v8_overrides_${monthKey}`, JSON.stringify(window.state.overrides)); 
+            window.runScheduler(); 
         } 
     }
-}
+};
 
-function refreshBadgesOnly(reportData) {
+window.refreshBadgesOnly = function(reportData) {
     let shopCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; 
     ['F79', 'GK3', 'G38', 'G2'].forEach(shop => { 
-        reportData[shop].forEach(slot => { if(slot.name) shopCounts[shop]++; }); 
+        if (reportData[shop]) {
+            reportData[shop].forEach(slot => { if(slot.name) shopCounts[shop]++; }); 
+        }
     });
-    renderMonitorBadges(shopCounts);
-}
+    window.renderMonitorBadges(shopCounts);
+};
+
+// ==================== 📥 智庫審批中心批准邏輯對接 ====================
+window.actionApproveHoliday = function(key, staffName, requestedHolidays) {
+    if (window.state.currentRole !== 'manager') return;
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    
+    let currentHols = window.state.holidays[staffName] || [];
+    requestedHolidays.forEach(d => {
+        if (!currentHols.includes(d)) {
+            currentHols.push(d);
+        }
+    });
+    window.state.holidays[staffName] = currentHols.sort((a, b) => a - b);
+    
+    if (window.isCloudMode && window.database) {
+        window.database.ref(`v8_holidays/${monthKey}/${staffName}`).set(window.state.holidays[staffName])
+        .then(() => {
+            return window.database.ref(`v8_pending_approvals/${monthKey}/${key}`).remove();
+        })
+        .then(() => {
+            showToastMessage(`🎉 已批准 ${staffName} 老師的放假申請！`);
+        })
+        .catch(err => {
+            alert("審批失敗: " + err.message);
+        });
+    } else {
+        localStorage.setItem(`v8_holidays_${monthKey}`, JSON.stringify(window.state.holidays));
+        showToastMessage(`🎉 本地已批准 ${staffName} 老師的放假申請！`);
+        window.runScheduler();
+    }
+};
 
 // ==================== ⚙️ 演算法與每日排班邏輯核心 ====================
-function runScheduler() {
+window.runScheduler = function() {
     let leavesToday = []; 
-    state.employees.forEach(emp => { if ((state.holidays[emp.name] || []).includes(state.currentDay)) leavesToday.push(emp.name); });
+    window.state.employees.forEach(emp => { 
+        if ((window.state.holidays[emp.name] || []).includes(window.state.currentDay)) {
+            leavesToday.push(emp.name); 
+        }
+    });
     
-    const dayKey = `day_${state.currentDay}`; 
+    const dayKey = `day_${window.state.currentDay}`; 
     let report = {}; 
-    let activeStaff = state.employees.filter(e => !(state.holidays[e.name] || []).includes(state.currentDay));
+    let activeStaff = window.state.employees.filter(e => !(window.state.holidays[e.name] || []).includes(window.state.currentDay));
     let manicurists = activeStaff.filter(e => e.role !== '學徒'); 
     let apprentices = activeStaff.filter(e => e.role === '學徒');
     
     const totalTextEl = document.getElementById('total-working-text'); 
     const leaveBoxEl = document.getElementById('today-leave-names-box');
     
-    if (state.overrides[dayKey]) {
-        report = state.overrides[dayKey];
-        if(totalTextEl) totalTextEl.innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 美甲師：<b>${manicurists.length}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${activeStaff.length}</b> 人 (⚠️手動微調模式)`;
+    if (window.state.overrides[dayKey]) {
+        report = window.state.overrides[dayKey];
+        if(totalTextEl) totalTextEl.innerHTML = `${window.state.currentMonth}月 ${window.state.currentDay} 日 (星期${window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, window.state.currentDay)}) 美甲師：<b>${manicurists.length}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${activeStaff.length}</b> 人 (⚠️手動微調模式)`;
         if(leaveBoxEl) leaveBoxEl.innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
-        refreshBadgesOnly(report); 
-        renderInteractiveReport(report); 
+        window.refreshBadgesOnly(report); 
+        window.renderInteractiveReport(report); 
         return;
     }
     
-    let result = calculateDaySchedule(state.currentDay); 
+    let result = window.calculateDaySchedule(window.state.currentDay); 
     report = result.report;
-    if(totalTextEl) totalTextEl.innerHTML = `${state.currentMonth}月 ${state.currentDay} 日 (星期${getDayOfWeekText(state.currentYear, state.currentMonth, state.currentDay)}) 美甲師：<b>${result.manicuristCount}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${result.totalCount}</b> 人`;
+    if(totalTextEl) totalTextEl.innerHTML = `${window.state.currentMonth}月 ${window.state.currentDay} 日 (星期${window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, window.state.currentDay)}) 美甲師：<b>${result.manicuristCount}</b> 人 ｜ 學徒：<b>${apprentices.length}</b> 人 ｜ 總上班：<b>${result.totalCount}</b> 人`;
     if(leaveBoxEl) leaveBoxEl.innerHTML = `今日放假：${leavesToday.length > 0 ? leavesToday.join(', ') : '無'}`;
-    refreshBadgesOnly(report); 
-    renderInteractiveReport(report);
-}
+    window.refreshBadgesOnly(report); 
+    window.renderInteractiveReport(report);
+};
 
-function calculateDaySchedule(dayNumber) {
+window.calculateDaySchedule = function(dayNumber) {
     let report = { F79: [], GK3: [], G38: [], G2: [] }; 
-    let isSun = isSunday(state.currentYear, state.currentMonth, dayNumber);
+    let isSun = window.isSunday(window.state.currentYear, window.state.currentMonth, dayNumber);
     
-    const activeStaff = state.employees.filter(e => !(state.holidays[e.name] || []).includes(dayNumber)); 
+    const activeStaff = window.state.employees.filter(e => !(window.state.holidays[e.name] || []).includes(dayNumber)); 
     const manicurists = activeStaff.filter(e => e.role !== '學徒'); 
     const apprentices = activeStaff.filter(e => e.role === '學徒');
     
@@ -979,7 +1071,7 @@ function calculateDaySchedule(dayNumber) {
     
     shopGroups.F79.forEach((emp, idx) => { 
         let shift = (idx === 0) ? "早班" : "晚班"; 
-        let t = autoExtractTime(emp, shift, isSun, 'F79'); 
+        let t = window.autoExtractTime(emp, shift, isSun, 'F79'); 
         report.F79.push({ name: emp.name, time: t }); 
     });
     
@@ -991,12 +1083,12 @@ function calculateDaySchedule(dayNumber) {
         let earlyEmp = list[earlyIdx]; 
         let remainingWorkers = list.filter((_, idx) => idx !== earlyIdx);
         
-        let earlyTime = autoExtractTime(earlyEmp, '早班', isSun, shop); 
+        let earlyTime = window.autoExtractTime(earlyEmp, '早班', isSun, shop); 
         report[shop].push({ name: earlyEmp.name, time: earlyTime });
         
         remainingWorkers.forEach((emp, remIdx) => { 
             let shift = isSun ? "中班" : ((remIdx < Math.ceil(remainingWorkers.length / 2)) ? "中班" : "晚班"); 
-            let t = autoExtractTime(emp, shift, isSun, shop); 
+            let t = window.autoExtractTime(emp, shift, isSun, shop); 
             report[shop].push({ name: emp.name, time: t }); 
         });
     });
@@ -1007,9 +1099,9 @@ function calculateDaySchedule(dayNumber) {
         } 
     }); 
     return { report, manicuristCount: M, totalCount: activeStaff.length };
-}
+};
 
-function autoExtractTime(emp, shift, isSun, shop) {
+window.autoExtractTime = function(emp, shift, isSun, shop) {
     if (shop === 'F79') return (shift === '早班') ? (isSun ? '11:00' : '12:00') : '13:00';
     let userTimes = (emp.times || '').split(',').map(t => t.trim()); 
     if (isSun) return (shift === '早班') ? '10:00' : '12:00';
@@ -1023,20 +1115,25 @@ function autoExtractTime(emp, shift, isSun, shop) {
     } else { 
         return primaryHour >= 13 ? primaryTime : (userTimes.find(t => parseInt(t.split(':')[0]) >= 13) || '13:00'); 
     }
-}
+};
 
 // ==================== 💾 下載與時空還原 ====================
-function downloadTimeCapsuleBackup() {
-    const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-    const backupPackage = { v8_employees: state.employees, v8_holidays: state.holidays, v8_overrides: state.overrides, v8_settings: state.settings, v8_special_notes: state.notes };
+window.downloadTimeCapsuleBackup = function() {
+    const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+    const backupPackage = { v8_employees: window.state.employees, v8_holidays: window.state.holidays, v8_overrides: window.state.overrides, v8_settings: window.state.settings, v8_special_notes: window.state.notes };
     const blob = new Blob([JSON.stringify(backupPackage, null, 2)], { type: 'text/plain' });
     const anchor = document.createElement('a'); 
     anchor.download = `Crystal_Pavilion_V10_Backup_[${monthKey}].txt`; 
     anchor.href = window.URL.createObjectURL(blob); 
     anchor.click();
-}
-function triggerBackupUploadClick() { document.getElementById('time-capsule-file-injector').click(); }
-function restoreFromTimeCapsule(event) {
+};
+
+window.triggerBackupUploadClick = function() { 
+    const fileInput = document.getElementById('time-capsule-file-injector');
+    if (fileInput) fileInput.click(); 
+};
+
+window.restoreFromTimeCapsule = function(event) {
     const file = event.target.files[0]; 
     if (!file) return; 
     const reader = new FileReader();
@@ -1048,23 +1145,23 @@ function restoreFromTimeCapsule(event) {
                 return; 
             }
             if (confirm('確定要一鍵還原雲端所有資料？此動作無法復原！')) {
-                const monthKey = `${state.currentYear}-${state.currentMonth < 10 ? '0'+state.currentMonth : state.currentMonth}`;
-                if (isCloudMode && database) { 
-                    database.ref('v8_employees').set(pkg.v8_employees); 
-                    database.ref(`v8_holidays/${monthKey}`).set(pkg.v8_holidays); 
-                    database.ref(`v8_overrides/${monthKey}`).set(pkg.v8_overrides || {}); 
-                    database.ref(`v8_special_notes/${monthKey}`).set(pkg.v8_special_notes || {});
-                    if(pkg.v8_settings) database.ref('v8_settings').set(pkg.v8_settings); 
+                const monthKey = `${window.state.currentYear}-${window.state.currentMonth < 10 ? '0'+window.state.currentMonth : window.state.currentMonth}`;
+                if (window.isCloudMode && window.database) { 
+                    window.database.ref('v8_employees').set(pkg.v8_employees); 
+                    window.database.ref(`v8_holidays/${monthKey}`).set(pkg.v8_holidays); 
+                    window.database.ref(`v8_overrides/${monthKey}`).set(pkg.v8_overrides || {}); 
+                    window.database.ref(`v8_special_notes/${monthKey}`).set(pkg.v8_special_notes || {});
+                    if(pkg.v8_settings) window.database.ref('v8_settings').set(pkg.v8_settings); 
                     alert('🟢 已完美還原覆蓋雲端！'); 
                 } 
             }
         } catch(err) { alert('讀取檔案失敗。'); }
     }; 
     reader.readAsText(file);
-}
+};
 
 // ==================== ⏰ 初始與離線校正器 ====================
-function calculateAutoDefaultDate() {
+window.calculateAutoDefaultDate = function() {
     const now = new Date(); 
     let year = now.getFullYear(); 
     let month = now.getMonth() + 1; 
@@ -1079,9 +1176,9 @@ function calculateAutoDefaultDate() {
         month = tomorrow.getMonth() + 1; 
         day = tomorrow.getDate(); 
     }
-    state.currentYear = year; 
-    state.currentMonth = month; 
-    state.currentDay = day;
+    window.state.currentYear = year; 
+    window.state.currentMonth = month; 
+    window.state.currentDay = day;
     
     const hintBanner = document.getElementById('time-switch-hint');
     if (hintBanner) {
@@ -1093,25 +1190,25 @@ function calculateAutoDefaultDate() {
             hintBanner.style.color = "#059669"; 
         }
     }
-}
+};
 
-function loadLocalFallbackContext() {
-    calculateAutoDefaultDate(); 
-    const y = state.currentYear; 
-    const m = state.currentMonth; 
+window.loadLocalFallbackContext = function() {
+    window.calculateAutoDefaultDate(); 
+    const y = window.state.currentYear; 
+    const m = window.state.currentMonth; 
     const monthKey = `${y}-${m < 10 ? '0'+m : m}`;
     
-    state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(defaultEmployees));
-    state.overrides = JSON.parse(localStorage.getItem(`v8_overrides_${monthKey}`)) || {};
-    state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || JSON.parse(JSON.stringify(defaultHolidaysData));
-    state.notes = JSON.parse(localStorage.getItem(`v8_notes_${monthKey}`)) || {};
-    state.localHolidaysDraft = JSON.parse(JSON.stringify(state.holidays));
+    window.state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(window.defaultEmployees));
+    window.state.overrides = JSON.parse(localStorage.getItem(`v8_overrides_${monthKey}`)) || {};
+    window.state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || JSON.parse(JSON.stringify(window.defaultHolidaysData));
+    window.state.notes = JSON.parse(localStorage.getItem(`v8_notes_${monthKey}`)) || {};
+    window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays));
     
-    cloudLoads = { emp: true, hol: true, ovr: true, note: true }; 
-    triggerSafeUIRender();
-}
+    window.cloudLoads = { emp: true, hol: true, ovr: true, note: true }; 
+    window.triggerSafeUIRender();
+};
 
-function switchTab(tabId) {
+window.switchTab = function(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none'); 
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
@@ -1121,64 +1218,63 @@ function switchTab(tabId) {
     const navBtn = document.getElementById('nav-' + tabId.replace('tab-', '')); 
     if(navBtn) navBtn.classList.add('active');
     
-    if(tabId === 'tab-schedule') runScheduler(); 
-    if(tabId === 'tab-my-month') renderIndividualMonthCalendar(); 
-    if(tabId === 'tab-analysis') renderMonthlyAnalysis();
-}
+    if(tabId === 'tab-schedule') window.runScheduler(); 
+    if(tabId === 'tab-my-month') window.renderIndividualMonthCalendar(); 
+    if(tabId === 'tab-analysis') window.renderMonthlyAnalysis();
+};
 
-function triggerSafeUIRender() {
-    if(cloudLoads.emp && cloudLoads.hol && cloudLoads.ovr && cloudLoads.note) {
-        state.employees.forEach(e => { 
-            if(!state.holidays[e.name]) state.holidays[e.name] = []; 
-            if(!state.localHolidaysDraft[e.name]) state.localHolidaysDraft[e.name] = []; 
+window.triggerSafeUIRender = function() {
+    if(window.cloudLoads.emp && window.cloudLoads.hol && window.cloudLoads.ovr && window.cloudLoads.note) {
+        window.state.employees.forEach(e => { 
+            if(!window.state.holidays[e.name]) window.state.holidays[e.name] = []; 
+            if(!window.state.localHolidaysDraft[e.name]) window.state.localHolidaysDraft[e.name] = []; 
         });
-        renderEmployeeTable(); 
-        populateStaffDropdown(); 
-        renderMonthlyAnalysis(); 
-        renderIndividualMonthCalendar(); 
-        renderHolidayTable();
+        window.renderEmployeeTable(); 
+        window.populateStaffDropdown(); 
+        window.renderMonthlyAnalysis(); 
+        window.renderIndividualMonthCalendar(); 
+        window.renderHolidayTable();
         
         const ind = document.getElementById('cloud-indicator'); 
-        if(ind && isCloudMode) { 
+        if(ind && window.isCloudMode) { 
             ind.className = "cloud-status status-online"; 
             ind.innerText = "🟢 雲端連線成功！跨月份智能排班大腦運作中"; 
         }
-        runScheduler();
+        window.runScheduler();
     }
-}
+};
 
 // ==================== 🚀 核心監聽封裝啟動入口 ====================
 // 💡 全面封裝在 DOMContentLoaded 中，保證 100% 網頁 DOM 樹與 Overrides 全部載入後才初始化 Firebase 與排班！
 window.addEventListener('DOMContentLoaded', () => {
-    calculateAutoDefaultDate(); 
-    initYearMonthDropdowns();
+    window.calculateAutoDefaultDate(); 
+    window.initYearMonthDropdowns();
 
-    if (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined') {
+    if (typeof firebase !== 'undefined' && typeof window.firebaseConfig !== 'undefined') {
         try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            database.ref(".info/connected").on("value", function(snap) { 
+            if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
+            window.database = firebase.database();
+            window.database.ref(".info/connected").on("value", function(snap) { 
                 if (snap.val() === true) { 
-                    isCloudMode = true; 
-                    setupSettingsListener(); 
-                    handleDateContextChange(); 
+                    window.isCloudMode = true; 
+                    window.setupSettingsListener(); 
+                    window.handleDateContextChange(); 
                 } 
             });
-        } catch(e) { isCloudMode = false; }
+        } catch(e) { window.isCloudMode = false; }
     }
 
     setTimeout(function() {
-        if (!isCloudMode) {
+        if (!window.isCloudMode) {
             const ind = document.getElementById('cloud-indicator'); 
             if(ind) { 
                 ind.className = "cloud-status status-offline"; 
                 ind.innerText = "⚠️ 獨立離線模式下運作（本地快取保護中）"; 
             }
-            state.settings = JSON.parse(localStorage.getItem('v8_settings')) || JSON.parse(JSON.stringify(defaultSystemSettings)); 
-            applyDynamicSettingsToUI(); 
-            loadLocalFallbackContext();
+            window.state.settings = JSON.parse(localStorage.getItem('v8_settings')) || JSON.parse(JSON.stringify(window.defaultSystemSettings)); 
+            window.applyDynamicSettingsToUI(); 
+            window.loadLocalFallbackContext();
         }
     }, 1500);
 });
-
 
