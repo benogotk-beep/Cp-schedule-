@@ -1,4 +1,4 @@
-```javascript
+
 // 🔮 雲端資料庫連線鎖匙 (與分店智能主機 100% 保持一致)
 window.firebaseConfig = {
     apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
@@ -1374,4 +1374,3 @@ window.addEventListener('DOMContentLoaded', function() {
     }, 1500);
 });
 
-```
