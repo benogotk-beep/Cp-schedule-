@@ -87,7 +87,7 @@
         </div>
     </div>
 
-    <!-- 🏷️ 標籤導航列：包含所有完整排班系統功能標籤，並相容舊版標籤結構 -->
+    <!-- 🏷️ 標籤導航列 -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
@@ -169,6 +169,7 @@
         </div>
     </div>
 
+    <!-- 全月分析 -->
     <div id="tab-analysis" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" id="analysis-title-text" style="margin-bottom: 8px;">全月店鋪上班人手監控大表</div>
@@ -245,6 +246,7 @@
         </div>
     </div>
 
+    <!-- 🏖️ 放假大表 -->
     <div id="tab-holidays" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" id="holiday-title-text" style="margin-bottom: 10px;">放假表 (管理層審閱大表)</div>
@@ -322,20 +324,11 @@
         </div>
     </div>
 
-    <!-- ⚙️ 雲端相容性隱性佔位插槽 (相容預約功能) -->
+    <!-- ⚙️ 雲端相容性隱性佔位插槽 -->
     <div id="nav-bookings" style="display: none !important;"></div>
     <div id="tab-bookings" style="display: none !important;"><div id="live-bookings-container"></div></div>
 
-    <style>
-        @keyframes modalBounce {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        #warning-cancel-btn:hover { background: #e2e8f0 !important; }
-        #warning-confirm-btn:hover { background: #b91c1c !important; }
-    </style>
-
-    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部，確保 DOM 解析完成) -->
+    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部) -->
     <script src="app.js"></script>
 
     <!-- 3. 🔮 水晶閣動態事件攔截、雙向跨月選單與觀察器守護中心 (保證 100% 執行安全) -->
@@ -347,19 +340,12 @@
             }
         });
 
-        let rawEmployees = [];
-        let loggedInEmployeeName = ""; 
-        let pendingConfirmCallback = null;
+        // 💡 僅讀取或寫入 window 屬性，絕對不宣告 let 衝突變數，徹底解決 SyntaxError！
+        window.rawEmployees = [];
+        window.loggedInEmployeeName = ""; 
+        window.pendingConfirmCallback = null;
 
-        // 全域雙向認證安全同步 (將 index.html 輸入的密碼無縫寫入隱藏欄位，徹底解決登入問題)
-        document.addEventListener('input', (e) => {
-            if (e.target.id === 'login-password-input') {
-                const globalPass = document.getElementById('global-pass-input');
-                if (globalPass) globalPass.value = e.target.value;
-            }
-        });
-
-        // ==================== 🔐 二合一安全登入核心認證 (支援管理員與員工自編帳密) ====================
+        // ==================== 🔐 二合一安全登入核心認證 ====================
         window.triggerGateLogin = function() {
             const usernameInput = document.getElementById('login-username-input');
             const passwordInput = document.getElementById('login-password-input');
@@ -376,13 +362,12 @@
                 return;
             }
 
-            // 同步寫入隱藏欄位，防範原生 app.js 無法讀取
             if (globalPassInput) globalPassInput.value = pVal;
 
-            // A. 驗證最高權限管理員 (主機專屬口令：工號 9343 / 密碼 6973)
+            // A. 驗證最高權限管理員 (主機專屬密碼：9343/6973)
             if (uVal === "9343" && pVal === "6973") {
                 state.currentRole = 'manager';
-                loggedInEmployeeName = "";
+                window.loggedInEmployeeName = "";
                 document.body.classList.add('is-manager');
                 window.safeSetDisplay('login-overlay', 'none');
                 window.safeSetDisplay('main-system-tab-bar', 'flex');
@@ -409,7 +394,7 @@
                 const expectedPass = String(matchedEmployee.password || (matchedEmployee.id + "22")).trim();
                 if (pVal === expectedPass) {
                     state.currentRole = 'employee';
-                    loggedInEmployeeName = matchedEmployee.name;
+                    window.loggedInEmployeeName = matchedEmployee.name;
                     document.body.classList.remove('is-manager');
                     window.safeSetDisplay('login-overlay', 'none');
                     window.safeSetDisplay('main-system-tab-bar', 'flex');
@@ -439,7 +424,7 @@
 
             if (pVal === globalEmpPass) {
                 state.currentRole = 'employee';
-                loggedInEmployeeName = "";
+                window.loggedInEmployeeName = "";
                 document.body.classList.remove('is-manager');
                 window.safeSetDisplay('login-overlay', 'none');
                 window.safeSetDisplay('main-system-tab-bar', 'flex');
@@ -464,7 +449,7 @@
 
             if (pVal === globalMgrPass) {
                 state.currentRole = 'manager';
-                loggedInEmployeeName = "";
+                window.loggedInEmployeeName = "";
                 document.body.classList.add('is-manager');
                 window.safeSetDisplay('login-overlay', 'none');
                 window.safeSetDisplay('main-system-tab-bar', 'flex');
@@ -490,7 +475,7 @@
 
         window.triggerGlobalLogout = function() {
             state.currentRole = 'none'; 
-            loggedInEmployeeName = "";
+            window.loggedInEmployeeName = "";
             document.body.classList.remove('is-manager'); 
             const uInput = document.getElementById('login-username-input');
             const pInput = document.getElementById('login-password-input');
@@ -612,7 +597,7 @@
                     if (modal) {
                         modal.style.setProperty('display', 'flex', 'important');
                     }
-                    pendingConfirmCallback = function() {
+                    window.pendingConfirmCallback = function() {
                         state.localHolidaysDraft[name].push(day);
                         btn.classList.add('active');
                         
@@ -882,11 +867,11 @@
         // ==================== 🛠️ 背景定時連鎖校正器 ====================
         setInterval(() => {
             // A. 強效防錯：將普通員工的姓名下拉選單強制自鎖
-            if (loggedInEmployeeName) {
+            if (window.loggedInEmployeeName) {
                 const select = document.getElementById('my-month-staff-select');
                 if (select) {
-                    if (select.value !== loggedInEmployeeName) {
-                        select.value = loggedInEmployeeName;
+                    if (select.value !== window.loggedInEmployeeName) {
+                        select.value = window.loggedInEmployeeName;
                         const event = new Event('change');
                         select.dispatchEvent(event);
                     }
@@ -895,9 +880,7 @@
                     select.style.opacity = '0.75';
                 }
             }
-            // B. 多選單初始化
             initializeMyMonthSelectors();
-            // C. 聯鎖同步
             syncMainToMyMonthDate();
         }, 100);
 
@@ -909,16 +892,16 @@
                 warnCancel.addEventListener('click', () => {
                     const modal = document.getElementById('manpower-warning-modal');
                     if (modal) modal.style.setProperty('display', 'none', 'important');
-                    pendingConfirmCallback = null;
+                    window.pendingConfirmCallback = null;
                 });
             }
             if (warnConfirm) {
                 warnConfirm.addEventListener('click', () => {
                     const modal = document.getElementById('manpower-warning-modal');
                     if (modal) modal.style.setProperty('display', 'none', 'important');
-                    if (pendingConfirmCallback) {
-                        pendingConfirmCallback();
-                        pendingConfirmCallback = null;
+                    if (window.pendingConfirmCallback) {
+                        window.pendingConfirmCallback();
+                        window.pendingConfirmCallback = null;
                     }
                 });
             }
