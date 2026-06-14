@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -13,7 +13,7 @@
             observe: function() { console.log("🔍 觀察器防禦佔位晶片啟動中..."); },
             disconnect: function() { console.log("🔍 觀察器防禦佔位斷開"); }
         };
-        window.optimizeApprovalCenterUI = function() { console.log("⚡ UI 優化器防禦佔位啟動中..."); };
+        window.optimizeApprovalCenterUI = function() { console.log("⚡ UI 優化器防禦佔位晶片運作中..."); };
         window.crystalStore = {
             employees: [],
             holidays: {},
@@ -308,11 +308,8 @@
                 </div>
             </div>
 
-            <div class="settings-section">
-                <span class="settings-label">🔐 全局網頁密碼控制門禁</span>
-                <div class="settings-row"><span>經理管理口令：</span><input type="text" id="cfg-pass-manager"></div>
-                <div class="settings-row"><span>普通員工口令：</span><input type="text" id="cfg-pass-employee"></div>
-            </div>
+            <!-- 舊有的密碼設定輸入框已於此處物理移除，回歸一對一獨立安全工號密碼大腦 -->
+
             <div class="settings-section">
                 <span class="settings-label">📌 網頁自訂文字與標題</span>
                 <div class="settings-row"><span>系統主頁標題：</span><input type="text" id="cfg-web-title" style="width:200px;"></div>
@@ -328,7 +325,7 @@
                 <div class="settings-row"><span>美甲師 ⚠️ 告急人手：少於 or 等於</span><input type="number" id="cfg-limit-low" style="width:60px;"> 人</div>
                 <div class="settings-row"><span>美甲師 🟢 充沛人手：大於 or 等於</span><input type="number" id="cfg-limit-high" style="width:60px;"> 人</div>
             </div>
-            <button class="btn btn-save" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發佈雲端</button>
+            <button class="btn btn-save" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發雲端</button>
         </div>
     </div>
 
@@ -336,7 +333,7 @@
     <div id="nav-bookings" style="display: none !important;"></div>
     <div id="tab-bookings" style="display: none !important;"><div id="live-bookings-container"></div></div>
 
-    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部，確保 DOM 解析完成) -->
+    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部) -->
     <script src="app.js"></script>
 
     <!-- 3. 🔮 水晶閣動態事件攔截、雙向跨月選單與觀察器守護中心 (保證 100% 執行安全) -->
@@ -426,7 +423,7 @@
                 }
             }
 
-            // C. 降級備用認證：驗證全局員工與管理員設定密碼 (防止 Firebase 連線延遲)
+            // C. 降級備用密碼認證 (員工1234/經理8888) 
             const globalEmpPass = (state.settings && state.settings.passEmployee) ? state.settings.passEmployee : "1234";
             const globalMgrPass = (state.settings && state.settings.passManager) ? state.settings.passManager : "8888";
 
@@ -526,14 +523,29 @@
             if (myYr && myMo && mainYr && mainMo) {
                 mainYr.value = myYr.value;
                 mainMo.value = myMo.value;
+                
+                // 🚀 第一時間強制更新底層 state 的年月，防止渲染落後
+                window.state.currentYear = parseInt(myYr.value) || 2026;
+                window.state.currentMonth = parseInt(myMo.value) || 5;
+
                 if (typeof handleDateContextChange === 'function') {
                     handleDateContextChange();
                 }
+
+                // 強制初始化當前員工在該月份的假表草稿
+                const staffName = document.getElementById('my-month-staff-select')?.value;
+                if (staffName) {
+                    if (!window.state.localHolidaysDraft[staffName]) {
+                        window.state.localHolidaysDraft[staffName] = window.state.holidays[staffName] || [];
+                    }
+                }
+
+                // 延長延遲以待 Firebase listeners 完成握手
                 setTimeout(() => {
                     if (typeof renderIndividualMonthCalendar === 'function') {
                         renderIndividualMonthCalendar();
                     }
-                }, 200);
+                }, 400);
             }
         };
 
@@ -892,7 +904,7 @@
             syncMainToMyMonthDate();
         }, 100);
 
-        // DOM 載入綁定
+        // DOM 載入與標籤切換攔截綁定
         document.addEventListener('DOMContentLoaded', () => {
             const warnCancel = document.getElementById('warning-cancel-btn');
             const warnConfirm = document.getElementById('warning-confirm-btn');
@@ -926,6 +938,17 @@
             if (appCenterContainer) {
                 window.approvalObserver.observe(appCenterContainer, { childList: true, subtree: true });
             }
+
+            // 🚀 關鍵：阻斷並包裝全域 `switchTab` 函數，當切換到「微調設定頁」時，主動、即時拉取並渲染員工帳密
+            const originalSwitchTab = window.switchTab;
+            window.switchTab = function(tabId) {
+                if (typeof originalSwitchTab === 'function') {
+                    originalSwitchTab(tabId);
+                }
+                if (tabId === 'tab-settings' && typeof window.renderSettingsAccountsList === 'function') {
+                    window.renderSettingsAccountsList(window.state.employees || []);
+                }
+            };
         });
 
         function showToastMessage(msg) {
@@ -939,3 +962,4 @@
 </body>
 </html>
 
+```
