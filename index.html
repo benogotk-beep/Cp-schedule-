@@ -10,10 +10,10 @@
     <!-- 🔮 1. 全域安全預載守護晶片 (必須置於最頂部，防止 app.js 載入時發生 ReferenceError/TypeError 崩潰) -->
     <script>
         window.approvalObserver = {
-            observe: function() { console.log("🔍 觀察器佔位晶片運作中..."); },
-            disconnect: function() {}
+            observe: function() { console.log("🔍 觀察器防禦佔位晶片啟動中..."); },
+            disconnect: function() { console.log("🔍 觀察器防禦佔位斷開"); }
         };
-        window.optimizeApprovalCenterUI = function() { console.log("⚡ UI 優化器佔位晶片運作中..."); };
+        window.optimizeApprovalCenterUI = function() { console.log("⚡ UI 優化器防禦佔位啟動中..."); };
         window.crystalStore = {
             employees: [],
             holidays: {},
@@ -23,6 +23,14 @@
         window.safeSetDisplay = function(id, val) {
             const el = document.getElementById(id);
             if (el) el.style.setProperty('display', val, 'important');
+        };
+        window.safeSetText = function(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
+        window.safeSetHtml = function(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = val;
         };
     </script>
 
@@ -126,7 +134,7 @@
         <div id="shops-report-container"></div>
     </div>
 
-    <!-- 👤 個人每月排班 Tab (全新注入年份與月份自選選單，所有人皆可選取、跨月反映更表) -->
+    <!-- 👤 個人每月排班 Tab -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:8px;">👤 員工個人當月排班及放假申請表</div>
@@ -317,7 +325,7 @@
             </div>
             <div class="settings-section">
                 <span class="settings-label">📊 人手分析定義告急線</span>
-                <div class="settings-row"><span>美甲師 ⚠️ 告急人手：少於或等於</span><input type="number" id="cfg-limit-low" style="width:60px;"> 人</div>
+                <div class="settings-row"><span>美甲師 ⚠️ 告急人手：少於 or 等於</span><input type="number" id="cfg-limit-low" style="width:60px;"> 人</div>
                 <div class="settings-row"><span>美甲師 🟢 充沛人手：大於 or 等於</span><input type="number" id="cfg-limit-high" style="width:60px;"> 人</div>
             </div>
             <button class="btn btn-save" onclick="saveGlobalSystemSettings()">💾 儲存控制台微調配置並發佈雲端</button>
@@ -328,7 +336,7 @@
     <div id="nav-bookings" style="display: none !important;"></div>
     <div id="tab-bookings" style="display: none !important;"><div id="live-bookings-container"></div></div>
 
-    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部) -->
+    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部，確保 DOM 解析完成) -->
     <script src="app.js"></script>
 
     <!-- 3. 🔮 水晶閣動態事件攔截、雙向跨月選單與觀察器守護中心 (保證 100% 執行安全) -->
@@ -930,5 +938,4 @@
     </script>
 </body>
 </html>
-
 
