@@ -1,4 +1,4 @@
-
+```javascript
 // 🔮 雲端資料庫連線鎖匙 (與分店智能主機 100% 保持一致)
 window.firebaseConfig = {
     apiKey: "AIzaSyCsfaqMDLYAxXMW5ivDHAgJEwnFA5MuvqM",
@@ -86,7 +86,7 @@ window.setupSettingsListener = function() {
 };
 
 window.applyDynamicSettingsToUI = function() {
-    // 🛡️ 安全 DOM 哨兵守衛，防止 Null TypeError 造成執行序中斷崩潰
+    // 🛡️ 安全 DOM 哨兵守衛，防止原密碼輸入框被刪除後導致拋出 Null 錯誤
     const cfgMgr = document.getElementById('cfg-pass-manager');
     const cfgEmp = document.getElementById('cfg-pass-employee');
     const cfgTitle = document.getElementById('cfg-web-title');
@@ -122,9 +122,9 @@ window.applyDynamicSettingsToUI = function() {
 window.saveGlobalSystemSettings = function() {
     if (window.state.currentRole !== 'manager') return;
     
-    const cfgMgrVal = document.getElementById('cfg-pass-manager')?.value.trim();
-    const cfgEmpVal = document.getElementById('cfg-pass-employee')?.value.trim();
-    const cfgTitleVal = document.getElementById('cfg-web-title')?.value.trim();
+    const cfgMgrVal = document.getElementById('cfg-pass-manager')?.value.trim() || window.state.settings.passManager || "8888";
+    const cfgEmpVal = document.getElementById('cfg-pass-employee')?.value.trim() || window.state.settings.passEmployee || "1234";
+    const cfgTitleVal = document.getElementById('cfg-web-title')?.value.trim() || "分店智能排班系統 V10.0";
     const cfgLockVal = parseInt(document.getElementById('cfg-lock-day')?.value || 26);
     const cfgMaxFtVal = parseInt(document.getElementById('cfg-max-ft-leave')?.value || 5);
     const cfgMaxPtVal = parseInt(document.getElementById('cfg-max-pt-leave')?.value || 20);
@@ -266,7 +266,16 @@ window.setupFirebaseListeners = function() {
     
     window.holRef = window.database.ref(`v8_holidays/${monthKey}`);
     window.holRef.on('value', (snapshot) => { 
-        window.state.holidays = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(window.defaultHolidaysData)); 
+        const isDefaultMonth = (window.state.currentYear === 2026 && window.state.currentMonth === 5);
+        window.state.holidays = snapshot.exists() ? snapshot.val() : (isDefaultMonth ? JSON.parse(JSON.stringify(window.defaultHolidaysData)) : {});
+        
+        // 🚀 強制校正與補全，確保每一個員工不論在新月份有沒有放假數據，都必須在 holidays 中擁有空陣列
+        window.state.employees.forEach(e => {
+            if (!window.state.holidays[e.name]) {
+                window.state.holidays[e.name] = [];
+            }
+        });
+        
         window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays)); 
         window.cloudLoads.hol = true; 
         window.triggerSafeUIRender(); 
@@ -792,14 +801,14 @@ window.renderSettingsAccountsList = function(employees) {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (employees.length === 0) {
+    if (!employees || employees.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-weight:bold;">⚠️ 雲端尚無員工名單！請先在員工管理頁新增。</td></tr>`;
         return;
     }
 
     employees.forEach((e, idx) => {
         if (!e) return;
-        const code = e.id || "100";
+        const code = e.id || window.defaultStaffIds[e.name] || "100";
         const pass = e.password || (code + "22");
 
         tbody.innerHTML += `
@@ -859,12 +868,16 @@ window.saveEmployeesAccountsFromSettings = function() {
         }
     });
 
-    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-        firebase.database().ref('v8_employees').set(updatedList).then(() => {
+    if (window.isCloudMode && window.database) {
+        window.database.ref('v8_employees').set(updatedList).then(() => {
             showToastMessage('🎉 員工登入帳號及密碼成功同步至雲端大腦！');
         }).catch(err => {
             alert('儲存變更失敗: ' + err.message);
         });
+    } else {
+        localStorage.setItem('v8_employees', JSON.stringify(updatedList));
+        showToastMessage('💾 員工帳密已儲存至本地快取中！');
+        window.populateStaffDropdown();
     }
 };
 
@@ -1197,10 +1210,11 @@ window.loadLocalFallbackContext = function() {
     const y = window.state.currentYear; 
     const m = window.state.currentMonth; 
     const monthKey = `${y}-${m < 10 ? '0'+m : m}`;
+    const isDefaultMonth = (y === 2026 && m === 5);
     
     window.state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(window.defaultEmployees));
     window.state.overrides = JSON.parse(localStorage.getItem(`v8_overrides_${monthKey}`)) || {};
-    window.state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || JSON.parse(JSON.stringify(window.defaultHolidaysData));
+    window.state.holidays = JSON.parse(localStorage.getItem(`v8_holidays_${monthKey}`)) || (isDefaultMonth ? JSON.parse(JSON.stringify(window.defaultHolidaysData)) : {});
     window.state.notes = JSON.parse(localStorage.getItem(`v8_notes_${monthKey}`)) || {};
     window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays));
     
@@ -1278,3 +1292,4 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 1500);
 });
 
+```
