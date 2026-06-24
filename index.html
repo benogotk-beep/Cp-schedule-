@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -7,7 +7,7 @@
     <title id="web-title-tag">分店智能排班系統 V11.5-Ultimate Pro</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- 🔮 1. 全域安全自鎖樣式 (解決導航鎖定與過濾衝突) -->
+    <!-- 🔮 1. 全域安全自鎖樣式 (解決導航鎖定與選單消失衝突) -->
     <style>
         /* 🔒 管理員標籤鎖定樣式：強制顯示並反灰，不從 DOM 隱藏 */
         .tab-btn {
@@ -24,9 +24,18 @@
             display: inline-block !important; /* 強制防隱藏 */
         }
 
-        /* 強制顯示選單容器：覆蓋 app.js 對員工的隱藏限制，還原完美年月 UI */
+        /* 📅 強制顯示選單與容器：覆蓋任何嘗試隱藏選單的限制，還原第四張圖的完美年月 UI */
         .force-show-flex {
             display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        #my-month-year-select, 
+        #my-month-month-select, 
+        #my-month-staff-select {
+            display: inline-block !important;
             visibility: visible !important;
             opacity: 1 !important;
             pointer-events: auto !important;
@@ -148,7 +157,7 @@
         </div>
     </div>
 
-    <!-- 🏷️ 標籤導航列 (完美保留所有按鈕，只對非管理員做反灰停用) -->
+    <!-- 🏷️ 標籤導航列 (完美保留所有按鈕，只對非管理員做反灰停用，防隱藏) -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
@@ -188,14 +197,14 @@
         <div id="shops-report-container"></div>
     </div>
 
-    <!-- 👤 個人每月排班 Tab ( UI 已強制還原第三張截圖的完美年月排版 ) -->
+    <!-- 👤 個人每月排班 Tab ( UI 已強制還原第四張截圖的完美年月排版並防吞 ) -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:12px;">👤 員工個人當月排班及放假申請表</div>
             
             <div class="force-show-flex" style="flex-direction:column; gap:12px; margin-bottom:16px; background:#f8fafc; padding:14px; border-radius:12px; border:1px solid #e2e8f0;">
                 <!-- 頂部列：年份、月份選單 -->
-                <div class="force-show-flex" style="justify-content:center; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div class="force-show-flex" style="justify-content:center; align-items:center; gap:12px; flex-wrap:wrap; display: flex !important;">
                     <div style="display:inline-flex !important; align-items:center; background:white; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1;">
                         <label style="font-size:13px; font-weight:bold; color:#4b5563; margin-right:6px;">選取年份：</label>
                         <select id="my-month-year-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="window.syncMyMonthDateToMain()">
@@ -209,7 +218,7 @@
                 </div>
 
                 <!-- 底部列：選取姓名與一鍵優化按鈕 -->
-                <div class="force-show-flex" style="justify-content:center; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div class="force-show-flex" style="justify-content:center; align-items:center; gap:12px; flex-wrap:wrap; display: flex !important;">
                     <div style="display:inline-flex !important; align-items:center; background:white; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1;">
                         <label style="font-size:13px; font-weight:bold; color:#4b5563; margin-right:6px;">選取姓名：</label>
                         <select id="my-month-staff-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="renderIndividualMonthCalendar()">
@@ -397,16 +406,25 @@
     <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部) -->
     <script src="app.js"></script>
 
-    <!-- 3. 🔮 100% 安全與舊版設備相容 ES5 守護腳本 (徹底移除 ES6 語法，防止微信/老舊 iOS 崩潰) -->
+    <!-- 3. 🔮 100% 安全與舊版設備相容 ES5 守護腳本 (徹底移除 ES6 語法，特別保護並容錯 MutationObserver 物件) -->
     <script>
         (function() {
             try {
-                // 重新實體化真實的 MutationObserver，監控審批中心 UI 的狀態
-                window.approvalObserver = new MutationObserver(function() {
-                    if (typeof window.optimizeApprovalCenterUI === 'function') {
-                        window.optimizeApprovalCenterUI();
-                    }
-                });
+                // 🛡️ 容錯與偵測 MutationObserver (老舊 iOS 與內建瀏覽器防崩潰核心)
+                var MutationObserverClass = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+                if (MutationObserverClass) {
+                    window.approvalObserver = new MutationObserverClass(function() {
+                        if (typeof window.optimizeApprovalCenterUI === 'function') {
+                            window.optimizeApprovalCenterUI();
+                        }
+                    });
+                } else {
+                    // 若設備完全不支援，提供安全 mock 佔位對象，絕不拋出未定義 ReferenceError
+                    window.approvalObserver = {
+                        observe: function() {},
+                        disconnect: function() {}
+                    };
+                }
 
                 window.rawEmployees = [];
                 window.loggedInEmployeeName = ""; 
@@ -714,7 +732,7 @@
                     return (currentWorkingCount - 1) <= alertThreshold;
                 };
 
-                // ==================== 🏖️ 切換放假核心 (解決 undefined 與自鎖問題) ====================
+                // ==================== 🏖️ 切換放假核心 (100% 成功載入與阻斷微調硬鎖定) ====================
                 window.toggleLocalHolidayDraft = function(name, day, btn) {
                     var state = window.state || {};
                     state.overrides = state.overrides || {};
@@ -897,7 +915,7 @@
                 window.actionApproveSingleHoliday = function(key, staffName, day, isNewFormat, allDraftHols) {
                     var state = window.state || {};
                     var monthKey = window.getActiveMonthKey();
-                    var currentApproved = (state.holidays[staffName] || []).slice(); // ES5 乾淨拷貝
+                    var currentApproved = (state.holidays[staffName] || []).slice(); 
                     
                     if (currentApproved.indexOf(day) === -1) {
                         currentApproved.push(day);
@@ -970,7 +988,12 @@
                     var state = window.state || {};
                     var inputs = document.querySelectorAll('.calendar-special-note-input'); 
                     if (inputs.length === 0) return; 
-                    var staffName = inputs[0].getAttribute('data-staff');
+                    
+                    var firstInput = inputs[0];
+                    if (!firstInput) return;
+                    var staffName = firstInput.getAttribute('data-staff');
+                    if (!staffName) return;
+
                     var monthKey = window.getActiveMonthKey(); 
                     var realToday = new Date(); 
                     var realDayNum = realToday.getDate(); 
@@ -1155,7 +1178,7 @@
                     }
 
                     var appCenterContainer = document.getElementById('smart-approval-list-container');
-                    if (appCenterContainer) {
+                    if (appCenterContainer && window.approvalObserver && typeof window.approvalObserver.observe === 'function') {
                         window.approvalObserver.observe(appCenterContainer, { childList: true, subtree: true });
                     }
 
@@ -1187,4 +1210,4 @@
 </body>
 </html>
 
-```
+
