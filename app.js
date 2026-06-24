@@ -1025,3 +1025,128 @@ window.restoreFromTimeCapsule = function(event) {
     reader.readAsText(file);
 };
 
+window.calculateAutoDefaultDate = function() {
+    var now = new Date(); 
+    var year = now.getFullYear(); 
+    var month = now.getMonth() + 1; 
+    var day = now.getDate(); 
+    var hour = now.getHours(); 
+    var isJumped = false;
+    
+    if (hour >= 20) { 
+        isJumped = true; 
+        var tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
+        year = tomorrow.getFullYear(); 
+        month = tomorrow.getMonth() + 1; 
+        day = tomorrow.getDate(); 
+    }
+    window.state.currentYear = year; 
+    window.state.currentMonth = month; 
+    window.state.currentDay = day;
+    
+    var hintBanner = document.getElementById('time-switch-hint');
+    if (hintBanner) {
+        if (isJumped) { 
+            hintBanner.innerHTML = "🕗 系統提示：已過夜間 20:00，已自動預載【明天 " + month + "月" + day + "日】排班表"; 
+            hintBanner.style.color = "#ea580c"; 
+        } else { 
+            hintBanner.innerHTML = "🌞 系統提示：目前為日間時段，正顯示【今日 " + month + "月" + day + "日】排班表"; 
+            hintBanner.style.color = "#059669"; 
+        }
+    }
+};
+
+window.loadLocalFallbackContext = function() {
+    window.calculateAutoDefaultDate(); 
+    var y = window.state.currentYear; 
+    var m = window.state.currentMonth; 
+    var monthKey = y + '-' + (m < 10 ? '0' + m : m);
+    var isDefaultMonth = (y === 2026 && m === 5);
+    
+    window.state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(window.defaultEmployees));
+    window.state.overrides = JSON.parse(localStorage.getItem('v8_overrides_' + monthKey)) || {};
+    window.state.holidays = JSON.parse(localStorage.getItem('v8_holidays_' + monthKey)) || (isDefaultMonth ? JSON.parse(JSON.stringify(window.defaultHolidaysData)) : {});
+    window.state.notes = JSON.parse(localStorage.getItem('v8_notes_' + monthKey)) || {};
+    window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays));
+    
+    window.cloudLoads = { emp: true, hol: true, ovr: true, note: true }; 
+    window.triggerSafeUIRender();
+};
+
+window.switchTab = function(tabId) {
+    document.querySelectorAll('.tab-content').forEach(function(el) { el.style.display = 'none'; }); 
+    document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+    
+    var targetEl = document.getElementById(tabId);
+    if(targetEl) targetEl.style.display = 'block'; 
+    
+    var navBtn = document.getElementById('nav-' + tabId.replace('tab-', '')); 
+    if(navBtn) navBtn.classList.add('active');
+    
+    if(tabId === 'tab-schedule') window.runScheduler(); 
+    if(tabId === 'tab-my-month') {
+        if (typeof window.renderIndividualMonthCalendar === 'function') {
+            window.renderIndividualMonthCalendar();
+        }
+    } 
+    if(tabId === 'tab-analysis') window.renderMonthlyAnalysis();
+};
+
+window.triggerSafeUIRender = function() {
+    if(window.cloudLoads.emp && window.cloudLoads.hol && window.cloudLoads.ovr && window.cloudLoads.note) {
+        for(var i=0; i<window.state.employees.length; i++) {
+            var e = window.state.employees[i];
+            if(!window.state.holidays[e.name]) window.state.holidays[e.name] = []; 
+            if(!window.state.localHolidaysDraft[e.name]) window.state.localHolidaysDraft[e.name] = []; 
+        }
+        window.renderEmployeeTable(); 
+        window.populateStaffDropdown(); 
+        window.renderMonthlyAnalysis(); 
+        if (typeof window.renderIndividualMonthCalendar === 'function') {
+            window.renderIndividualMonthCalendar();
+        }
+        window.renderHolidayTable();
+        
+        var ind = document.getElementById('cloud-indicator'); 
+        if(ind && window.isCloudMode) { 
+            ind.className = "cloud-status status-online"; 
+            ind.innerText = "🟢 雲端連線成功！跨月份智能排班大腦運作中"; 
+        }
+        window.runScheduler();
+    }
+};
+
+// ==================== 🚀 核心監聽封裝啟動入口 ====================
+window.addEventListener('DOMContentLoaded', function() {
+    window.calculateAutoDefaultDate(); 
+    window.initYearMonthDropdowns();
+
+    if (typeof firebase !== 'undefined' && typeof window.firebaseConfig !== 'undefined') {
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
+            window.database = firebase.database();
+            window.database.ref(".info/connected").on("value", function(snap) { 
+                if (snap.val() === true) { 
+                    window.isCloudMode = true; 
+                    window.setupSettingsListener(); 
+                    window.handleDateContextChange(); 
+                } 
+            });
+        } catch(e) { window.isCloudMode = false; }
+    }
+
+    setTimeout(function() {
+        if (!window.isCloudMode) {
+            var ind = document.getElementById('cloud-indicator'); 
+            if(ind) { 
+                ind.className = "cloud-status status-offline"; 
+                ind.innerText = "⚠️ 獨立離線模式下運作（本地快取保護中）"; 
+            }
+            window.state.settings = JSON.parse(localStorage.getItem('v8_settings')) || JSON.parse(JSON.stringify(window.defaultSystemSettings)); 
+            window.applyDynamicSettingsToUI(); 
+            window.loadLocalFallbackContext();
+        }
+    }, 1500);
+});
+
+
