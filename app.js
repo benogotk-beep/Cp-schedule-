@@ -57,11 +57,11 @@ window.defaultHolidaysData = {
 
 // 4. 預設全域系統微調設定
 window.defaultSystemSettings = {
-    passManager: "8888", passEmployee: "1234", webTitle: "分店智能排班系統 V10.0",
+    passManager: "8888", passEmployee: "1234", webTitle: "分店智能排班系統 V11.0",
     lockDay: 26, maxFtLeave: 5, maxPtLeave: 20, limitLow: 3, limitHigh: 5
 };
 
-// 5. 系統大腦核心狀態變數 (不使用 const 宣告，全部綁定於 window，防止宣告衝突)
+// 5. 系統大腦核心狀態變數
 window.database = null; 
 window.isCloudMode = false;
 window.state = { 
@@ -80,13 +80,19 @@ window.setupSettingsListener = function() {
     if(!window.database || !window.isCloudMode) return;
     window.cfgRef = window.database.ref('v8_settings');
     window.cfgRef.on('value', function(snapshot) {
-        window.state.settings = snapshot.exists() ? Object.assign({}, window.defaultSystemSettings, snapshot.val()) : JSON.parse(JSON.stringify(window.defaultSystemSettings));
+        var newVal = snapshot.exists() ? snapshot.val() : {};
+        var mergedSettings = JSON.parse(JSON.stringify(window.defaultSystemSettings));
+        for (var key in newVal) {
+            if (newVal.hasOwnProperty(key)) {
+                mergedSettings[key] = newVal[key];
+            }
+        }
+        window.state.settings = mergedSettings;
         window.applyDynamicSettingsToUI();
     });
 };
 
 window.applyDynamicSettingsToUI = function() {
-    // 🛡️ 安全 DOM 哨兵守衛，防止原密碼輸入框被刪除後導致拋出 Null 錯誤
     var cfgMgr = document.getElementById('cfg-pass-manager');
     var cfgEmp = document.getElementById('cfg-pass-employee');
     var cfgTitle = document.getElementById('cfg-web-title');
@@ -98,14 +104,14 @@ window.applyDynamicSettingsToUI = function() {
 
     if (cfgMgr) cfgMgr.value = window.state.settings.passManager || "8888";
     if (cfgEmp) cfgEmp.value = window.state.settings.passEmployee || "1234";
-    if (cfgTitle) cfgTitle.value = window.state.settings.webTitle || "分店智能排班系統 V10.0";
+    if (cfgTitle) cfgTitle.value = window.state.settings.webTitle || "分店智能排班系統 V11.0";
     if (cfgLock) cfgLock.value = window.state.settings.lockDay || 26;
     if (cfgMaxFt) cfgMaxFt.value = window.state.settings.maxFtLeave || 5;
     if (cfgMaxPt) cfgMaxPt.value = window.state.settings.maxPtLeave || 20;
     if (cfgLimitL) cfgLimitL.value = window.state.settings.limitLow || 3;
     if (cfgLimitH) cfgLimitH.value = window.state.settings.limitHigh || 5;
     
-    document.title = window.state.settings.webTitle; 
+    document.title = window.state.settings.webTitle || "分店智能排班系統 V11.0"; 
     var webTag = document.getElementById('web-title-tag');
     var loginTitle = document.getElementById('login-box-title');
     var mainTitle = document.getElementById('page-main-title');
@@ -124,7 +130,7 @@ window.saveGlobalSystemSettings = function() {
     
     var cfgMgrVal = (document.getElementById('cfg-pass-manager') ? document.getElementById('cfg-pass-manager').value.trim() : "") || window.state.settings.passManager || "8888";
     var cfgEmpVal = (document.getElementById('cfg-pass-employee') ? document.getElementById('cfg-pass-employee').value.trim() : "") || window.state.settings.passEmployee || "1234";
-    var cfgTitleVal = (document.getElementById('cfg-web-title') ? document.getElementById('cfg-web-title').value.trim() : "") || "分店智能排班系統 V10.0";
+    var cfgTitleVal = (document.getElementById('cfg-web-title') ? document.getElementById('cfg-web-title').value.trim() : "") || "分店智能排班系統 V11.0";
     var cfgLockVal = parseInt(document.getElementById('cfg-lock-day') ? document.getElementById('cfg-lock-day').value : 26);
     var cfgMaxFtVal = parseInt(document.getElementById('cfg-max-ft-leave') ? document.getElementById('cfg-max-ft-leave').value : 5);
     var cfgMaxPtVal = parseInt(document.getElementById('cfg-max-pt-leave') ? document.getElementById('cfg-max-pt-leave').value : 20);
@@ -144,11 +150,11 @@ window.saveGlobalSystemSettings = function() {
 
     if (window.isCloudMode && window.database) {
         window.database.ref('v8_settings').set(window.state.settings).then(function() { 
-            showToastMessage('⚙️ 全局配置已成功發佈至雲端！'); 
+            if(window.showToastMessage) window.showToastMessage('⚙️ 全局配置已成功發佈至雲端！'); 
         });
     } else {
         localStorage.setItem('v8_settings', JSON.stringify(window.state.settings)); 
-        showToastMessage('💾 配置已成功儲存至本地快取中！'); 
+        if(window.showToastMessage) window.showToastMessage('💾 配置已成功儲存至本地快取中！'); 
         window.applyDynamicSettingsToUI();
     }
 };
@@ -157,7 +163,7 @@ window.saveGlobalSystemSettings = function() {
 window.generateTimeOptions = function(selectedValue) {
     var optionsHtml = '<option value="">無班次</option>'; 
     var tClean = selectedValue || '';
-    if (tClean.includes('(')) { 
+    if (tClean.indexOf('(') !== -1) { 
         var matches = tClean.match(/\(([^)]+)\)/); 
         if (matches && matches[1]) tClean = matches[1]; 
     }
@@ -195,7 +201,8 @@ window.handleSlotDragLeave = function(e) {
 window.handleSlotDrop = function(e, targetShop, targetIndex) {
     e.preventDefault(); 
     e.currentTarget.classList.remove('drag-over'); 
-    document.querySelectorAll('.slot-box').forEach(function(el) { el.classList.remove('dragging'); });
+    var slots = document.querySelectorAll('.slot-box');
+    for (var i = 0; i < slots.length; i++) { slots[i].classList.remove('dragging'); }
     if (!window.draggedSourceData) return; 
     
     var sourceShop = window.draggedSourceData.shop; 
@@ -228,7 +235,8 @@ window.renderMonitorBadges = function(shopCounts) {
     if(!monitorPanel) return; 
     monitorPanel.innerHTML = '';
     var shops = ['F79', 'GK3', 'G38', 'G2'];
-    shops.forEach(function(shop) {
+    for(var k=0; k<shops.length; k++) {
+        var shop = shops[k];
         var count = shopCounts[shop]; 
         var badgeClass = 'bg-ok'; 
         var txt = '正常';
@@ -245,7 +253,7 @@ window.renderMonitorBadges = function(shopCounts) {
             } 
         }
         monitorPanel.innerHTML += '<div class="badge ' + badgeClass + '"><div style="font-weight:bold;">' + shop + '</div><div style="font-size:18px; font-weight:900; margin:2px 0;">' + count + '人</div><div style="font-size:10px; opacity:0.8;">' + txt + '</div></div>';
-    });
+    }
 };
 
 window.setupFirebaseListeners = function() {
@@ -262,10 +270,16 @@ window.setupFirebaseListeners = function() {
     window.empRef = window.database.ref('v8_employees');
     window.empRef.on('value', function(snapshot) { 
         var val = snapshot.exists() ? snapshot.val() : JSON.parse(JSON.stringify(window.defaultEmployees)); 
-        window.state.employees = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+        
+        var arr = [];
+        for (var k in val) {
+            if (val.hasOwnProperty(k) && val[k]) {
+                arr.push(val[k]);
+            }
+        }
+        window.state.employees = Array.isArray(val) ? val.filter(Boolean) : arr;
         window.cloudLoads.emp = true; 
         
-        // 🚀 強力修正：拉取完員工資料，立刻對設定頁進行資料預載與同步
         if (typeof window.renderSettingsAccountsList === 'function') {
             window.renderSettingsAccountsList(window.state.employees);
         }
@@ -277,12 +291,12 @@ window.setupFirebaseListeners = function() {
         var isDefaultMonth = (window.state.currentYear === 2026 && window.state.currentMonth === 5);
         window.state.holidays = snapshot.exists() ? snapshot.val() : (isDefaultMonth ? JSON.parse(JSON.stringify(window.defaultHolidaysData)) : {});
         
-        // 🚀 跨月防漏校正：強制讓名單中每個人都存在假期陣列
-        window.state.employees.forEach(function(e) {
+        for(var i=0; i<window.state.employees.length; i++) {
+            var e = window.state.employees[i];
             if (!window.state.holidays[e.name]) {
                 window.state.holidays[e.name] = [];
             }
-        });
+        }
         
         window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays)); 
         window.cloudLoads.hol = true; 
@@ -371,10 +385,14 @@ window.populateStaffDropdown = function() {
     if(!sel) return; 
     var currentSelected = sel.value; 
     sel.innerHTML = '';
-    window.state.employees.forEach(function(e) { 
+    
+    var found = false;
+    for(var i=0; i<window.state.employees.length; i++) {
+        var e = window.state.employees[i];
         sel.innerHTML += '<option value="' + e.name + '">' + e.name + ' [' + e.role + ']</option>'; 
-    });
-    if (currentSelected && window.state.employees.some(function(e) { return e.name === currentSelected; })) { 
+        if(e.name === currentSelected) found = true;
+    }
+    if (currentSelected && found) { 
         sel.value = currentSelected; 
     }
 };
@@ -398,13 +416,16 @@ window.renderInteractiveReport = function(report) {
     
     var headerColors = { F79: '#4f46e5', GK3: '#9333ea', G38: '#d97706', G2: '#0d9488' };
     var nameOptionsHtml = '<option value="">-- 空缺 --</option>'; 
-    window.state.employees.forEach(function(e) { 
+    for(var idx=0; idx<window.state.employees.length; idx++) {
+        var e = window.state.employees[idx];
         nameOptionsHtml += '<option value="' + e.name + '">' + e.name + '</option>'; 
-    });
+    }
     
     var isManager = (window.state.currentRole === 'manager');
     var shops = ['F79', 'GK3', 'G38', 'G2'];
-    shops.forEach(function(shop) {
+    
+    for(var sIdx=0; sIdx<shops.length; sIdx++) {
+        var shop = shops[sIdx];
         var slotsHtml = '';
         for (var i = 0; i < 6; i++) {
             var slot = report[shop][i] || { name: '', time: '' }; 
@@ -424,7 +445,9 @@ window.renderInteractiveReport = function(report) {
                          '</div>';
         }
         var currentCount = 0; 
-        report[shop].forEach(function(s) { if(s.name) currentCount++; });
+        for(var rIdx=0; rIdx<report[shop].length; rIdx++) {
+            if(report[shop][rIdx].name) currentCount++;
+        }
         reportContainer.innerHTML += '<div class="shop-box">' +
                                         '<div class="shop-header" style="background: ' + headerColors[shop] + ';">' +
                                             '<span>' + shop + ' 店鋪</span>' +
@@ -432,113 +455,6 @@ window.renderInteractiveReport = function(report) {
                                         '</div>' +
                                         '<div class="grid-6">' + slotsHtml + '</div>' +
                                      '</div>';
-    });
-};
-
-// ==================== 👤 個人當月排班月曆繪製 ====================
-window.renderIndividualMonthCalendar = function() {
-    var tbody = document.getElementById('my-month-calendar-body'); 
-    if(!tbody) return; 
-    tbody.innerHTML = ''; 
-    var staffName = document.getElementById('my-month-staff-select') ? document.getElementById('my-month-staff-select').value : null; 
-    if(!staffName) return;
-    
-    var totalDays = window.getDaysInMonth(window.state.currentYear, window.state.currentMonth); 
-    var realToday = new Date(); 
-    var realDayNum = realToday.getDate(); 
-    var realMonthNum = realToday.getMonth() + 1; 
-    var realYearNum = realToday.getFullYear(); 
-    var isManager = (window.state.currentRole === 'manager');
-    
-    for (var d = 1; d <= totalDays; d++) {
-        var isWknd = window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d) === '日' ? 'background:#fef2f2; font-weight:bold; color:var(--danger);' : ''; 
-        var assignedShop = '<span style="color:#9ca3af;">-</span>'; 
-        var assignedTime = '<span style="color:#9ca3af;">-</span>';
-        var isPastDay = (window.state.currentYear < realYearNum || (window.state.currentYear === realYearNum && window.state.currentMonth < realMonthNum) || (window.state.currentYear === realYearNum && window.state.currentMonth === realMonthNum && d < realDayNum));
-        
-        var dayKey = 'day_' + d; 
-        var dayReport = window.state.overrides[dayKey] || window.calculateDaySchedule(d).report; 
-        var activeUniqueManiSet = new Set();
-        
-        var shops = ['F79', 'GK3', 'G38', 'G2'];
-        shops.forEach(function(s) { 
-            if (dayReport[s]) {
-                dayReport[s].forEach(function(slot) { 
-                    if(slot.name) { 
-                        var staff = window.state.employees.find(function(e) { return e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''); }); 
-                        if(staff && staff.role !== '學徒') activeUniqueManiSet.add(staff.name); 
-                    } 
-                }); 
-            }
-        });
-        
-        var activeManiCount = activeUniqueManiSet.size; 
-        var isHolidayDraft = (window.state.localHolidaysDraft[staffName] || []).includes(d);
-        
-        if (isHolidayDraft) { 
-            assignedShop = '<span style="color:var(--danger); font-weight:bold;">放假要求 🏖️</span>'; 
-            assignedTime = '<span style="color:var(--danger); font-size:11px;">(待存/放假)</span>'; 
-        } else {
-            shops.forEach(function(s) { 
-                if (dayReport[s]) { 
-                    dayReport[s].forEach(function(slot) { 
-                        if (slot.name && slot.name.replace(/\s+/g, '') === staffName.replace(/\s+/g, '')) { 
-                            assignedShop = '<b style="color:var(--primary);">' + s + ' 店</b>'; 
-                            var tClean = slot.time; 
-                            if(tClean.includes('(')) { 
-                                var m = tClean.match(/\(([^)]+)\)/); 
-                                if(m && m[1]) tClean = m[1]; 
-                            } 
-                            assignedTime = '<span style="font-weight:bold; color:#1e3a8a;">' + tClean + '</span>'; 
-                        } 
-                    }); 
-                } 
-            });
-        }
-        
-        var currentNote = (window.state.notes && window.state.notes[staffName] && window.state.notes[staffName]['day_' + d]) ? window.state.notes[staffName]['day_' + d] : ''; 
-        var btnHtml = ""; 
-        var inputDisabledHtml = "";
-        
-        // 🔒 完美對接衝突一：手動微調硬自鎖邏輯
-        var hasOverrideOnDay = !!(window.state.overrides && window.state.overrides[dayKey]);
-
-        if (hasOverrideOnDay) {
-            // 當天有微調時，該日的「請假鈕」強制置灰，並鎖定顯示「🔒 鎖定」
-            btnHtml = '<button class="holiday-btn override-locked" disabled title="當天排班已被管理員拖曳手動修改，假更已自鎖！">🔒 鎖定</button>';
-            inputDisabledHtml = 'disabled style="background:#f3f4f6; color:#9ca3af; cursor:not-allowed;"';
-        } else if (isPastDay && !isManager) { 
-            var lockedActive = isHolidayDraft ? 'active' : ''; 
-            btnHtml = '<button class="holiday-btn locked ' + lockedActive + '" disabled>已鎖</button>'; 
-            inputDisabledHtml = 'disabled style="background:#f3f4f6; color:#9ca3af; cursor:not-allowed;"'; 
-        } else { 
-            var activeClass = isHolidayDraft ? 'active' : ''; 
-            btnHtml = '<button class="holiday-btn ' + activeClass + '" onclick="window.toggleLocalHolidayDraft(\'' + staffName + '\', ' + d + ', this)">放假</button>'; 
-        }
-        
-        var maniBadgeStyle = "background:#cef7e5; color:#03543f;"; 
-        var limitLowVal = window.state.settings.limitLow || 3;
-        var limitHighVal = window.state.settings.limitHigh || 5;
-
-        if(activeManiCount <= limitLowVal) {
-            maniBadgeStyle = "background:#fde8e8; color:#9b1c1c; font-weight:bold;"; 
-        } else if(activeManiCount < limitHighVal) {
-            maniBadgeStyle = "background:#e6fbf4; color:#0d9488;";
-        }
-        tbody.innerHTML += '<tr>' +
-                            '<td style="text-align:center; font-weight:bold; ' + (isPastDay?'color:#9ca3af;':'') + '">' + (isPastDay ? '🔒 ' : '') + d + ' 日</td>' +
-                            '<td style="text-align:center; ' + isWknd + '">' + window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d) + '</td>' +
-                            '<td style="text-align:center;"><span style="padding:2px 6px; border-radius:6px; font-size:11px; ' + maniBadgeStyle + '">' + activeManiCount + ' 師</span></td>' +
-                            '<td style="text-align:center;">' + assignedShop + '</td>' +
-                            '<td style="text-align:center;">' + assignedTime + '</td>' +
-                            '<td style="text-align:center;">' + btnHtml + '</td>' +
-                            '<td><input type="text" class="calendar-special-note-input" data-day="' + d + '" data-staff="' + staffName + '" ' + inputDisabledHtml + ' value="' + currentNote + '" placeholder="原因..."></td>' +
-                           '</tr>';
-    }
-    var invertBtn = document.getElementById('my-month-invert-btn'); 
-    if (invertBtn) { 
-        invertBtn.disabled = ((window.state.currentYear < realYearNum || (window.state.currentYear === realYearNum && window.state.currentMonth < realMonthNum)) && !isManager); 
-        invertBtn.style.opacity = invertBtn.disabled ? 0.4 : 1; 
     }
 };
 
@@ -550,35 +466,45 @@ window.invertIndividualEmployeeHolidays = function() {
     if (!window.state.localHolidaysDraft[staffName]) window.state.localHolidaysDraft[staffName] = []; 
     var inverted = [];
     
+    var hols = window.state.holidays[staffName] || [];
+    var drafts = window.state.localHolidaysDraft[staffName] || [];
+    
     for (var d = 1; d <= totalDays; d++) {
         var isPastDay = (window.state.currentYear < 2026 || (window.state.currentYear === 2026 && window.state.currentMonth < 5) || (window.state.currentYear === 2026 && window.state.currentMonth === 5 && d < 1));
         if (isPastDay && !isManager) { 
-            if ((window.state.holidays[staffName] || []).includes(d)) inverted.push(d); 
+            if (hols.indexOf(d) !== -1) inverted.push(d); 
         } else { 
-            if (!window.state.localHolidaysDraft[staffName].includes(d)) inverted.push(d); 
+            if (drafts.indexOf(d) === -1) inverted.push(d); 
         }
     }
     window.state.localHolidaysDraft[staffName] = inverted; 
-    window.renderIndividualMonthCalendar();
+    if(typeof window.renderIndividualMonthCalendar === 'function') window.renderIndividualMonthCalendar();
 };
 
-// ==================== 📊 全月分析與排班人手統計 ====================
 window.applyColumnFilter = function(type) {
-    document.querySelectorAll('.btn-filter').forEach(function(b) { b.classList.remove('active'); }); 
+    var btns = document.querySelectorAll('.btn-filter');
+    for(var b=0; b<btns.length; b++) { btns[b].classList.remove('active'); }
     var filterBtn = document.getElementById('filter-' + type);
     if (filterBtn) filterBtn.classList.add('active');
     
     if(type === 'all') {
-        document.querySelectorAll('.col-mani, .col-app, .col-shops').forEach(function(el) { el.style.display = ''; });
+        var allCols = document.querySelectorAll('.col-mani, .col-app, .col-shops');
+        for(var i=0; i<allCols.length; i++) allCols[i].style.display = '';
     } else if(type === 'mani') { 
-        document.querySelectorAll('.col-mani').forEach(function(el) { el.style.display = ''; }); 
-        document.querySelectorAll('.col-app, .col-shops').forEach(function(el) { el.style.display = 'none'; }); 
+        var mCols = document.querySelectorAll('.col-mani');
+        for(var i=0; i<mCols.length; i++) mCols[i].style.display = '';
+        var hidden1 = document.querySelectorAll('.col-app, .col-shops');
+        for(var i=0; i<hidden1.length; i++) hidden1[i].style.display = 'none';
     } else if(type === 'app') { 
-        document.querySelectorAll('.col-app').forEach(function(el) { el.style.display = ''; }); 
-        document.querySelectorAll('.col-mani, .col-shops').forEach(function(el) { el.style.display = 'none'; }); 
+        var aCols = document.querySelectorAll('.col-app');
+        for(var i=0; i<aCols.length; i++) aCols[i].style.display = '';
+        var hidden2 = document.querySelectorAll('.col-mani, .col-shops');
+        for(var i=0; i<hidden2.length; i++) hidden2[i].style.display = 'none';
     } else if(type === 'shops') { 
-        document.querySelectorAll('.col-shops').forEach(function(el) { el.style.display = ''; }); 
-        document.querySelectorAll('.col-mani, .col-app').forEach(function(el) { el.style.display = 'none'; }); 
+        var sCols = document.querySelectorAll('.col-shops');
+        for(var i=0; i<sCols.length; i++) sCols[i].style.display = '';
+        var hidden3 = document.querySelectorAll('.col-mani, .col-app');
+        for(var i=0; i<hidden3.length; i++) hidden3[i].style.display = 'none';
     }
 };
 
@@ -597,9 +523,10 @@ window.renderMonthlyAnalysis = function() {
     var highStaffHtml = ""; 
     var attendanceCounters = {};
     
-    window.state.employees.forEach(function(e) { 
-        attendanceCounters[e.name] = { totalLeave: 0, totalWork: 0, role: e.role || 'Full-time' }; 
-    });
+    for(var e=0; e<window.state.employees.length; e++) {
+        var empInfo = window.state.employees[e];
+        attendanceCounters[empInfo.name] = { totalLeave: 0, totalWork: 0, role: empInfo.role || 'Full-time' }; 
+    }
     
     for (var d = 1; d <= totalDays; d++) {
         var dayKey = 'day_' + d; 
@@ -608,27 +535,31 @@ window.renderMonthlyAnalysis = function() {
         var dayReport = window.state.overrides[dayKey] || window.calculateDaySchedule(d).report;
         
         var shops = ['F79', 'GK3', 'G38', 'G2'];
-        shops.forEach(function(s) { 
-            if (dayReport[s]) {
-                dayReport[s].forEach(function(slot) { 
+        for(var s=0; s<shops.length; s++) {
+            var shopName = shops[s];
+            if (dayReport[shopName]) {
+                for(var st=0; st<dayReport[shopName].length; st++) {
+                    var slot = dayReport[shopName][st];
                     if(slot.name) { 
-                        var staff = window.state.employees.find(function(e) { return e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''); }); 
-                        if(staff) { 
-                            if(staff.role === '學徒') totalWorkingApprentices++; 
-                            else finalCounts[s]++; 
+                        var staffMatch = window.state.employees.filter(function(emp) { return emp.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''); })[0];
+                        if(staffMatch) { 
+                            if(staffMatch.role === '學徒') totalWorkingApprentices++; 
+                            else finalCounts[shopName]++; 
                         } 
                     } 
-                }); 
+                }
             }
-        });
+        }
         
-        window.state.employees.forEach(function(e) { 
-            if ((window.state.holidays[e.name] || []).includes(d)) { 
-                if(attendanceCounters[e.name]) attendanceCounters[e.name].totalLeave++; 
+        for(var a=0; a<window.state.employees.length; a++) {
+            var empName = window.state.employees[a].name;
+            var hols = window.state.holidays[empName] || [];
+            if (hols.indexOf(d) !== -1) { 
+                if(attendanceCounters[empName]) attendanceCounters[empName].totalLeave++; 
             } else { 
-                if(attendanceCounters[e.name]) attendanceCounters[e.name].totalWork++; 
+                if(attendanceCounters[empName]) attendanceCounters[empName].totalWork++; 
             } 
-        });
+        }
         
         var totalWorkingMani = finalCounts.F79 + finalCounts.GK3 + finalCounts.G38 + finalCounts.G2;
         var alertBgClass = totalWorkingMani <= window.state.settings.limitLow ? "bg-alert-red" : (totalWorkingMani >= window.state.settings.limitHigh ? "bg-alert-darkgreen" : "bg-alert-lightgreen");
@@ -656,20 +587,21 @@ window.renderMonthlyAnalysis = function() {
     var summaryBody = document.getElementById('staff-month-summary-body');
     if(summaryBody) {
         summaryBody.innerHTML = ''; 
-        Object.keys(attendanceCounters).forEach(function(name) { 
-            var info = attendanceCounters[name];
+        var attKeys = Object.keys(attendanceCounters);
+        for(var y=0; y<attKeys.length; y++) {
+            var n = attKeys[y];
+            var info = attendanceCounters[n];
             summaryBody.innerHTML += '<tr>' +
-                                        '<td style="padding:6px 10px; font-weight:bold;">' + name + '</td>' +
+                                        '<td style="padding:6px 10px; font-weight:bold;">' + n + '</td>' +
                                         '<td style="text-align:center;">' + info.role + '</td>' +
                                         '<td style="text-align:center; color:var(--success);">' + info.totalWork + ' 天</td>' +
                                         '<td style="text-align:center; color:var(--danger);">' + info.totalLeave + ' 天</td>' +
                                       '</tr>';
-        });
+        }
     }
     window.applyColumnFilter('all'); 
 };
 
-// ==================== 🏖️ 管理大表：全月放假表繪製 ====================
 window.renderHolidayTable = function() {
     var headerRow = document.getElementById('holiday-table-header-row'); 
     var tbody = document.getElementById('holiday-table-body'); 
@@ -682,35 +614,40 @@ window.renderHolidayTable = function() {
     
     for(var d=1; d<=totalDays; d++) { 
         var dayReport = window.state.overrides['day_' + d] || window.calculateDaySchedule(d).report; 
-        var tMani = 0;
         var tApp = 0; 
-        var activeUniqueManiSet = new Set();
+        var activeUniqueManiArr = [];
         
         if (dayReport['F79']) {
             var combinedSlots = dayReport['F79'].concat(dayReport['GK3'] || [], dayReport['G38'] || [], dayReport['G2'] || []);
-            combinedSlots.forEach(function(slot) { 
+            for(var st=0; st<combinedSlots.length; st++) {
+                var slot = combinedSlots[st];
                 if(slot.name) { 
-                    var staff = window.state.employees.find(function(e) { return e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''); }); 
+                    var staff = window.state.employees.filter(function(e) { return e.name.replace(/\s+/g, '') === slot.name.replace(/\s+/g, ''); })[0];
                     if(staff) { 
-                        if(staff.role === '學徒') tApp++; 
-                        else activeUniqueManiSet.add(staff.name); 
+                        if(staff.role === '學徒') {
+                            tApp++; 
+                        } else {
+                            if(activeUniqueManiArr.indexOf(staff.name) === -1) activeUniqueManiArr.push(staff.name);
+                        }
                     } 
                 } 
-            });
+            }
         }
         headerRow.innerHTML += '<th style="text-align:center; min-width:42px; background:#f8fafc;">' +
-                                '<span style="color:var(--primary); display:block;">' + activeUniqueManiSet.size + '師</span>' +
+                                '<span style="color:var(--primary); display:block;">' + activeUniqueManiArr.length + '師</span>' +
                                 '<span style="color:#0d9488; display:block;">' + tApp + '徒</span>' +
                                 '<b>' + d + '</b><br>' +
                                 '<span style="font-size:9px; font-weight:normal;">' + window.getDayOfWeekText(window.state.currentYear, window.state.currentMonth, d) + '</span>' +
                                '</th>'; 
     }
-    window.state.employees.forEach(function(emp) {
+    
+    for(var e=0; e<window.state.employees.length; e++) {
+        var emp = window.state.employees[e];
         var dotsHtml = ''; 
         var userHols = window.state.holidays[emp.name] || [];
-        for(var d = 1; d <= totalDays; d++) { 
-            var isActive = userHols.includes(d) ? 'active' : ''; 
-            var dotText = userHols.includes(d) ? '假' : '-'; 
+        for(var hd = 1; hd <= totalDays; hd++) { 
+            var isActive = (userHols.indexOf(hd) !== -1) ? 'active' : ''; 
+            var dotText = (userHols.indexOf(hd) !== -1) ? '假' : '-'; 
             dotsHtml += '<td><span class="holiday-display-dot ' + isActive + '">' + dotText + '</span></td>'; 
         }
         tbody.innerHTML += '<tr>' +
@@ -720,238 +657,7 @@ window.renderHolidayTable = function() {
                             '</td>' +
                             dotsHtml +
                            '</tr>';
-    });
-};
-
-// ==================== 👥 員工資料庫表與安全帳密維護 ====================
-window.renderEmployeeTable = function() {
-    var tbody = document.getElementById('employee-table-body'); 
-    if(!tbody) return; 
-    tbody.innerHTML = '';
-    var isReadonly = (window.state.currentRole !== 'manager') ? 'disabled' : '';
-    
-    window.state.employees.forEach(function(emp, index) {
-        var currentRole = emp.role || 'Full-time';
-        var code = emp.id || window.defaultStaffIds[emp.name] || "100";
-        var pass = emp.password || (code + "22");
-        
-        tbody.innerHTML += '<tr>' +
-            '<td>' +
-                '<input type="text" class="emp-id-input" ' + isReadonly + ' style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="' + code + '" oninput="window.updateEmployeeRowPassword(this, ' + index + ')">' +
-            '</td>' +
-            '<td>' +
-                '<input type="text" class="emp-name-input" ' + isReadonly + ' style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="' + emp.name + '">' +
-            '</td>' +
-            '<td>' +
-                '<select class="emp-type-select" ' + isReadonly + ' style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">' +
-                    '<option value="Full-time" ' + (currentRole === 'Full-time' ? 'selected' : '') + '>Full-time</option>' +
-                    '<option value="Part-time" ' + (currentRole === 'Part-time' ? 'selected' : '') + '>Part-time</option>' +
-                    '<option value="學徒" ' + (currentRole === '學徒' ? 'selected' : '') + '>學徒</option>' +
-                '</select>' +
-            '</td>' +
-            '<td>' +
-                '<input type="text" class="emp-shops-input" ' + isReadonly + ' style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="' + (emp.p_shops || '') + '">' +
-            '</td>' +
-            '<td>' +
-                '<input type="text" class="emp-times-input" ' + isReadonly + ' style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="' + (emp.times || '') + '">' +
-            '</td>' +
-            '<td>' +
-                '<div style="display:flex; align-items:center; gap:4px; justify-content:center;">' +
-                    '<input type="text" class="emp-pass-input" ' + isReadonly + ' style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="' + pass + '">' +
-                    '<button class="btn" ' + isReadonly + ' style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="window.regenerateEmployeeRowPass(this)" title="重算密碼">🔄</button>' +
-                '</div>' +
-            '</td>' +
-            '<td>' +
-                '<button class="btn btn-del" ' + isReadonly + ' style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest(\'tr\').remove()">刪除</button>' +
-            '</td>' +
-        '</tr>';
-    });
-};
-
-window.updateEmployeeRowPassword = function(idInput) {
-    var tr = idInput.closest('tr');
-    if (!tr) return;
-    var passInput = tr.querySelector('.emp-pass-input');
-    if (passInput) {
-        var idVal = idInput.value.trim();
-        if (idVal) {
-            passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
-        }
     }
-};
-
-window.regenerateEmployeeRowPass = function(btn) {
-    var tr = btn.closest('tr');
-    if (!tr) return;
-    var idInput = tr.querySelector('.emp-id-input') || tr.querySelector('.sett-id-field');
-    var passInput = tr.querySelector('.emp-pass-input') || tr.querySelector('.sett-pass-field');
-    if (idInput && passInput) {
-        var idVal = idInput.value.trim();
-        if (idVal) {
-            passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
-            showToastMessage("🔄 密碼重算完成！");
-        } else {
-            alert("⚠️ 請先輸入工號！");
-        }
-    }
-};
-
-window.addEmployeeRow = function() {
-    if(window.state.currentRole !== 'manager') return; 
-    var tbody = document.getElementById('employee-table-body'); 
-    if(!tbody) return;
-    var randomSuffix = String(Math.floor(Math.random() * 90 + 10));
-    tbody.innerHTML += '<tr>' +
-        '<td>' +
-            '<input type="text" class="emp-id-input" style="width: 70px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124" oninput="window.updateEmployeeRowPassword(this)">' +
-        '</td>' +
-        '<td>' +
-            '<input type="text" class="emp-name-input" style="width: 100px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" placeholder="姓名">' +
-        '</td>' +
-        '<td>' +
-            '<select class="emp-type-select" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 6px;">' +
-                '<option value="Full-time" selected>Full-time</option>' +
-                '<option value="Part-time">Part-time</option>' +
-                '<option value="學徒">學徒</option>' +
-            '</select>' +
-        '</td>' +
-        '<td>' +
-            '<input type="text" class="emp-shops-input" style="width: 150px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="G2, G38, GK3">' +
-        '</td>' +
-        '<td>' +
-            '<input type="text" class="emp-times-input" style="width: 180px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="11:00, 12:00, 13:00">' +
-        '</td>' +
-        '<td>' +
-            '<div style="display:flex; align-items:center; gap:4px; justify-content:center;">' +
-                '<input type="text" class="emp-pass-input" style="width: 90px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px;" value="124' + randomSuffix + '">' +
-                '<button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 6px; font-size:11px;" onclick="window.regenerateEmployeeRowPass(this)">🔄</button>' +
-            '</div>' +
-        '</td>' +
-        '<td>' +
-            '<button class="btn btn-del" style="background: var(--danger); color: white; padding: 4px 8px;" onclick="this.closest(\'tr\').remove()">刪除</button>' +
-        '</td>' +
-    '</tr>';
-};
-
-window.saveEmployeeData = function() {
-    if (window.state.currentRole !== 'manager') return; 
-    var rows = document.querySelectorAll('#employee-table-body tr'); 
-    var newEmps = [];
-    rows.forEach(function(row) { 
-        var id = row.querySelector('.emp-id-input').value.trim();
-        var name = row.querySelector('.emp-name-input').value.trim(); 
-        var role = row.querySelector('.emp-type-select').value;
-        var p_shops = row.querySelector('.emp-shops-input').value;
-        var times = row.querySelector('.emp-times-input').value;
-        var password = row.querySelector('.emp-pass-input').value.trim();
-        if(!name) return; 
-        newEmps.push({ id: id, name: name, role: role, p_shops: p_shops, times: times, password: password }); 
-    });
-    window.state.employees = newEmps;
-    if(window.isCloudMode && window.database) { 
-        window.database.ref('v8_employees').set(window.state.employees).then(function() { 
-            showToastMessage('👥 員工設定與安全帳密已成功發佈！'); 
-        }); 
-    } else { 
-        localStorage.setItem('v8_employees', JSON.stringify(window.state.employees)); 
-        showToastMessage('💾 員工名單已儲存至本地！'); 
-        window.populateStaffDropdown(); 
-        window.renderSettingsAccountsList(window.state.employees);
-    }
-};
-
-// ==================== ⚙️ 微調設定頁：員工帳密管理渲染與操作 ====================
-window.renderSettingsAccountsList = function(employees) {
-    var tbody = document.getElementById('settings-accounts-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    if (!employees || employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94a3b8; font-weight:bold;">⚠️ 雲端尚無員工名單！請先在員工管理頁新增。</td></tr>';
-        return;
-    }
-
-    employees.forEach(function(e, idx) {
-        if (!e) return;
-        var code = e.id || window.defaultStaffIds[e.name] || "100";
-        var pass = e.password || (code + "22");
-
-        tbody.innerHTML += '<tr style="border-bottom:1px solid #f1f5f9;" data-idx="' + idx + '">' +
-            '<td style="padding:10px; font-weight:bold; color:#1e293b;">' + (e.name || '未命名') + '</td>' +
-            '<td style="padding:10px; text-align:center;">' +
-                '<input type="text" class="sett-id-field" style="width:100px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="' + code + '" oninput="window.updateSettingsRowPassword(this)">' +
-            '</td>' +
-            '<td style="padding:10px; text-align:center;">' +
-                '<input type="text" class="sett-pass-field" style="width:120px; text-align:center; font-weight:bold; border:1px solid #cbd5e1; border-radius:6px; padding:4px;" value="' + pass + '">' +
-            '</td>' +
-            '<td style="padding:10px; text-align:center;">' +
-                '<button class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="window.regenerateEmployeeRowPass(this)">🔄 重算</button>' +
-            '</td>' +
-        '</tr>';
-    });
-};
-
-window.updateSettingsRowPassword = function(idInput) {
-    var tr = idInput.closest('tr');
-    if (!tr) return;
-    var passInput = tr.querySelector('.sett-pass-field');
-    if (passInput) {
-        var idVal = idInput.value.trim();
-        if (idVal) {
-            passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
-        }
-    }
-};
-
-window.triggerRegenerateAllPasswords = function() {
-    if (confirm("⚠️ 確定要為所有人「重新生成」隨機預設密碼嗎？\n生成後需要點擊右下角「儲存員工帳密變更」才會正式寫入雲端！")) {
-        var rows = document.querySelectorAll('#settings-accounts-tbody tr');
-        rows.forEach(function(tr) {
-            var idInput = tr.querySelector('.sett-id-field');
-            var passInput = tr.querySelector('.sett-pass-field');
-            if (idInput && passInput) {
-                var idVal = idInput.value.trim();
-                passInput.value = idVal + String(Math.floor(Math.random() * 90 + 10));
-            }
-        });
-        showToastMessage("⚡ 已在本機重算，請記得點擊儲存變更！");
-    }
-};
-
-window.saveEmployeesAccountsFromSettings = function() {
-    var rows = document.querySelectorAll('#settings-accounts-tbody tr');
-    var updatedList = [].concat(window.state.employees); 
-
-    rows.forEach(function(tr, index) {
-        var idInput = tr.querySelector('.sett-id-field');
-        var passInput = tr.querySelector('.sett-pass-field');
-        if (idInput && passInput && updatedList[index]) {
-            updatedList[index].id = idInput.value.trim();
-            updatedList[index].password = passInput.value.trim();
-        }
-    });
-
-    if (window.isCloudMode && window.database) {
-        window.database.ref('v8_employees').set(updatedList).then(function() {
-            showToastMessage('🎉 員工登入帳號及密碼成功同步至雲端大腦！');
-        }).catch(function(err) {
-            alert('儲存變更失敗: ' + err.message);
-        });
-    } else {
-        localStorage.setItem('v8_employees', JSON.stringify(updatedList));
-        showToastMessage('💾 員工帳密已儲存至本地快取中！');
-        window.populateStaffDropdown();
-    }
-};
-
-window.saveHolidayData = function() {
-    if(window.state.currentRole !== 'manager') return; 
-    var monthKey = window.state.currentYear + '-' + (window.state.currentMonth < 10 ? '0' + window.state.currentMonth : window.state.currentMonth);
-    if(window.isCloudMode && window.database) { 
-        window.database.ref('v8_holidays/' + monthKey).set(window.state.holidays).then(function() { 
-            showToastMessage('🏖️ 放假大表已成功發佈！'); 
-        }); 
-    } 
 };
 
 window.handleManualSlotChange = function(shop, index, field, value) {
@@ -988,25 +694,27 @@ window.resetCurrentDayToAuto = function() {
 window.refreshBadgesOnly = function(reportData) {
     var shopCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; 
     var shops = ['F79', 'GK3', 'G38', 'G2'];
-    shops.forEach(function(shop) { 
+    for(var s=0; s<shops.length; s++) {
+        var shop = shops[s];
         if (reportData[shop]) {
-            reportData[shop].forEach(function(slot) { if(slot.name) shopCounts[shop]++; }); 
+            for(var r=0; r<reportData[shop].length; r++) {
+                if(reportData[shop][r].name) shopCounts[shop]++; 
+            }
         }
-    });
+    }
     window.renderMonitorBadges(shopCounts);
 };
 
-// ==================== 📥 智庫審批中心批准邏輯對接 ====================
 window.actionApproveHoliday = function(key, staffName, requestedHolidays) {
     if (window.state.currentRole !== 'manager') return;
     var monthKey = window.state.currentYear + '-' + (window.state.currentMonth < 10 ? '0' + window.state.currentMonth : window.state.currentMonth);
     
     var currentHols = window.state.holidays[staffName] || [];
-    requestedHolidays.forEach(function(d) {
-        if (!currentHols.includes(d)) {
-            currentHols.push(d);
+    for(var i=0; i<requestedHolidays.length; i++) {
+        if (currentHols.indexOf(requestedHolidays[i]) === -1) {
+            currentHols.push(requestedHolidays[i]);
         }
-    });
+    }
     window.state.holidays[staffName] = currentHols.sort(function(a, b) { return a - b; });
     
     if (window.isCloudMode && window.database) {
@@ -1015,32 +723,42 @@ window.actionApproveHoliday = function(key, staffName, requestedHolidays) {
             return window.database.ref('v8_pending_approvals/' + monthKey + '/' + key).remove();
         })
         .then(function() {
-            showToastMessage("🎉 已批准 " + staffName + " 老師的放假申請！");
+            if(window.showToastMessage) window.showToastMessage("🎉 已批准 " + staffName + " 老師的放假申請！");
         })
         .catch(function(err) {
             alert("審批失敗: " + err.message);
         });
     } else {
         localStorage.setItem('v8_holidays_' + monthKey, JSON.stringify(window.state.holidays));
-        showToastMessage("🎉 本地已批准 " + staffName + " 老師的放假申請！");
+        if(window.showToastMessage) window.showToastMessage("🎉 本地已批准 " + staffName + " 老師的放假申請！");
         window.runScheduler();
     }
 };
 
-// ==================== ⚙️ 演算法與每日排班邏輯核心 ====================
 window.runScheduler = function() {
     var leavesToday = []; 
-    window.state.employees.forEach(function(emp) { 
-        if ((window.state.holidays[emp.name] || []).includes(window.state.currentDay)) {
+    for(var i=0; i<window.state.employees.length; i++) {
+        var emp = window.state.employees[i];
+        if ((window.state.holidays[emp.name] || []).indexOf(window.state.currentDay) !== -1) {
             leavesToday.push(emp.name); 
         }
-    });
+    }
     
     var dayKey = 'day_' + window.state.currentDay; 
     var report = {}; 
-    var activeStaff = window.state.employees.filter(function(e) { return !(window.state.holidays[e.name] || []).includes(window.state.currentDay); });
-    var manicurists = activeStaff.filter(function(e) { return e.role !== '學徒'; }); 
-    var apprentices = activeStaff.filter(function(e) { return e.role === '學徒'; });
+    var activeStaff = [];
+    for(var i=0; i<window.state.employees.length; i++) {
+        if((window.state.holidays[window.state.employees[i].name] || []).indexOf(window.state.currentDay) === -1) {
+            activeStaff.push(window.state.employees[i]);
+        }
+    }
+    
+    var manicurists = [];
+    var apprentices = [];
+    for(var i=0; i<activeStaff.length; i++) {
+        if(activeStaff[i].role === '學徒') apprentices.push(activeStaff[i]);
+        else manicurists.push(activeStaff[i]);
+    }
     
     var totalTextEl = document.getElementById('total-working-text'); 
     var leaveBoxEl = document.getElementById('today-leave-names-box');
@@ -1074,9 +792,19 @@ window.calculateDaySchedule = function(dayNumber) {
     var report = { F79: [], GK3: [], G38: [], G2: [] }; 
     var isSun = window.isSunday(window.state.currentYear, window.state.currentMonth, dayNumber);
     
-    var activeStaff = window.state.employees.filter(function(e) { return !(window.state.holidays[e.name] || []).includes(dayNumber); }); 
-    var manicurists = activeStaff.filter(function(e) { return e.role !== '學徒'; }); 
-    var apprentices = activeStaff.filter(function(e) { return e.role === '學徒'; });
+    var activeStaff = [];
+    for(var e=0; e<window.state.employees.length; e++) {
+        if((window.state.holidays[window.state.employees[e].name] || []).indexOf(dayNumber) === -1) {
+            activeStaff.push(window.state.employees[e]);
+        }
+    }
+    
+    var manicurists = [];
+    var apprentices = [];
+    for(var e=0; e<activeStaff.length; e++) {
+        if(activeStaff[e].role === '學徒') apprentices.push(activeStaff[e]);
+        else manicurists.push(activeStaff[e]);
+    }
     
     var M = manicurists.length; 
     var targets = { F79: 3, G2: 3, GK3: 3, G38: 3 };
@@ -1089,7 +817,6 @@ window.calculateDaySchedule = function(dayNumber) {
         targets.GK3 = Math.max(0, Math.min(3, rem)); 
         rem -= targets.GK3; 
         targets.G38 = Math.max(0, Math.min(3, rem)); 
-        rem -= targets.G38;
     } else {
         targets.F79 = 3; 
         targets.GK3 = 3; 
@@ -1107,8 +834,12 @@ window.calculateDaySchedule = function(dayNumber) {
     var currentCounts = { F79: 0, GK3: 0, G38: 0, G2: 0 }; 
     var unassignedMani = [];
     
-    sortedMani.forEach(function(emp) { 
-        var allowed = (emp.p_shops || 'G2').split(',').map(function(s) { return s.trim(); }); 
+    for(var m=0; m<sortedMani.length; m++) {
+        var emp = sortedMani[m];
+        var allowedRaw = (emp.p_shops || 'G2').split(',');
+        var allowed = [];
+        for(var i=0; i<allowedRaw.length; i++) allowed.push(allowedRaw[i].trim());
+        
         var primaryShop = allowed[0] || 'G2'; 
         if (currentCounts[primaryShop] < targets[primaryShop]) { 
             currentCounts[primaryShop]++; 
@@ -1116,109 +847,148 @@ window.calculateDaySchedule = function(dayNumber) {
         } else { 
             unassignedMani.push(emp); 
         } 
-    });
+    }
     
-    unassignedMani.forEach(function(emp) { 
-        var allowed = (emp.p_shops || 'G2').split(',').map(function(s) { return s.trim(); }); 
+    for(var u=0; u<unassignedMani.length; u++) {
+        var empU = unassignedMani[u];
+        var allowedRaw2 = (empU.p_shops || 'G2').split(',');
+        var allowed2 = [];
+        for(var i=0; i<allowedRaw2.length; i++) allowed2.push(allowedRaw2[i].trim());
+        
         var assigned = false; 
-        for (var i = 0; i < allowed.length; i++) {
-            var shop = allowed[i];
+        for (var i = 0; i < allowed2.length; i++) {
+            var shop = allowed2[i];
             if (currentCounts[shop] < targets[shop]) { 
                 currentCounts[shop]++; 
-                assignment[emp.name] = shop; 
+                assignment[empU.name] = shop; 
                 assigned = true; 
                 break; 
             } 
         } 
         if (!assigned) { 
-            var primaryShop = allowed[0] || 'G2'; 
-            currentCounts[primaryShop]++; 
-            assignment[emp.name] = primaryShop; 
+            var primaryShop2 = allowed2[0] || 'G2'; 
+            currentCounts[primaryShop2]++; 
+            assignment[empU.name] = primaryShop2; 
         } 
-    });
+    }
     
-    apprentices.forEach(function(app) { 
-        var allowed = (app.p_shops || 'G2').split(',').map(function(s) { return s.trim(); }); 
-        var bestShop = allowed[0] || 'G2'; 
+    for(var a=0; a<apprentices.length; a++) {
+        var app = apprentices[a];
+        var allowedRaw3 = (app.p_shops || 'G2').split(',');
+        var allowed3 = [];
+        for(var i=0; i<allowedRaw3.length; i++) allowed3.push(allowedRaw3[i].trim());
+        
+        var bestShop = allowed3[0] || 'G2'; 
         var minCount = 999; 
-        for(var i = 0; i < allowed.length; i++) {
-            var shop = allowed[i];
-            if(currentCounts[shop] < minCount) { 
-                minCount = currentCounts[shop]; 
-                bestShop = shop; 
+        for(var i = 0; i < allowed3.length; i++) {
+            var shop3 = allowed3[i];
+            if(currentCounts[shop3] < minCount) { 
+                minCount = currentCounts[shop3]; 
+                bestShop = shop3; 
             } 
         } 
         assignment[app.name] = bestShop; 
         currentCounts[bestShop]++; 
-    });
+    }
     
     var shopGroups = { F79: [], GK3: [], G38: [], G2: [] }; 
-    activeStaff.forEach(function(emp) { 
-        var shop = assignment[emp.name] || 'G2'; 
-        shopGroups[shop].push(emp); 
-    });
+    for(var x=0; x<activeStaff.length; x++) {
+        var shopG = assignment[activeStaff[x].name] || 'G2'; 
+        shopGroups[shopG].push(activeStaff[x]); 
+    }
     
-    shopGroups.F79.forEach(function(emp, idx) { 
-        var shift = (idx === 0) ? "早班" : "晚班"; 
+    for(var i=0; i<shopGroups.F79.length; i++) {
+        var emp = shopGroups.F79[i];
+        var shift = (i === 0) ? "早班" : "晚班"; 
         var t = window.autoExtractTime(emp, shift, isSun, 'F79'); 
         report.F79.push({ name: emp.name, time: t }); 
-    });
+    }
     
     var ordinaryShops = ['G2', 'GK3', 'G38'];
-    ordinaryShops.forEach(function(shop) {
-        var list = shopGroups[shop]; 
-        if (list.length === 0) return;
-        var earlyIdx = list.findIndex(function(emp) { 
-            return emp.role !== '學徒' && (emp.times || '').split(',').map(function(t) { return t.trim(); }).some(function(t) { 
-                return parseInt(t.split(':')[0]) < 12; 
-            }); 
-        }); 
+    for(var o=0; o<ordinaryShops.length; o++) {
+        var shopO = ordinaryShops[o];
+        var list = shopGroups[shopO]; 
+        if (list.length === 0) continue;
+        
+        var earlyIdx = -1;
+        for(var l=0; l<list.length; l++) {
+            var empL = list[l];
+            if(empL.role !== '學徒') {
+                var tArr = (empL.times || '').split(',');
+                var hasEarly = false;
+                for(var y=0; y<tArr.length; y++) {
+                    if(parseInt(tArr[y].trim().split(':')[0]) < 12) { hasEarly = true; break; }
+                }
+                if(hasEarly) { earlyIdx = l; break; }
+            }
+        }
         if (earlyIdx === -1) earlyIdx = 0; 
         var earlyEmp = list[earlyIdx]; 
-        var remainingWorkers = list.filter(function(_, idx) { return idx !== earlyIdx; });
         
-        var earlyTime = window.autoExtractTime(earlyEmp, '早班', isSun, shop); 
-        report[shop].push({ name: earlyEmp.name, time: earlyTime });
+        var remainingWorkers = [];
+        for(var l=0; l<list.length; l++) {
+            if(l !== earlyIdx) remainingWorkers.push(list[l]);
+        }
         
-        remainingWorkers.forEach(function(emp, remIdx) { 
-            var shift = isSun ? "中班" : ((remIdx < Math.ceil(remainingWorkers.length / 2)) ? "中班" : "晚班"); 
-            var t = window.autoExtractTime(emp, shift, isSun, shop); 
-            report[shop].push({ name: emp.name, time: t }); 
-        });
-    });
+        var earlyTime = window.autoExtractTime(earlyEmp, '早班', isSun, shopO); 
+        report[shopO].push({ name: earlyEmp.name, time: earlyTime });
+        
+        for(var r=0; r<remainingWorkers.length; r++) {
+            var empR = remainingWorkers[r];
+            var shift2 = isSun ? "中班" : ((r < Math.ceil(remainingWorkers.length / 2)) ? "中班" : "晚班"); 
+            var t2 = window.autoExtractTime(empR, shift2, isSun, shopO); 
+            report[shopO].push({ name: empR.name, time: t2 }); 
+        }
+    }
     
     var allShops = ['F79', 'GK3', 'G38', 'G2'];
-    allShops.forEach(function(shop) { 
+    for(var a=0; a<allShops.length; a++) {
+        var shop = allShops[a];
         while(report[shop].length < 6) { 
             report[shop].push({ name: '', time: '' }); 
         } 
-    }); 
+    } 
     return { report: report, manicuristCount: M, totalCount: activeStaff.length };
 };
 
 window.autoExtractTime = function(emp, shift, isSun, shop) {
     if (shop === 'F79') return (shift === '早班') ? (isSun ? '11:00' : '12:00') : '13:00';
-    var userTimes = (emp.times || '').split(',').map(function(t) { return t.trim(); }); 
+    var userTimesRaw = (emp.times || '').split(',');
+    var userTimes = [];
+    for(var i=0; i<userTimesRaw.length; i++) userTimes.push(userTimesRaw[i].trim());
+    
     if (isSun) return (shift === '早班') ? '10:00' : '12:00';
     
     var primaryTime = userTimes[0] || '12:00'; 
     var primaryHour = parseInt(primaryTime.split(':')[0]);
+    
     if (shift === '早班') { 
-        return primaryHour < 12 ? primaryTime : (userTimes.find(function(t) { return parseInt(t.split(':')[0]) < 12; }) || '11:00'); 
+        if(primaryHour < 12) return primaryTime;
+        for(var i=0; i<userTimes.length; i++) {
+            if(parseInt(userTimes[i].split(':')[0]) < 12) return userTimes[i];
+        }
+        return '11:00';
     } else if (shift === '中班') { 
-        return primaryHour === 12 ? primaryTime : (userTimes.find(function(t) { return t === '12:00'; }) || '12:00'); 
+        if(primaryHour === 12) return primaryTime;
+        for(var i=0; i<userTimes.length; i++) {
+            if(userTimes[i] === '12:00') return '12:00';
+        }
+        return '12:00';
     } else { 
-        return primaryHour >= 13 ? primaryTime : (userTimes.find(function(t) { return parseInt(t.split(':')[0]) >= 13; }) || '13:00'); 
+        if(primaryHour >= 13) return primaryTime;
+        for(var i=0; i<userTimes.length; i++) {
+            if(parseInt(userTimes[i].split(':')[0]) >= 13) return userTimes[i];
+        }
+        return '13:00';
     }
 };
 
-// ==================== 💾 下載與時空還原 ====================
 window.downloadTimeCapsuleBackup = function() {
     var monthKey = window.state.currentYear + '-' + (window.state.currentMonth < 10 ? '0' + window.state.currentMonth : window.state.currentMonth);
     var backupPackage = { v8_employees: window.state.employees, v8_holidays: window.state.holidays, v8_overrides: window.state.overrides, v8_settings: window.state.settings, v8_special_notes: window.state.notes };
     var blob = new Blob([JSON.stringify(backupPackage, null, 2)], { type: 'text/plain' });
     var anchor = document.createElement('a'); 
-    anchor.download = "Crystal_Pavilion_V10_Backup_[" + monthKey + "].txt"; 
+    anchor.download = "Crystal_Pavilion_V11_Backup_[" + monthKey + "].txt"; 
     anchor.href = window.URL.createObjectURL(blob); 
     anchor.click();
 };
@@ -1254,123 +1024,4 @@ window.restoreFromTimeCapsule = function(event) {
     }; 
     reader.readAsText(file);
 };
-
-// ==================== ⏰ 初始與離線校正器 ====================
-window.calculateAutoDefaultDate = function() {
-    var now = new Date(); 
-    var year = now.getFullYear(); 
-    var month = now.getMonth() + 1; 
-    var day = now.getDate(); 
-    var hour = now.getHours(); 
-    var isJumped = false;
-    
-    if (hour >= 20) { 
-        isJumped = true; 
-        var tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
-        year = tomorrow.getFullYear(); 
-        month = tomorrow.getMonth() + 1; 
-        day = tomorrow.getDate(); 
-    }
-    window.state.currentYear = year; 
-    window.state.currentMonth = month; 
-    window.state.currentDay = day;
-    
-    var hintBanner = document.getElementById('time-switch-hint');
-    if (hintBanner) {
-        if (isJumped) { 
-            hintBanner.innerHTML = "🕗 系統提示：已過夜間 20:00，已自動預載【明天 " + month + "月" + day + "日】排班表"; 
-            hintBanner.style.color = "#ea580c"; 
-        } else { 
-            hintBanner.innerHTML = "🌞 系統提示：目前為日間時段，正顯示【今日 " + month + "月" + day + "日】排班表"; 
-            hintBanner.style.color = "#059669"; 
-        }
-    }
-};
-
-window.loadLocalFallbackContext = function() {
-    window.calculateAutoDefaultDate(); 
-    var y = window.state.currentYear; 
-    var m = window.state.currentMonth; 
-    var monthKey = y + '-' + (m < 10 ? '0' + m : m);
-    var isDefaultMonth = (y === 2026 && m === 5);
-    
-    window.state.employees = JSON.parse(localStorage.getItem('v8_employees')) || JSON.parse(JSON.stringify(window.defaultEmployees));
-    window.state.overrides = JSON.parse(localStorage.getItem('v8_overrides_' + monthKey)) || {};
-    window.state.holidays = JSON.parse(localStorage.getItem('v8_holidays_' + monthKey)) || (isDefaultMonth ? JSON.parse(JSON.stringify(window.defaultHolidaysData)) : {});
-    window.state.notes = JSON.parse(localStorage.getItem('v8_notes_' + monthKey)) || {};
-    window.state.localHolidaysDraft = JSON.parse(JSON.stringify(window.state.holidays));
-    
-    window.cloudLoads = { emp: true, hol: true, ovr: true, note: true }; 
-    window.triggerSafeUIRender();
-};
-
-window.switchTab = function(tabId) {
-    document.querySelectorAll('.tab-content').forEach(function(el) { el.style.display = 'none'; }); 
-    document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
-    
-    var targetEl = document.getElementById(tabId);
-    if(targetEl) targetEl.style.display = 'block'; 
-    
-    var navBtn = document.getElementById('nav-' + tabId.replace('tab-', '')); 
-    if(navBtn) navBtn.classList.add('active');
-    
-    if(tabId === 'tab-schedule') window.runScheduler(); 
-    if(tabId === 'tab-my-month') window.renderIndividualMonthCalendar(); 
-    if(tabId === 'tab-analysis') window.renderMonthlyAnalysis();
-};
-
-window.triggerSafeUIRender = function() {
-    if(window.cloudLoads.emp && window.cloudLoads.hol && window.cloudLoads.ovr && window.cloudLoads.note) {
-        window.state.employees.forEach(function(e) { 
-            if(!window.state.holidays[e.name]) window.state.holidays[e.name] = []; 
-            if(!window.state.localHolidaysDraft[e.name]) window.state.localHolidaysDraft[e.name] = []; 
-        });
-        window.renderEmployeeTable(); 
-        window.populateStaffDropdown(); 
-        window.renderMonthlyAnalysis(); 
-        window.renderIndividualMonthCalendar(); 
-        window.renderHolidayTable();
-        
-        var ind = document.getElementById('cloud-indicator'); 
-        if(ind && window.isCloudMode) { 
-            ind.className = "cloud-status status-online"; 
-            ind.innerText = "🟢 雲端連線成功！跨月份智能排班大腦運作中"; 
-        }
-        window.runScheduler();
-    }
-};
-
-// ==================== 🚀 核心監聽封裝啟動入口 ====================
-// 💡 全面封裝在 DOMContentLoaded 中，保證 100% 網頁 DOM 樹與 Overrides 全部載入後才初始化 Firebase 與排班！
-window.addEventListener('DOMContentLoaded', function() {
-    window.calculateAutoDefaultDate(); 
-    window.initYearMonthDropdowns();
-
-    if (typeof firebase !== 'undefined' && typeof window.firebaseConfig !== 'undefined') {
-        try {
-            if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig);
-            window.database = firebase.database();
-            window.database.ref(".info/connected").on("value", function(snap) { 
-                if (snap.val() === true) { 
-                    window.isCloudMode = true; 
-                    window.setupSettingsListener(); 
-                    window.handleDateContextChange(); 
-                } 
-            });
-        } catch(e) { window.isCloudMode = false; }
-    }
-
-    setTimeout(function() {
-        if (!window.isCloudMode) {
-            var ind = document.getElementById('cloud-indicator'); 
-            if(ind) { 
-                ind.className = "cloud-status status-offline"; 
-                ind.innerText = "⚠️ 獨立離線模式下運作（本地快取保護中）"; 
-            }
-            window.state.settings = JSON.parse(localStorage.getItem('v8_settings')) || JSON.parse(JSON.stringify(window.defaultSystemSettings)); 
-            window.applyDynamicSettingsToUI(); 
-            window.loadLocalFallbackContext();
-        }
-    }, 1500);
-});
 
