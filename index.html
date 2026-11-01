@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -24,7 +23,7 @@
             display: inline-block !important; /* 強制防隱藏 */
         }
 
-        /* 📅 強制顯示選單與容器：覆蓋任何嘗試隱藏選單的限制，還原第四張圖的完美年月 UI */
+        /* 📅 強制顯示選單與容器：覆蓋任何嘗試隱藏選單的限制 */
         .force-show-flex {
             display: flex !important;
             visibility: visible !important;
@@ -95,7 +94,7 @@
 </head>
 <body>
 
-    <!-- 📢 自定義高質感「通知提示框 Modal」 (完美替代原生容易鎖死、不相容的 alert()) -->
+    <!-- 📢 自定義高質感「通知提示框 Modal」 -->
     <div id="custom-alert-modal" style="position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(15, 23, 42, 0.6) !important; backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; z-index: 10000000 !important; display: none; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 16px !important; box-sizing: border-box !important;">
         <div style="background: white !important; border-radius: 20px; padding: 28px; max-width: 360px; width: 100%; border: 1px solid rgba(79, 70, 229, 0.2); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box; animation: modalBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <div id="custom-alert-icon" style="font-size: 44px; margin-bottom: 12px; line-height: 1;">📢</div>
@@ -157,7 +156,7 @@
         </div>
     </div>
 
-    <!-- 🏷️ 標籤導航列 (完美保留所有按鈕，只對非管理員做反灰停用，防隱藏) -->
+    <!-- 🏷️ 標籤導航列 -->
     <div class="tab-bar" id="main-system-tab-bar" style="display: none;">
         <button class="tab-btn active" id="nav-schedule" onclick="switchTab('tab-schedule')">📅 每日排班</button>
         <button class="tab-btn" id="nav-my-month" onclick="switchTab('tab-my-month')">👤 個人當月排班</button>
@@ -193,36 +192,33 @@
             <div id="total-working-text" style="text-align:center; font-size:13px; color:#111827; font-weight:bold; background:#f8fafc; padding:6px; border-radius:8px; border:1px solid #e5e7eb; margin:4px 0;">核心美甲師：0 人 ｜ 學徒：0 人 ｜ 總上班：0 人</div>
             <div id="today-leave-names-box" style="text-align:center; font-size:12px; color:#dc2626; margin-top:4px; background:#fdf2f2; padding:4px; border-radius:6px; border:1px dashed #fca5a5; font-weight:bold;">今日放假：無</div>
         </div>
-        <div class="grid-4" id="monitor-panel"></div>
-        <div id="shops-report-container"></div>
+        
+        <!-- 五店指標與排班卡片容器 -->
+        <div class="grid-4" id="monitor-panel" style="display: grid !important; margin-bottom: 12px;"></div>
+        <div id="shops-report-container" style="display: block !important;"></div>
     </div>
 
-    <!-- 👤 個人每月排班 Tab ( UI 已強制還原第四張截圖的完美年月排版並防吞 ) -->
+    <!-- 👤 個人每月排班 Tab -->
     <div id="tab-my-month" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" style="margin-bottom:12px;">👤 員工個人當月排班及放假申請表</div>
             
             <div class="force-show-flex" style="flex-direction:column; gap:12px; margin-bottom:16px; background:#f8fafc; padding:14px; border-radius:12px; border:1px solid #e2e8f0;">
-                <!-- 頂部列：年份、月份選單 -->
                 <div class="force-show-flex" style="justify-content:center; align-items:center; gap:12px; flex-wrap:wrap; display: flex !important;">
                     <div style="display:inline-flex !important; align-items:center; background:white; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1;">
                         <label style="font-size:13px; font-weight:bold; color:#4b5563; margin-right:6px;">選取年份：</label>
-                        <select id="my-month-year-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="window.syncMyMonthDateToMain()">
-                        </select>
+                        <select id="my-month-year-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="window.syncMyMonthDateToMain()"></select>
                     </div>
                     <div style="display:inline-flex !important; align-items:center; background:white; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1;">
                         <label style="font-size:13px; font-weight:bold; color:#4b5563; margin-right:6px;">選取月份：</label>
-                        <select id="my-month-month-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="window.syncMyMonthDateToMain()">
-                        </select>
+                        <select id="my-month-month-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="window.syncMyMonthDateToMain()"></select>
                     </div>
                 </div>
 
-                <!-- 底部列：選取姓名與一鍵優化按鈕 -->
                 <div class="force-show-flex" style="justify-content:center; align-items:center; gap:12px; flex-wrap:wrap; display: flex !important;">
                     <div style="display:inline-flex !important; align-items:center; background:white; padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1;">
                         <label style="font-size:13px; font-weight:bold; color:#4b5563; margin-right:6px;">選取姓名：</label>
-                        <select id="my-month-staff-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="renderIndividualMonthCalendar()">
-                        </select>
+                        <select id="my-month-staff-select" style="font-size:14px; padding:4px 8px; border-radius:6px; border:2px solid var(--primary); font-weight:bold; outline:none; background:white;" onchange="renderIndividualMonthCalendar()"></select>
                     </div>
                     <button class="btn-invert" id="my-month-invert-btn" onclick="invertIndividualEmployeeHolidays()" style="display:inline-block !important; padding:8px 16px;">🔄 員工一鍵優化反選假期</button>
                 </div>
@@ -241,15 +237,14 @@
                             <th style="text-align:left;">📝 當天特別事項備註</th>
                         </tr>
                     </thead>
-                    <tbody id="my-month-calendar-body">
-                    </tbody>
+                    <tbody id="my-month-calendar-body"></tbody>
                 </table>
             </div>
             <button class="btn btn-save" style="background-color: var(--success);" id="my-month-save-btn">💾 儲存並提交當月變更要求</button>
         </div>
     </div>
 
-    <!-- 📊 全月人手分析 Tab -->
+    <!-- 📊 全月人手分析 Tab (已新增 G19B 欄位) -->
     <div id="tab-analysis" class="tab-content" style="display: none;">
         <div class="card">
             <div class="title" id="analysis-title-text" style="margin-bottom: 8px;">全月店鋪上班人手監控大表</div>
@@ -271,6 +266,7 @@
                             <th class="col-shops" style="text-align:center; color:#9333ea;">GK3</th>
                             <th class="col-shops" style="text-align:center; color:#d97706;">G38</th>
                             <th class="col-shops" style="text-align:center; color:#0d9488;">G2</th>
+                            <th class="col-shops" style="text-align:center; color:#e11d48;">G19B</th>
                         </tr>
                     </thead>
                     <tbody id="analysis-table-body"></tbody>
@@ -403,14 +399,13 @@
     <div id="nav-bookings" style="display: none !important;"></div>
     <div id="tab-bookings" style="display: none !important;"><div id="live-bookings-container"></div></div>
 
-    <!-- 2. 原生 App.js 動態排班系統主程式載入 (置於 body 底部) -->
+    <!-- 2. 原生 App.js 動態排班系統主程式載入 -->
     <script src="app.js"></script>
 
-    <!-- 3. 🔮 100% 安全與舊版設備相容 ES5 守護腳本 (徹底移除 ES6 語法，特別保護並容錯 MutationObserver 物件) -->
+    <!-- 3. 🔮 100% 安全與舊版設備相容 ES5 守護腳本 -->
     <script>
         (function() {
             try {
-                // 🛡️ 容錯與偵測 MutationObserver (老舊 iOS 與內建瀏覽器防崩潰核心)
                 var MutationObserverClass = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
                 if (MutationObserverClass) {
                     window.approvalObserver = new MutationObserverClass(function() {
@@ -419,7 +414,6 @@
                         }
                     });
                 } else {
-                    // 若設備完全不支援，提供安全 mock 佔位對象，絕不拋出未定義 ReferenceError
                     window.approvalObserver = {
                         observe: function() {},
                         disconnect: function() {}
@@ -430,7 +424,6 @@
                 window.loggedInEmployeeName = ""; 
                 window.pendingConfirmCallback = null;
 
-                // ==================== 📢 高質感自訂彈出框核心防線 ====================
                 window.showSafeAlert = function(title, msg, icon) {
                     var modal = document.getElementById('custom-alert-modal');
                     var titleEl = document.getElementById('custom-alert-title');
@@ -449,7 +442,6 @@
                     if (modal) modal.style.setProperty('display', 'none', 'important');
                 };
 
-                // ==================== 🔐 二合一安全登入核心認證 ====================
                 window.triggerGateLogin = function() {
                     var usernameInput = document.getElementById('login-username-input');
                     var passwordInput = document.getElementById('login-password-input');
@@ -579,7 +571,6 @@
                     if (roleTxt) roleTxt.innerText = "🔑 目前權限：未登入";
                 };
 
-                // ==================== 🔐 導航按鈕停用反灰控制中心 (解決衝突四) ====================
                 window.updateNavigationLockState = function() {
                     var state = window.state || {};
                     var adminBtns = ['nav-analysis', 'nav-employees', 'nav-holidays', 'nav-approval-center', 'nav-settings'];
@@ -608,7 +599,6 @@
                     }
                 };
 
-                // ==================== 📅 「個人每月排班頁」選單聯鎖同步 ====================
                 window.initializeMyMonthSelectors = function() {
                     var mainYr = document.getElementById('schedule-year-select');
                     var mainMo = document.getElementById('schedule-month-select');
@@ -688,7 +678,6 @@
                     return hkt.getUTCFullYear() + "-" + ((hkt.getUTCMonth() + 1) < 10 ? '0' + (hkt.getUTCMonth() + 1) : (hkt.getUTCMonth() + 1));
                 };
 
-                // 星期與天數輔助函數
                 window.getDayOfWeekText = function(y, m, d) {
                     var date = new Date(y, m - 1, d);
                     var weekDays = ['日', '一', '二', '三', '四', '五', '六'];
@@ -707,7 +696,7 @@
                     var empInfo = employees.filter(function(e) { return e && e.name === staffName; })[0];
                     if (empInfo && empInfo.role === "學徒") return false;
 
-                    var alertThreshold = (state.settings && state.settings.limitLow) ? state.settings.limitLow : 3;
+                    var alertThreshold = (state.settings && state.settings.limitLow) ? state.settings.limitLow : 12;
 
                     var manicurists = employees.filter(function(e) { return e && e.role !== "學徒"; });
                     var totalMani = manicurists.length;
@@ -732,7 +721,6 @@
                     return (currentWorkingCount - 1) <= alertThreshold;
                 };
 
-                // ==================== 🏖️ 切換放假核心 (100% 成功載入與阻斷微調硬鎖定) ====================
                 window.toggleLocalHolidayDraft = function(name, day, btn) {
                     var state = window.state || {};
                     state.overrides = state.overrides || {};
@@ -790,7 +778,6 @@
                     }
                 };
 
-                // ==================== 📥 智庫審批中心動態計算與單天過濾 ====================
                 window.getManpowerStatsOnDay = function(dayNum, excludeName) {
                     var state = window.state || {};
                     var holidays = state.holidays || {};
@@ -883,7 +870,7 @@
                         var d = cItem.day;
                         var name = cItem.staffName;
                         var stats = window.getManpowerStatsOnDay(d, name);
-                        var limitLow = (state.settings && state.settings.limitLow) ? state.settings.limitLow : 3;
+                        var limitLow = (state.settings && state.settings.limitLow) ? state.settings.limitLow : 12;
                         
                         var isAlert = stats.working <= limitLow;
                         var bgStyle = isAlert ? 'background:#fff1f2; border:1px solid #fca5a5; color:#9b1c1c;' : 'background:#f0fdf4; border:1px solid #bbf7d0; color:#03543f;';
@@ -983,7 +970,6 @@
                     }
                 };
 
-                // ==================== 💾 提交請假原因：強制告急理由與單天拆解 ====================
                 window.saveSpecialNotesAndHolidaysData = function() {
                     var state = window.state || {};
                     var inputs = document.querySelectorAll('.calendar-special-note-input'); 
@@ -1129,7 +1115,6 @@
                     if (typeof renderIndividualMonthCalendar === 'function') renderIndividualMonthCalendar();
                 };
 
-                // ==================== 🛠️ 背景定時連鎖校正器 ====================
                 setInterval(function() {
                     if (window.loggedInEmployeeName) {
                         var select = document.getElementById('my-month-staff-select');
@@ -1149,7 +1134,6 @@
                     window.syncMainToMyMonthDate();
                 }, 100);
 
-                // DOM 載入綁定
                 document.addEventListener('DOMContentLoaded', function() {
                     var warnCancel = document.getElementById('warning-cancel-btn');
                     var warnConfirm = document.getElementById('warning-confirm-btn');
@@ -1209,5 +1193,3 @@
     </script>
 </body>
 </html>
-
-
