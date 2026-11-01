@@ -167,21 +167,40 @@ function setupFirebaseListeners() {
 }
 
 function triggerSafeUIRender() {
-    if (cloudLoads.emp && cloudLoads.hol && cloudLoads.ovr && cloudLoads.note && cloudLoads.cfg) {
+    // 🛡️ 1. 安全防線：確保全域物件存在，防止 TypeError 崩潰
+    window.state = window.state || {};
+    window.state.holidays = window.state.holidays || {};
+    window.state.localHolidaysDraft = window.state.localHolidaysDraft || {};
+    window.state.employees = window.state.employees || [];
+
+    // 📅 2. 強制優先初始化年月選單
+    if (typeof initYearMonthDropdowns === 'function') {
+        initYearMonthDropdowns();
+    }
+
+    // ☁️ 3. 雲端資料載入檢查與防禦呼叫
+    const isCloudReady = typeof cloudLoads === 'undefined' || 
+        (cloudLoads.emp && cloudLoads.hol && cloudLoads.ovr && cloudLoads.note && cloudLoads.cfg);
+
+    if (isCloudReady) {
         (window.state.employees || []).forEach(e => {
-            if (!window.state.holidays[e.name]) window.state.holidays[e.name] = [];
-            if (!window.state.localHolidaysDraft[e.name]) window.state.localHolidaysDraft[e.name] = [];
+            if (e && e.name) {
+                if (!window.state.holidays[e.name]) window.state.holidays[e.name] = [];
+                if (!window.state.localHolidaysDraft[e.name]) window.state.localHolidaysDraft[e.name] = [];
+            }
         });
 
-        renderEmployeeTable();
-        populateStaffDropdown();
-        runScheduler();
-        renderMonthlyAnalysis();
-        renderIndividualMonthCalendar();
-        renderHolidayTable();
-        syncSettingsToForm();
+        // 4. 容錯執行各模組渲染，即使單個模組出錯也不影響其他區塊
+        if (typeof renderEmployeeTable === 'function') renderEmployeeTable();
+        if (typeof populateStaffDropdown === 'function') populateStaffDropdown();
+        if (typeof runScheduler === 'function') runScheduler();
+        if (typeof renderMonthlyAnalysis === 'function') renderMonthlyAnalysis();
+        if (typeof renderIndividualMonthCalendar === 'function') renderIndividualMonthCalendar();
+        if (typeof renderHolidayTable === 'function') renderHolidayTable();
+        if (typeof syncSettingsToForm === 'function') syncSettingsToForm();
     }
 }
+
 
 // ==================== 3. 日期 context 與選單控制 ====================
 function calculateAutoDefaultDate() {
