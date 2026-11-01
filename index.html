@@ -1166,17 +1166,51 @@
                         window.approvalObserver.observe(appCenterContainer, { childList: true, subtree: true });
                     }
 
-                    var originalSwitchTab = window.switchTab;
-                    window.switchTab = function(tabId) {
-                        if (typeof originalSwitchTab === 'function') originalSwitchTab(tabId);
-                        
-                        if (tabId === 'tab-settings' && typeof window.renderSettingsAccountsList === 'function') {
-                            window.renderSettingsAccountsList(window.state.employees || []);
-                        }
-                        if (tabId === 'tab-approval-center') {
-                            window.renderPendingApprovalsBox();
-                        }
-                    };
+// 🟢 替換為 100% 完整的頁籤顯示與數據渲染大腦：
+window.switchTab = function(tabId) {
+    // 1. 隱藏所有頁籤內容區塊
+    var contents = document.querySelectorAll('.tab-content');
+    for (var i = 0; i < contents.length; i++) {
+        contents[i].style.setProperty('display', 'none', 'important');
+    }
+    
+    // 2. 移除所有導航按鈕的高亮狀態
+    var btns = document.querySelectorAll('.tab-btn');
+    for (var j = 0; j < btns.length; j++) {
+        btns[j].classList.remove('active');
+    }
+
+    // 3. 強制顯示目標頁籤內容
+    var targetContent = document.getElementById(tabId);
+    if (targetContent) {
+        targetContent.style.setProperty('display', 'block', 'important');
+    }
+
+    // 4. 高亮對應的導航按鈕
+    var targetBtnId = tabId.replace('tab-', 'nav-');
+    var targetBtn = document.getElementById(targetBtnId);
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+
+    // 5. 根據切換的頁籤，觸發對應的畫面渲染
+    if (tabId === 'tab-schedule' && typeof runScheduler === 'function') {
+        runScheduler();
+    }
+    if (tabId === 'tab-my-month' && typeof renderIndividualMonthCalendar === 'function') {
+        renderIndividualMonthCalendar();
+    }
+    if (tabId === 'tab-analysis' && typeof renderMonthlyAnalysis === 'function') {
+        renderMonthlyAnalysis();
+    }
+    if (tabId === 'tab-approval-center' && typeof renderPendingApprovalsBox === 'function') {
+        renderPendingApprovalsBox();
+    }
+    if (tabId === 'tab-settings' && typeof window.renderSettingsAccountsList === 'function') {
+        window.renderSettingsAccountsList(window.state.employees || []);
+    }
+};
+
                 });
 
                 window.showToastMessage = function(msg) {
